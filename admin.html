@@ -3,18 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin NADĚJE</title>
+    <title>Admin NADĚJE - Kancelář</title>
     <script src="stats.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <style>
+        :root { --primary: #3498db; --success: #27ae60; --danger: #e74c3c; --dark: #2c3e50; }
         body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; padding: 20px; }
-        .card { background: white; padding: 20px; border-radius: 15px; max-width: 500px; margin: 0 auto 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-        input, textarea { width: 100%; padding: 10px; margin: 5px 0; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; }
-        .btn { padding: 10px 15px; border: none; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; margin-top: 10px; width: 100%; }
-        .btn-blue { background: #3498db; } .btn-green { background: #27ae60; } .btn-red { background: #e74c3c; } .btn-dark { background: #2c3e50; }
-        .bet-admin { background: #f9f9f9; padding: 8px; border-radius: 8px; margin-top: 5px; display: flex; justify-content: space-between; align-items: center; font-size: 0.8em; }
+        .card { background: white; padding: 25px; border-radius: 15px; max-width: 600px; margin: 0 auto 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        input, textarea { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        .btn { width: 100%; padding: 14px; border: none; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .btn-blue { background: var(--primary); } .btn-dark { background: var(--dark); } .btn-red { background: var(--danger); }
+        .bet-admin { display: flex; justify-content: space-between; align-items: center; background: #f9f9f9; padding: 10px; border-radius: 8px; margin-top: 5px; font-size: 0.9em; }
         #authOverlay { position: fixed; top:0; left:0; width:100%; height:100%; background:white; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:1000; }
+        .strelec-tag { background: var(--dark); color: white; padding: 4px 10px; border-radius: 15px; font-size: 0.8em; margin: 2px; display: inline-block; }
     </style>
 </head>
 <body onload="initAdmin()">
@@ -25,15 +27,20 @@
     </div>
 
     <div class="card">
-        <h2>🚀 Vypsat zápas</h2>
-        <input list="statyList" id="d" placeholder="Domácí">
-        <input list="statyList" id="h" placeholder="Hosté">
+        <h2>🚀 Vypsat nový zápas</h2>
+        <input list="statyList" id="d" placeholder="Domácí tým">
+        <input list="statyList" id="h" placeholder="Hostující tým">
         <input type="datetime-local" id="dl">
-        <button class="btn btn-blue" onclick="addM()">VYPSAT</button>
+        <button class="btn btn-blue" onclick="addM()">VYPSAT ZÁPAS</button>
     </div>
 
     <div id="adminMatches"></div>
     <datalist id="statyList"></datalist>
+
+    <div class="card" style="text-align: center;">
+        <button class="btn btn-dark" onclick="if(confirm('Opravdu?')) db.ref('sazkyData/prevedenyBank').set(0)">VYNULOVAT HLAVNÍ BANK (0 Kč)</button>
+        <a href="index.html" style="display:block; margin-top:15px; text-decoration: none; color: var(--primary); font-weight: bold;">← ZPĚT NA WEB</a>
+    </div>
 
     <script>
         const firebaseConfig = { apiKey: "AIzaSyC-NCdmsgA42FxnopKm92m1y5gUGw_z_uE", authDomain: "nadeje-208bd.firebaseapp.com", databaseURL: "https://nadeje-208bd-default-rtdb.europe-west1.firebasedatabase.app", projectId: "nadeje-208bd", storageBucket: "nadeje-208bd.firebasestorage.app", messagingSenderId: "688478977789", appId: "1:688478977789:web:512d1520cf96c9e59cc894" };
@@ -42,61 +49,85 @@
         const norm = (s) => s ? s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim() : "";
 
         function check() { if(document.getElementById('adminPass').value === "fotbal2024") document.getElementById('authOverlay').style.display='none'; }
-        function initAdmin() { const l = document.getElementById('statyList'); vsechnyStaty.forEach(s => { const o = document.createElement('option'); o.value=s.n; o.setAttribute('data-code', s.c); l.appendChild(o); }); }
+        
+        function initAdmin() {
+            const l = document.getElementById('statyList');
+            if(window.vsechnyStaty) vsechnyStaty.forEach(s => {
+                const o = document.createElement('option'); o.value=s.n; o.setAttribute('data-code', s.c); l.appendChild(o);
+            });
+        }
 
         function addM() {
             const d = document.getElementById('d').value, h = document.getElementById('h').value, dl = document.getElementById('dl').value;
             const kd = vsechnyStaty.find(s => s.n === d)?.c || "un";
             const kh = vsechnyStaty.find(s => s.n === h)?.c || "un";
+            if(!d || !h || !dl) return alert("Vyplň vše!");
             db.ref('sazkyData/zapasy').push({ domaci: d, hoste: h, kodD: kd, kodH: kh, deadline: dl });
         }
 
         db.ref('sazkyData').on('value', snap => {
             const data = snap.val() || {};
             const cont = document.getElementById('adminMatches'); cont.innerHTML = "";
-            if(data.zapasy) Object.entries(data.zapasy).forEach(([id, m]) => {
-                const div = document.createElement('div'); div.className = 'card';
-                div.innerHTML = `<h3>${m.domaci} - ${m.hoste}</h3>
-                    <textarea id="raw-${id}" placeholder="Livesport text..."></textarea>
-                    <button class="btn btn-dark" onclick="evalM('${id}', ${data.prevedenyBank || 0})">VYHODNOTIT</button>
-                    <button class="btn btn-red" onclick="db.ref('sazkyData/zapasy/${id}').remove()">SMAZAT</button>
-                    <div id="bets-${id}"></div>`;
-                cont.appendChild(div);
-                if(m.sazky) Object.entries(m.sazky).forEach(([sid, s]) => {
-                    const row = document.createElement('div'); row.className = 'bet-admin';
-                    row.innerHTML = `<span>${s.jmeno}: ${s.skore} (${s.stav})</span>
-                        <div><button onclick="db.ref('sazkyData/zapasy/${id}/sazky/${sid}/stav').set('✅ ZAPLACENO')">OK</button>
-                        <button onclick="db.ref('sazkyData/zapasy/${id}/sazky/${sid}').remove()">🗑️</button></div>`;
-                    document.getElementById(`bets-${id}`).appendChild(row);
+            if(data.zapasy) {
+                Object.entries(data.zapasy).forEach(([id, m]) => {
+                    const div = document.createElement('div'); div.className = 'card';
+                    div.innerHTML = `<h3>${m.domaci} - ${m.hoste}</h3>
+                        <textarea id="raw-${id}" placeholder="Vlož text z Livesportu..." style="height:80px;"></textarea>
+                        <button class="btn btn-dark" onclick="evalM('${id}', ${data.prevedenyBank || 0})">VYHODNOTIT AUTO-PILOTEM</button>
+                        <button class="btn btn-red" onclick="if(confirm('Smazat?')) db.ref('sazkyData/zapasy/${id}').remove()" style="margin-top:20px; opacity:0.6;">SMAZAT ZÁPAS</button>
+                        <div id="bets-${id}" style="margin-top:15px;"></div>`;
+                    cont.appendChild(div);
+
+                    if(m.sazky) {
+                        Object.entries(m.sazky).forEach(([sid, s]) => {
+                            const row = document.createElement('div'); row.className = 'bet-admin';
+                            row.innerHTML = `<span><b>${s.jmeno}</b>: ${s.skore} (${s.stav})</span>
+                                <div>
+                                    <button class="btn-green" onclick="db.ref('sazkyData/zapasy/${id}/sazky/${sid}/stav').set('✅ ZAPLACENO')" style="padding:5px 10px; border-radius:5px; border:none; color:white; cursor:pointer;">OK</button>
+                                    <button class="btn-red" onclick="db.ref('sazkyData/zapasy/${id}/sazky/${sid}').remove()" style="padding:5px 10px; border-radius:5px; border:none; color:white; cursor:pointer; margin-left:5px;">🗑️</button>
+                                </div>`;
+                            document.getElementById(`bets-${id}`).appendChild(row);
+                        });
+                    }
                 });
-            });
+            }
         });
 
         function evalM(mid, mainBank) {
             const raw = document.getElementById(`raw-${mid}`).value;
+            if(!raw) return alert("Vlož text!");
             const lines = raw.split('\n').map(l => l.trim()).filter(l => l.length > 0);
             let fD = 0, fH = 0, goals = [];
             let isOT = raw.toUpperCase().includes("PRODLOUŽENÍ") || raw.toUpperCase().includes("NÁJEZDY");
+
             for (let i = 0; i < lines.length; i++) {
                 const m = lines[i].match(/(\d+)\s*-\s*(\d+)/);
-                if (m) { fD = parseInt(m[1]); fH = parseInt(m[2]); if(lines[i+1] && !lines[i+1].includes('+')) goals.push(norm(lines[i+1])); }
+                if (m) {
+                    fD = parseInt(m[1]); fH = parseInt(m[2]);
+                    if(lines[i+1] && !lines[i+1].includes('+') && !lines[i+1].includes('(') && !lines[i+1].match(/^\d{2}:\d{2}$/)) {
+                        goals.push(norm(lines[i+1]));
+                    }
+                }
             }
             if(isOT) { fD = Math.min(fD, fH); fH = fD; }
             const res = `${fD}:${fH}`;
 
             db.ref(`sazkyData/zapasy/${mid}`).once('value', snap => {
                 const m = snap.val(); const sazky = Object.values(m.sazky || {});
-                const matchBank = sazky.length * 20;
+                const mBank = sazky.length * 20;
                 let winnersSkore = sazky.filter(s => s.skore === res);
                 let winnersFull = winnersSkore.filter(s => goals.some(g => g.includes(norm(s.strelec)) || norm(s.strelec).includes(g)));
                 let finalWinners = winnersFull.length > 0 ? winnersFull : winnersSkore;
 
                 if(finalWinners.length > 0) {
-                    alert("VÝHRA! Bank rozdělen."); db.ref('sazkyData/prevedenyBank').set(0);
+                    alert(`VÝHRA! ${finalWinners.length} lidí bere ${mainBank + mBank} Kč!`);
+                    db.ref('sazkyData/prevedenyBank').set(0);
                 } else {
-                    alert("Nikdo nevyhrál, bank se přelévá."); db.ref('sazkyData/prevedenyBank').set(mainBank + matchBank);
+                    alert(`Nikdo nevyhrál. ${mBank} Kč se přelévá do Hlavního banku.`);
+                    db.ref('sazkyData/prevedenyBank').set(mainBank + mBank);
                 }
                 db.ref(`sazkyData/zapasy/${mid}`).remove();
+                db.ref('sazkyData/posledniVysledek').set({ tymy: `${m.domaci} vs ${m.hoste}`, skore: res, strelci: goals.join(', ') });
             });
         }
     </script>
