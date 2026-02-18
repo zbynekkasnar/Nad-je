@@ -28,9 +28,6 @@
         .mood-1 { background: #3498db; } .mood-0 { background: #95a5a6; } .mood-2 { background: #e74c3c; }
 
         input { padding: 12px; border: 2px solid #ddd; border-radius: 8px; width: 100%; box-sizing: border-box; background: var(--input-bg); color: var(--text); margin-bottom: 10px; border-color: var(--table-border); font-size: 16px; }
-        input[type="number"] { -moz-appearance: textfield; }
-        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-
         button#btnOdeslat { background: #28a745; color: white; border: none; padding: 15px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1.1em; }
         button:disabled { background: #ccc; cursor: not-allowed; }
         
@@ -58,8 +55,8 @@
                 <div class="zapas-nazev"><span id="txtDomaci"></span> VS <span id="txtHoste"></span></div>
                 <input type="text" id="jmeno" placeholder="Tvé jméno">
                 <div style="display:flex; gap:10px;">
-                    <input type="number" id="tip_domaci" placeholder="0" min="0" oninput="this.value = Math.abs(this.value)">
-                    <input type="number" id="tip_hoste" placeholder="0" min="0" oninput="this.value = Math.abs(this.value)">
+                    <input type="number" id="tip_domaci" placeholder="Skóre domácí" min="0" oninput="this.value = Math.abs(this.value)">
+                    <input type="number" id="tip_hoste" placeholder="Skóre hosté" min="0" oninput="this.value = Math.abs(this.value)">
                 </div>
                 <input type="text" id="tip_strelec" placeholder="Tip na střelce">
                 <button id="btnOdeslat" onclick="ulozitSazku()">ODESLAT SÁZKU (20 Kč)</button>
@@ -138,10 +135,8 @@
             seznam.reverse().forEach(s => {
                 const tr = document.createElement('tr');
                 if(s.stav && s.stav.includes("VÝHRA")) tr.className="win";
-                
                 const tipNorm = normalize(s.strelec);
                 const trefilS = tipNorm !== "" && vStrelciNorm.some(v => tipNorm.includes(v) || v.includes(tipNorm));
-
                 tr.innerHTML = `<td>${s.jmeno}</td><td>${s.skore}</td><td>${trefilS ? '🎯 '+s.strelec : s.strelec}</td><td>${s.stav || '⏳'}</td>`;
                 tbody.appendChild(tr);
             });
@@ -159,11 +154,9 @@
             const dG = document.getElementById('tip_domaci').value;
             const hG = document.getElementById('tip_hoste').value;
             const s = document.getElementById('tip_strelec').value.trim();
-
-            if(!j || dG==="" || hG==="" || !s) return alert("⚠️ Vyplň prosím všechna pole!");
-
+            if(!j || dG==="" || hG==="" || !s) return alert("⚠️ Vyplň vše (jméno, skóre, střelce)!");
             db.ref('sazkyData/seznamSazek').push({ jmeno:j, skore:dG+":"+hG, strelec:s, stav:"⏳ Vsadil" }).then(() => {
-                alert("✅ Sázka odeslána!");
+                alert("✅ Odesláno!");
                 document.getElementById('tip_strelec').value = "";
             });
         }
