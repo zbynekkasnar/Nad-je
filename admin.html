@@ -3,27 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sázky NADĚJE - Admin Panel (Mega List)</title>
+    <title>Admin NADĚJE - Čistá verze</title>
+    <script src="stats.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <style>
         :root { --primary: #3498db; --success: #27ae60; --danger: #e74c3c; --dark: #2c3e50; --bg: #f4f7f6; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: #333; padding: 20px; display: flex; flex-direction: column; align-items: center; }
         .card { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); width: 100%; max-width: 500px; margin-bottom: 20px; border-top: 5px solid var(--primary); }
-        .card.evaluate { border-top-color: var(--success); }
         h2 { margin-top: 0; color: var(--dark); font-size: 1.3em; }
         label { display: block; margin-top: 15px; font-weight: bold; font-size: 0.8em; color: #7f8c8d; }
         input, textarea { width: 100%; padding: 12px; margin-top: 5px; border: 2px solid #edf2f7; border-radius: 10px; box-sizing: border-box; font-size: 16px; background: #f8fafc; }
         .btn { padding: 15px; border: none; border-radius: 10px; color: white; font-weight: bold; width: 100%; cursor: pointer; margin-top: 12px; transition: 0.2s; }
         .btn-blue { background: var(--primary); } .btn-green { background: var(--success); } .btn-dark { background: var(--dark); } .btn-red { background: var(--danger); }
+        .strelci-seznam { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; padding: 10px; background: #f1f3f5; border-radius: 10px; min-height: 40px; }
+        .strelec-tag { background: var(--dark); color: white; padding: 5px 12px; border-radius: 20px; display: flex; align-items: center; gap: 8px; font-size: 0.85em; }
+        .strelec-tag span { cursor: pointer; font-weight: bold; color: #ff7675; margin-left: 5px; }
         .score-preview { display: flex; align-items: center; justify-content: center; gap: 15px; margin: 15px 0; }
-        .score-box { font-size: 1.8em; font-weight: bold; width: 60px; text-align: center; border: 2px solid var(--primary) !important; }
+        .score-box { font-size: 1.8em; font-weight: bold; width: 65px; text-align: center; border: 2px solid var(--primary) !important; }
+        .footer-link { margin-top: 20px; text-decoration: none; color: var(--primary); font-weight: bold; }
         #authOverlay { position: fixed; top:0; left:0; width:100%; height:100%; background:var(--bg); display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:1000; }
-        .debug-info { font-size: 0.8em; margin-top: 5px; font-weight: bold; }
-        .status-ok { color: var(--success); } .status-error { color: var(--danger); }
+        .debug-info { font-size: 0.75em; margin-top: 4px; font-weight: bold; }
     </style>
 </head>
-<body>
+<body onload="initAdmin()">
 
     <div id="authOverlay">
         <div class="card">
@@ -38,205 +41,120 @@
         <label>Uzávěrka sázek</label>
         <input type="datetime-local" id="set_deadline">
         <label>Týmy</label>
-        <input list="statyList" id="set_domaci" placeholder="Domácí tým" oninput="syncCodes()">
-        <div id="debug_domaci" class="debug-info status-error">Vlajka: NENÍ ❌</div>
-        <input list="statyList" id="set_hoste" placeholder="Hosté tým" oninput="syncCodes()">
-        <div id="debug_hoste" class="debug-info status-error">Vlajka: NENÍ ❌</div>
+        <input list="statyList" id="set_domaci" placeholder="Domácí" oninput="syncCodes()">
+        <div id="debug_domaci" class="debug-info"></div>
+        <input list="statyList" id="set_hoste" placeholder="Hosté" oninput="syncCodes()">
+        <div id="debug_hoste" class="debug-info"></div>
         <button class="btn btn-blue" onclick="nastavitKolo()">VYPSAT ZÁPAS</button>
     </div>
 
-    <div class="card evaluate">
+    <div class="card" style="border-top-color: var(--success);">
         <h2>🤖 Auto-Pilot Vyhodnocení</h2>
-        <label>Vlož text z Livesportu</label>
-        <textarea id="raw_data" placeholder="Vlož průběh zápasu..." style="height: 120px;"></textarea>
-        <button class="btn btn-dark" onclick="analyzovatText()">⚡ NAČÍST VŠE</button>
+        <textarea id="raw_data" placeholder="Vlož text z Livesportu..." style="height: 100px;"></textarea>
+        <button class="btn btn-dark" onclick="analyzovatText()">⚡ NAČÍST DATA</button>
         <div class="score-preview">
-            <input type="number" id="real_domaci" class="score-box" value="0">
-            <span style="font-size: 1.5em;">:</span>
+            <input type="number" id="real_domaci" class="score-box" value="0"> : 
             <input type="number" id="real_hoste" class="score-box" value="0">
         </div>
-        <input type="text" id="real_strelec" placeholder="Střelci se doplní sami">
-        <button class="btn btn-green" onclick="vyhodnotit()">🏆 POTVRDIT VÝSLEDKY</button>
-    </div>
-
-    <div class="card">
-        <h2>💵 Správa plateb</h2>
-        <table style="width:100%;" id="platbyTable"><tbody id="platbyBody"></tbody></table>
+        <div id="strelciContainer" class="strelci-seznam"></div>
+        <button class="btn btn-green" onclick="vyhodnotit()">🏆 VYHODNOTIT</button>
     </div>
 
     <div class="card" style="border-top-color: var(--danger);">
-        <h2>⚠️ Údržba</h2>
-        <button class="btn btn-dark" onclick="vynulovatJackpot()">VYNULOVAT BANK</button>
         <button class="btn btn-red" onclick="smazatHistoriiStatistik()">SMAZAT STATISTIKY</button>
     </div>
 
-    <datalist id="statyList">
-        <option data-code="cz" value="Česko">
-        <option data-code="sk" value="Slovensko">
-        <option data-code="ca" value="Kanada">
-        <option data-code="us" value="USA">
-        <option data-code="de" value="Německo">
-        <option data-code="fi" value="Finsko">
-        <option data-code="se" value="Švédsko">
-        <option data-code="ch" value="Švýcarsko">
-        <option data-code="at" value="Rakousko">
-        <option data-code="fr" value="Francie">
-        <option data-code="no" value="Norsko">
-        <option data-code="it" value="Itálie">
-        <option data-code="gb" value="Velká Británie">
-        <option data-code="lv" value="Lotyšsko">
-        <option data-code="pl" value="Polsko">
-        <option data-code="kz" value="Kazachstán">
-        <option data-code="dk" value="Dánsko">
-        <option data-code="si" value="Slovinsko">
-        <option data-code="hu" value="Maďarsko">
-        <option data-code="by" value="Bělorusko">
-        <option data-code="ru" value="Rusko">
-        <option data-code="ua" value="Ukrajina">
-        <option data-code="be" value="Belgie">
-        <option data-code="nl" value="Nizozemsko">
-        <option data-code="pt" value="Portugalsko">
-        <option data-code="es" value="Španělsko">
-        <option data-code="hr" value="Chorvatsko">
-        <option data-code="rs" value="Srbsko">
-        <option data-code="ro" value="Rumunsko">
-        <option data-code="gr" value="Řecko">
-        <option data-code="tr" value="Turecko">
-        <option data-code="ie" value="Irsko">
-        <option data-code="is" value="Island">
-        <option data-code="ge" value="Gruzie">
-        <option data-code="al" value="Albánie">
-        <option data-code="br" value="Brazílie">
-        <option data-code="ar" value="Argentina">
-        <option data-code="uy" value="Uruguay">
-        <option data-code="cl" value="Chile">
-        <option data-code="co" value="Kolumbie">
-        <option data-code="pe" value="Peru">
-        <option data-code="mx" value="Mexiko">
-        <option data-code="ec" value="Ekvádor">
-        <option data-code="py" value="Paraguay">
-        <option data-code="ve" value="Venezuela">
-        <option data-code="jp" value="Japonsko">
-        <option data-code="kr" value="Jižní Korea">
-        <option data-code="cn" value="Čína">
-        <option data-code="au" value="Austrálie">
-        <option data-code="nz" value="Nový Zéland">
-        <option data-code="sa" value="Saúdská Arábie">
-        <option data-code="ae" value="SAE">
-        <option data-code="qa" value="Katar">
-        <option data-code="sn" value="Senegal">
-        <option data-code="ma" value="Maroko">
-        <option data-code="dz" value="Alžírsko">
-        <option data-code="tn" value="Tunisko">
-        <option data-code="eg" value="Egypt">
-        <option data-code="ng" value="Nigérie">
-        <option data-code="cm" value="Kamerun">
-        <option data-code="gh" value="Ghana">
-        <option data-code="ci" value="Pobřeží slonoviny">
-        <option data-code="za" value="JAR">
-    </datalist>
+    <a href="index.html" class="footer-link">← ZPĚT NA WEB</a>
+
+    <datalist id="statyList"></datalist>
 
     <script>
         const firebaseConfig = { apiKey: "AIzaSyC-NCdmsgA42FxnopKm92m1y5gUGw_z_uE", authDomain: "nadeje-208bd.firebaseapp.com", databaseURL: "https://nadeje-208bd-default-rtdb.europe-west1.firebasedatabase.app", projectId: "nadeje-208bd", storageBucket: "nadeje-208bd.firebasestorage.app", messagingSenderId: "688478977789", appId: "1:688478977789:web:512d1520cf96c9e59cc894" };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
+        let listStrelcu = [];
+        const norm = (s) => s ? s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim() : "";
+
+        // NAPLNĚNÍ SEZNAMU PŘI NAČTENÍ
+        function initAdmin() {
+            const list = document.getElementById('statyList');
+            vsechnyStaty.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s.n;
+                opt.setAttribute('data-code', s.c);
+                list.appendChild(opt);
+            });
+        }
+
         function checkPass() { if(document.getElementById('adminPass').value === "fotbal2024") document.getElementById('authOverlay').style.display = 'none'; }
-        const norm = (s) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+
+        function syncCodes() {
+            const dVal = document.getElementById('set_domaci').value;
+            const hVal = document.getElementById('set_hoste').value;
+            const dKod = vsechnyStaty.find(s => norm(s.n) === norm(dVal))?.c || "";
+            const hKod = vsechnyStaty.find(s => norm(s.n) === norm(hVal))?.c || "";
+            
+            document.getElementById('debug_domaci').innerHTML = dKod ? "✅ Vlajka: " + dKod : "❌ Vlajka nenalezena";
+            document.getElementById('debug_hoste').innerHTML = hKod ? "✅ Vlajka: " + hKod : "❌ Vlajka nenalezena";
+        }
 
         function analyzovatText() {
             const raw = document.getElementById('raw_data').value;
             const lines = raw.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-            let strelci = []; let finalD = 0, finalH = 0;
+            listStrelcu = [];
+            let fD = 0, fH = 0;
+            let isOvertime = raw.toUpperCase().includes("PRODLOUŽENÍ") || raw.toUpperCase().includes("NÁJEZDY");
+
             for (let i = 0; i < lines.length; i++) {
                 const match = lines[i].match(/^(\d+)\s*-\s*(\d+)$/);
                 if (match) {
-                    finalD = match[1]; finalH = match[2];
-                    if (lines[i + 1] && !lines[i + 1].includes('+') && !lines[i + 1].includes('(')) {
-                        strelci.push(lines[i + 1]);
+                    fD = parseInt(match[1]); fH = parseInt(match[2]);
+                    let pStrelec = lines[i + 1];
+                    if (pStrelec && !pStrelec.includes('+') && !pStrelec.includes('(') && !pStrelec.match(/^\d{2}:\d{2}$/)) {
+                        listStrelcu.push(pStrelec.replace(/\.$/, ''));
                     }
                 }
             }
-            document.getElementById('real_domaci').value = finalD;
-            document.getElementById('real_hoste').value = finalH;
-            const cleanStrelci = strelci.map(s => s.replace(/\.$/, ''));
-            document.getElementById('real_strelec').value = [...new Set(cleanStrelci)].join(', ');
-            alert("Načteno!");
+            if (isOvertime) { fD = Math.min(fD, fH); fH = fD; }
+            document.getElementById('real_domaci').value = fD;
+            document.getElementById('real_hoste').value = fH;
+            renderStrelce();
         }
 
-        function syncCodes() {
-            const list = document.getElementById('statyList').options;
-            const dVal = document.getElementById('set_domaci').value;
-            const hVal = document.getElementById('set_hoste').value;
-            let dK = "", hK = "";
-            for (let i = 0; i < list.length; i++) {
-                if (norm(list[i].value) === norm(dVal)) dK = list[i].getAttribute('data-code');
-                if (norm(list[i].value) === norm(hVal)) hK = list[i].getAttribute('data-code');
-            }
-            document.getElementById('debug_domaci').className = dK ? "debug-info status-ok" : "debug-info status-error";
-            document.getElementById('debug_domaci').innerText = dK ? "Vlajka: ANO ✅" : "Vlajka: NENÍ ❌";
-            document.getElementById('debug_hoste').className = hK ? "debug-info status-ok" : "debug-info status-error";
-            document.getElementById('debug_hoste').innerText = hK ? "Vlajka: ANO ✅" : "Vlajka: NENÍ ❌";
-        }
-
-        db.ref('sazkyData').on('value', (snapshot) => {
-            const data = snapshot.val();
-            const body = document.getElementById('platbyBody'); body.innerHTML = "";
-            if(data && data.seznamSazek) {
-                Object.entries(data.seznamSazek).forEach(([id, s]) => {
-                    const ok = s.stav && s.stav.includes("ZAPLACENO");
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `<td style="padding:10px 0;"><b>${s.jmeno}</b><br><small>${s.skore} (${s.strelec})</small></td>
-                        <td style="text-align:right;">
-                            <button class="btn btn-green" style="width:auto; padding:5px 10px; margin:0;" onclick="potvrditPlatbu('${id}', ${ok})">${ok?'✅':'💵'}</button>
-                            <button class="btn btn-red" style="width:auto; padding:5px 10px; margin:0;" onclick="smazatSazku('${id}')">🗑️</button>
-                        </td>`;
-                    body.appendChild(tr);
-                });
-            }
-        });
-
-        function potvrditPlatbu(id, stav) { db.ref(`sazkyData/seznamSazek/${id}/stav`).set(stav ? "⏳ Vsadil" : "💵 ZAPLACENO"); }
-        function smazatSazku(id) { if(confirm("Smazat?")) db.ref(`sazkyData/seznamSazek/${id}`).remove(); }
-
-        function nastavitKolo() {
-            const d = document.getElementById('set_domaci').value, h = document.getElementById('set_hoste').value, dl = document.getElementById('set_deadline').value;
-            const list = document.getElementById('statyList').options;
-            let kd = "", kh = "";
-            for (let i = 0; i < list.length; i++) {
-                if (norm(list[i].value) === norm(d)) kd = list[i].getAttribute('data-code');
-                if (norm(list[i].value) === norm(h)) kh = list[i].getAttribute('data-code');
-            }
-            if(!d || !h || !dl) return alert("Chybí data!");
-            db.ref('sazkyData').once('value', (snapshot) => {
-                const data = snapshot.val(); let jpt = data.prevedenyBank || 0;
-                if (data.seznamSazek) {
-                    const sez = Object.values(data.seznamSazek);
-                    if (!sez.some(s => s.stav && s.stav.includes("VÝHRA"))) jpt += (sez.length * 20); else jpt = 0;
-                }
-                db.ref('sazkyData').update({ domaci:d, hoste:h, kodDomaci:kd, kodHoste:kh, deadline:dl, seznamSazek:null, prevedenyBank:jpt }).then(() => alert("Kolo vypsáno!"));
+        function renderStrelce() {
+            const container = document.getElementById('strelciContainer'); container.innerHTML = "";
+            [...new Set(listStrelcu)].forEach((s, index) => {
+                const tag = document.createElement('div'); tag.className = 'strelec-tag';
+                tag.innerHTML = `${s} <span onclick="listStrelcu.splice(${index}, 1); renderStrelce();">✕</span>`;
+                container.appendChild(tag);
             });
         }
 
+        function nastavitKolo() {
+            const d = document.getElementById('set_domaci').value, h = document.getElementById('set_hoste').value, dl = document.getElementById('set_deadline').value;
+            const kd = vsechnyStaty.find(s => norm(s.n) === norm(d))?.c || "";
+            const kh = vsechnyStaty.find(s => norm(s.n) === norm(h))?.c || "";
+            if(!d || !h || !dl) return alert("Chybí data!");
+            db.ref('sazkyData').update({ domaci:d, hoste:h, kodDomaci:kd, kodHoste:kh, deadline:dl, seznamSazek:null, posledniStrelec:"" }).then(() => alert("Vypsáno!"));
+        }
+
         function vyhodnotit() {
-            const resD = document.getElementById('real_domaci').value, resH = document.getElementById('real_hoste').value, vys = `${resD}:${resH}`, sTxt = document.getElementById('real_strelec').value;
-            const sNorm = norm(sTxt).split(',').map(s => s.trim());
+            const rD = document.getElementById('real_domaci').value, rH = document.getElementById('real_hoste').value, vys = `${rD}:${rH}`;
             db.ref('sazkyData').once('value', (snapshot) => {
                 const data = snapshot.val(); if(!data || !data.seznamSazek) return;
-                const sez = Object.entries(data.seznamSazek);
-                let updates = { posledniStrelec: sTxt };
-                sez.forEach(([key, s]) => {
+                db.ref('sazkyData/posledniVysledek').set({ tymy: `${data.domaci} vs ${data.hoste}`, skore: vys, strelci: listStrelcu.join(', ') });
+                let updates = { posledniStrelec: listStrelcu.join(', ') };
+                Object.entries(data.seznamSazek).forEach(([key, s]) => {
                     const vyhraSkore = (s.skore === vys);
                     const tipStrelecNorm = norm(s.strelec);
-                    const vyhraStrelec = tipStrelecNorm !== "" && sNorm.some(v => v.includes(tipStrelecNorm) || tipStrelecNorm.includes(v));
+                    const vyhraStrelec = tipStrelecNorm !== "" && listStrelcu.some(v => norm(v).includes(tipStrelecNorm));
                     updates[`seznamSazek/${key}/stav`] = vyhraSkore ? "VÝHRA! 🎉" : "❌";
                     db.ref('historieSazek').push({ jmeno: s.jmeno, trefilSkore: vyhraSkore, trefilStrelce: vyhraStrelec, datum: new Date().toISOString() });
                 });
                 db.ref('sazkyData').update(updates).then(() => alert("Vyhodnoceno!"));
             });
         }
-        function vynulovatJackpot() { if(confirm("Nula?")) db.ref('sazkyData/prevedenyBank').set(0); }
-        function smazatHistoriiStatistik() { if(confirm("Smazat historii?")) db.ref('historieSazek').remove(); }
     </script>
 </body>
 </html>
