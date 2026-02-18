@@ -27,7 +27,6 @@
             50% { opacity: 1; transform: scale(1.05) translateY(0); }
             100% { opacity: 0.5; transform: scale(1); }
         }
-        .header-logo:hover { opacity: 1; transition: 0.5s; }
 
         /* HLAVNÍ BANK BOX */
         .bank-box { 
@@ -43,18 +42,32 @@
             background: rgba(255,255,255,0.05); border-radius: 20px; border: 1px solid rgba(255,255,255,0.1);
             margin-bottom: 20px; padding: 20px; cursor: pointer; transition: 0.3s;
         }
-        .match-card:hover { background: rgba(255,255,255,0.1); }
         
-        /* 3D VLAJKY */
-        .flag-container { perspective: 1000px; filter: drop-shadow(0 8px 15px rgba(0,0,0,0.4)); }
+        /* EXTRÉMNÍ 3D VLAJKY - VLAJÍCÍ EFEKT */
+        .flag-container { 
+            perspective: 1200px; /* Větší hloubka */
+            filter: drop-shadow(0 12px 20px rgba(0,0,0,0.6));
+            display: inline-block;
+        }
         .flag-img {
-            width: 80px; height: auto; border-radius: 4px;
-            animation: flagWave 4s ease-in-out infinite;
+            width: 85px; height: auto; border-radius: 4px;
+            animation: flagWave 3s ease-in-out infinite;
             transform-origin: left center;
+            border-left: 2px solid rgba(255,255,255,0.3); /* "Stožárová" hrana */
         }
         @keyframes flagWave {
-            0%, 100% { transform: rotateY(0deg) rotateX(0deg); }
-            50% { transform: rotateY(20deg) rotateX(-5deg) scale(1.05); }
+            0%, 100% { 
+                transform: rotateY(0deg) rotateX(0deg) skewY(0deg) scale(1); 
+            }
+            25% {
+                transform: rotateY(35deg) rotateX(10deg) skewY(-5deg) scale(1.05);
+            }
+            50% { 
+                transform: rotateY(15deg) rotateX(-10deg) skewY(3deg) scale(1.1); 
+            }
+            75% {
+                transform: rotateY(40deg) rotateX(5deg) skewY(-2deg) scale(1.05);
+            }
         }
 
         .vs { background: var(--neon); color: black; border-radius: 50%; width: 35px; height: 35px; line-height: 35px; font-weight: bold; margin: 0 20px; display: inline-block; }
@@ -66,7 +79,7 @@
 
         /* FORMULÁŘ */
         .details { display: none; padding-top: 25px; border-top: 1px solid rgba(255,255,255,0.1); margin-top: 20px; text-align: left; }
-        .name-input { width: 100%; padding: 12px; margin-bottom: 15px; background: #000; border: 1px solid #333; color: white; border-radius: 10px; font-weight: bold; }
+        .name-input { width: 100%; padding: 12px; margin-bottom: 15px; background: rgba(0,242,255,0.1); border: 1px solid var(--neon); color: white; border-radius: 10px; font-weight: bold; box-sizing: border-box; }
         .score-input { width: 65px; padding: 12px; text-align: center; font-weight: bold; font-size: 1.4em; background: #000; border: 1px solid var(--neon); color: white; border-radius: 10px; }
         
         /* PŘEPÍNAČ (SWITCH) */
@@ -77,7 +90,6 @@
         input:checked + .slider { background: var(--neon); }
         input:checked + .slider:before { transform: translateX(22px); }
 
-        /* SÁZKY */
         .bet-row { background: rgba(255,255,255,0.03); padding: 12px; border-radius: 12px; margin-bottom: 8px; border-left: 3px solid var(--neon); display: flex; flex-direction: column; gap: 4px; }
         .bet-main { display: flex; justify-content: space-between; font-weight: bold; }
         .bet-player { font-size: 0.85em; color: var(--neon); opacity: 0.9; }
@@ -85,6 +97,7 @@
         /* TIKET */
         #cart { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 480px; background: #1e293b; border: 2px solid var(--neon); border-radius: 25px; padding: 20px; display: none; z-index: 1000; box-shadow: 0 -10px 40px rgba(0,0,0,0.8); }
         .btn-add { width: 100%; background: var(--neon); color: black; border: none; padding: 15px; border-radius: 12px; font-weight: bold; cursor: pointer; margin-top: 15px; }
+        .btn-send { background: var(--neon); color: black; border: none; padding: 12px 25px; border-radius: 15px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -101,11 +114,13 @@
 
     <div id="cart">
         <div style="display:flex; justify-content:space-between; align-items:center;">
-            <div style="text-align:left;"><b id="cartCount">0 zápasů</b><br><span id="cartTotal" style="color:var(--neon); font-size:1.4em;">0 Kč</span></div>
-            <button class="btn-add" style="width:auto; padding: 12px 25px; margin:0;" onclick="odeslatTiket()">ODESLAT</button>
+            <div id="cartLabels" style="text-align:left;"><b id="cartCount">0 zápasů</b><br><span id="cartTotal" style="color:var(--neon); font-size:1.4em;">0 Kč</span></div>
+            <button id="sendBtn" class="btn-send" onclick="odeslatTiket()">ODESLAT</button>
         </div>
         <div id="qrArea" style="display:none; margin-top:15px; background:white; color:black; padding:15px; border-radius:15px; text-align:center;">
-            <img id="qrImg" src="" style="width:160px;"><br><small id="qrDesc"></small>
+            <div id="qrStatus" style="margin-bottom:10px; font-weight:bold;"></div>
+            <img id="qrImg" src="" style="width:160px;"><br>
+            <small id="qrDesc"></small>
         </div>
     </div>
 
@@ -159,9 +174,9 @@
                     <div id="det-${id}" class="details" onclick="event.stopPropagation()">
                         <input type="text" id="name-${id}" class="name-input" placeholder="TVÉ JMÉNO / PŘEZDÍVKA">
                         <div style="display:flex; justify-content:center; align-items:center; gap:15px; margin-bottom:15px;">
-                            <div style="text-align:center;"><small style="display:block;opacity:0.6;">${m.domaci}</small><input type="number" id="sD-${id}" class="score-input"></div>
+                            <div style="text-align:center;"><small style="display:block;opacity:0.6;">${m.domaci}</small><input type="number" id="sD-${id}" class="score-input" min="0"></div>
                             <div style="font-weight:bold; font-size:1.5em; margin-top:20px;">:</div>
-                            <div style="text-align:center;"><small style="display:block;opacity:0.6;">${m.hoste}</small><input type="number" id="sH-${id}" class="score-input"></div>
+                            <div style="text-align:center;"><small style="display:block;opacity:0.6;">${m.hoste}</small><input type="number" id="sH-${id}" class="score-input" min="0"></div>
                         </div>
                         <input type="text" id="p-${id}" placeholder="Tip na střelce" style="width:100%; padding:12px; margin:10px 0; background:#000; border:1px solid #333; color:white; border-radius:10px;">
                         <div style="margin:15px 0; display:flex; align-items:center;">
@@ -186,19 +201,27 @@
             const sD = document.getElementById(`sD-${id}`).value, sH = document.getElementById(`sH-${id}`).value, p = document.getElementById(`p-${id}`).value;
             if(!jm || sD === "" || sH === "" || p === "") return alert("Vyplň jméno, skóre i střelce!");
             kosik[id] = { jmeno: jm, skore: `${sD}:${sH}`, strelec: p, skryt: document.getElementById(`h-${id}`).checked };
-            toggle(id); // Zavřít detail
+            toggle(id);
             document.getElementById('cart').style.display = 'block';
             document.getElementById('cartCount').innerText = `${Object.keys(kosik).length} zápasů na tiketu`;
             document.getElementById('cartTotal').innerText = `${Object.keys(kosik).length * 20} Kč`;
         }
 
         function odeslatTiket() {
+            const btn = document.getElementById('sendBtn');
+            btn.disabled = true; btn.innerText = "ODESÍLÁM..."; btn.style.opacity = "0.5";
             Object.entries(kosik).forEach(([mid, d]) => { db.ref(`sazkyData/zapasy/${mid}/sazky`).push({ ...d, stav: "⏳" }); });
             const tot = Object.keys(kosik).length * 20;
+            document.getElementById('qrStatus').innerHTML = "<span style='color:#27ae60'>✅ TIPY BYLY POSLÁNY!</span>";
             document.getElementById('qrArea').style.display = 'block';
             document.getElementById('qrImg').src = `https://api.paylibo.com/paylibo/generator/czech/image?accountNumber=222333444&bankCode=0800&amount=${tot}&currency=CZK&message=Sazka_Tiket`;
-            document.getElementById('qrDesc').innerText = `Zaplaťte ${tot} Kč přes QR kód.`;
-            setTimeout(() => { document.getElementById('cart').style.display = 'none'; document.getElementById('qrArea').style.display = 'none'; kosik = {}; }, 15000);
+            document.getElementById('cartLabels').style.visibility = "hidden";
+            setTimeout(() => { 
+                document.getElementById('cart').style.display = 'none'; document.getElementById('qrArea').style.display = 'none';
+                document.getElementById('cartLabels').style.visibility = "visible";
+                btn.disabled = false; btn.innerText = "ODESLAT"; btn.style.opacity = "1";
+                kosik = {}; 
+            }, 15000);
         }
 
         setInterval(() => {
