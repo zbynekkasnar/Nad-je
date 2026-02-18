@@ -9,59 +9,42 @@
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; padding: 15px; display: flex; flex-direction: column; align-items: center; }
         .admin-box { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 450px; }
-        h1 { color: #e74c3c; text-align: center; margin-bottom: 25px; }
-        h3 { border-bottom: 2px solid #eee; padding-bottom: 10px; margin-top: 30px; color: #2c3e50; }
+        h3 { border-bottom: 2px solid #eee; padding-bottom: 10px; margin-top: 25px; color: #2c3e50; }
         label { display: block; margin-top: 15px; font-weight: bold; color: #34495e; font-size: 0.85em; }
         input { padding: 12px; border: 2px solid #ddd; border-radius: 8px; width: 100%; box-sizing: border-box; margin-top: 5px; font-size: 16px; }
         .btn { padding: 15px; border: none; border-radius: 8px; color: white; font-weight: bold; width: 100%; cursor: pointer; margin-top: 10px; font-size: 1em; }
-        .btn-blue { background: #3498db; }
-        .btn-red { background: #e74c3c; }
-        .btn-grey { background: #95a5a6; }
-        .btn-dark { background: #2c3e50; }
+        .btn-blue { background: #3498db; } .btn-red { background: #e74c3c; } .btn-grey { background: #95a5a6; } .btn-dark { background: #2c3e50; }
         .score-row { display: flex; gap: 10px; align-items: center; }
         #authOverlay { position: fixed; top:0; left:0; width:100%; height:100%; background:white; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:1000; }
     </style>
 </head>
 <body>
-
     <div id="authOverlay">
         <h2>Vstup pro administrátora</h2>
-        <input type="password" id="adminPass" placeholder="Zadej heslo" style="width: 200px; margin-bottom: 10px;">
+        <input type="password" id="adminPass" placeholder="Heslo" style="width: 200px; margin-bottom: 10px;">
         <button class="btn btn-blue" onclick="checkPass()" style="width: 200px;">Vstoupit</button>
     </div>
 
     <div class="admin-box">
         <h1>🛠 Administrace</h1>
-        
         <h3>1. Nový zápas</h3>
-        <label>Deadline (začátek zápasu):</label>
-        <input type="datetime-local" id="set_deadline">
+        <label>Deadline:</label><input type="datetime-local" id="set_deadline">
         <label>Týmy:</label>
-        <div class="score-row">
-            <input type="text" id="set_domaci" placeholder="Domácí">
-            <input type="text" id="set_hoste" placeholder="Hosté">
-        </div>
-        <label>Obrázek zápasu (URL):</label>
-        <input type="text" id="set_url" placeholder="https://...">
-        <button class="btn btn-blue" onclick="nastavitZapas()">🚀 NASTAVIT ZÁPAS & PROMAZAT SÁZKY</button>
+        <div class="score-row"><input type="text" id="set_domaci" placeholder="Domácí"><input type="text" id="set_hoste" placeholder="Hosté"></div>
+        <label>Foto URL:</label><input type="text" id="set_url" placeholder="https://...">
+        <button class="btn btn-blue" onclick="nastavitZapas()">🚀 NASTAVIT & PROMAZAT SÁZKY</button>
 
         <h3>2. Vyhodnocení</h3>
-        <label>Skutečný konečný výsledek:</label>
-        <div class="score-row">
-            <input type="number" id="real_domaci" value="0">
-            <span>:</span>
-            <input type="number" id="real_hoste" value="0">
-        </div>
+        <label>Skóre:</label>
+        <div class="score-row"><input type="number" id="real_domaci" value="0"> : <input type="number" id="real_hoste" value="0"></div>
+        <label>Vítězný střelec:</label><input type="text" id="real_strelec" placeholder="Jméno střelce">
         <button class="btn btn-red" onclick="vyhodnotit()">🏆 VYHODNOTIT & ARCHIVOVAT</button>
 
-       <h3>3. Správa dat a banku</h3>
-        <button class="btn btn-blue" onclick="jenSmazatSazky()">🧹 SMAZAT JEN SEZNAM SÁZEK</button>
-        
-        <button class="btn btn-grey" onclick="vynulovatJackpot()">💰 VYNULOVAT JEN JACKPOT (BANK)</button>
-        
-        <button class="btn btn-dark" onclick="smazatStatistiky()">❌ SMAZAT CELOU HISTORII (STATISTIKY)</button>
-
-        <a href="index.html" style="display:block; text-align:center; margin-top:30px; color:#7f8c8d; text-decoration:none;">⬅ Zpět na sázky</a>
+        <h3>3. Údržba</h3>
+        <button class="btn btn-blue" onclick="jenSmazatSazky()">🧹 JEN SMAZAT SÁZKY</button>
+        <button class="btn btn-grey" onclick="vynulovatJackpot()">💰 VYNULOVAT JACKPOT</button>
+        <button class="btn btn-dark" onclick="smazatStatistiky()">❌ SMAZAT HISTORII</button>
+        <a href="index.html" style="display:block; text-align:center; margin-top:20px; color:#7f8c8d; text-decoration:none;">Zpět na sázky</a>
     </div>
 
     <script>
@@ -76,95 +59,41 @@
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        const PASS = "fotbal2024";
-
-        function checkPass() {
-            if(document.getElementById('adminPass').value === PASS) {
-                document.getElementById('authOverlay').style.display = 'none';
-            } else {
-                alert("Špatné heslo!");
-            }
-        }
+        function checkPass() { if(document.getElementById('adminPass').value === "fotbal2024") document.getElementById('authOverlay').style.display = 'none'; }
 
         function nastavitZapas() {
             const d = document.getElementById('set_deadline').value;
-            if(!d) return alert("Musíš nastavit deadline!");
-            db.ref('sazkyData').update({
-                domaci: document.getElementById('set_domaci').value || "Tým A",
-                hoste: document.getElementById('set_hoste').value || "Tým B",
-                foto: document.getElementById('set_url').value,
-                deadline: d,
-                seznamSazek: null // Promaže aktuální sázky
-            });
-            alert("Nový zápas byl nastaven!");
+            if(!d) return alert("Nastav deadline!");
+            db.ref('sazkyData').update({ domaci: document.getElementById('set_domaci').value, hoste: document.getElementById('set_hoste').value, foto: document.getElementById('set_url').value, deadline: d, seznamSazek: null });
+            alert("Zápas nastaven!");
         }
 
         function vyhodnotit() {
-            const rd = document.getElementById('real_domaci').value;
-            const rh = document.getElementById('real_hoste').value;
-            const vysledek = `${rd}:${rh}`;
-            
+            const vysledek = `${document.getElementById('real_domaci').value}:${document.getElementById('real_hoste').value}`;
+            const rs = document.getElementById('real_strelec').value.trim();
             db.ref('sazkyData').once('value', (snapshot) => {
                 const data = snapshot.val();
-                if(!data || !data.seznamSazek) return alert("Nejsou tu žádné sázky k vyhodnocení.");
-                
-                const seznamEntries = Object.entries(data.seznamSazek);
-                const celkovyBank = (data.prevedenyBank || 0) + (seznamEntries.length * 20);
-                const vyherci = seznamEntries.filter(i => i[1].skore === vysledek);
-                
-                let updates = {};
-                let podilNaVyherce = 0;
-
+                if(!data || !data.seznamSazek) return alert("Nejsou sázky.");
+                const seznam = Object.entries(data.seznamSazek);
+                const celkovyBank = (data.prevedenyBank || 0) + (seznam.length * 20);
+                const vyherci = seznam.filter(i => i[1].skore === vysledek);
+                let updates = {}; let podil = 0;
                 if (vyherci.length > 0) {
-                    podilNaVyherce = Math.floor(celkovyBank / vyherci.length);
-                    seznamEntries.forEach(([key, s]) => {
-                        updates[`seznamSazek/${key}/stav`] = (s.skore === vysledek) ? `VÝHRA! 🎉 (+${podilNaVyherce})` : "❌";
-                    });
+                    podil = Math.floor(celkovyBank / vyherci.length);
+                    seznam.forEach(([key, s]) => { updates[`seznamSazek/${key}/stav`] = (s.skore === vysledek) ? `VÝHRA! 🎉 (+${podil})` : "❌"; });
                     updates['prevedenyBank'] = 0;
                 } else {
-                    seznamEntries.forEach(([key, s]) => { updates[`seznamSazek/${key}/stav`] = "❌"; });
+                    seznam.forEach(([key, s]) => { updates[`seznamSazek/${key}/stav`] = "❌"; });
                     updates['prevedenyBank'] = celkovyBank;
                 }
-
-                // Uložení do historie pro statistiky
-                db.ref('historieSazek').push({
-                    zapas: `${data.domaci} VS ${data.hoste}`,
-                    vysledek: vysledek,
-                    datum: new Date().toISOString(),
-                    sazky: data.seznamSazek,
-                    vyhraNaHlavu: podilNaVyherce
-                });
-
+                db.ref('historieSazek').push({ zapas: `${data.domaci} VS ${data.hoste}`, vysledek, strelecZapasu: rs, sazky: data.seznamSazek, vyhraNaHlavu: podil });
                 db.ref('sazkyData').update(updates);
-                alert("Zápas vyhodnocen a archivován do statistik!");
+                alert("Archivováno!");
             });
         }
-
-     // FUNKCE 1: Smaže jen lidi z tabulky, bank (Jackpot) nechá být
-        function jenSmazatSazky() {
-            if(confirm("Opravdu smazat aktuální sázky? (Jackpot v banku zůstane)")) {
-                db.ref('sazkyData/seznamSazek').remove();
-                alert("Seznam sázek byl vymazán.");
-            }
-        }
-
-        // FUNKCE 2: Smaže jen peníze v banku
-        function vynulovatJackpot() {
-            if(confirm("Opravdu vynulovat bank (Jackpot) na 0 Kč?")) {
-                db.ref('sazkyData/prevedenyBank').set(0);
-                alert("Bank byl vynulován.");
-            }
-        }
-
-        // FUNKCE 3: Smaže celou historii sázek (statistiky)
-        function smazatStatistiky() {
-            if(confirm("POZOR! Opravdu chceš nenávratně smazat CELOU HISTORII statistik?")) {
-                db.ref('historieSazek').remove();
-                alert("Statistiky byly vymazány.");
-            }
-        }
-
-        
+        function jenSmazatSazky() { if(confirm("Smazat sázky?")) db.ref('sazkyData/seznamSazek').remove(); }
+        function vynulovatJackpot() { if(confirm("Vynulovat bank?")) db.ref('sazkyData/prevedenyBank').set(0); }
+        function smazatStatistiky() { if(confirm("Smazat historii?")) db.ref('historieSazek').remove(); }
     </script>
 </body>
 </html>
