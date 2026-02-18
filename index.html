@@ -16,6 +16,7 @@
             display: flex; flex-direction: column; align-items: center; overflow-x: hidden;
         }
 
+        /* ANIMOVANÉ LOGO */
         .header-logo { 
             max-width: 320px; width: 85%; filter: drop-shadow(0 0 15px var(--neon)); 
             margin-bottom: 25px; opacity: 0; transform: scale(0.8);
@@ -27,6 +28,7 @@
             100% { opacity: 0.5; transform: scale(1); }
         }
 
+        /* BANK BOX */
         .bank-box { 
             background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(0,242,255,0.1));
             border: 1px solid var(--neon); border-radius: 20px; padding: 20px;
@@ -34,12 +36,14 @@
         }
         .bank-box span { font-size: 2.6em; font-weight: bold; text-shadow: 0 0 10px var(--neon); }
 
+        /* MATCH CARDS */
         #matchList { width: 100%; max-width: 600px; }
         .match-card {
             background: rgba(255,255,255,0.05); border-radius: 20px; border: 1px solid rgba(255,255,255,0.1);
             margin-bottom: 20px; padding: 20px; cursor: pointer; transition: 0.3s; position: relative;
         }
         
+        /* EXTRÉMNÍ 3D VLAJKY */
         .flag-container { perspective: 1200px; filter: drop-shadow(0 12px 20px rgba(0,0,0,0.6)); display: inline-block; }
         .flag-img {
             width: 85px; height: auto; border-radius: 4px;
@@ -56,12 +60,13 @@
 
         .vs { background: var(--neon); color: black; border-radius: 50%; width: 35px; height: 35px; line-height: 35px; font-weight: bold; margin: 0 20px; display: inline-block; }
         .timer-box { font-size: 0.8em; font-weight: bold; color: var(--neon); background: rgba(0,0,0,0.4); padding: 5px 12px; border-radius: 20px; }
-        .urgent { color: #ff4444 !important; animation: pulse 1s infinite; }
 
+        /* FORMULÁŘ */
         .details { display: none; padding-top: 25px; border-top: 1px solid rgba(255,255,255,0.1); margin-top: 20px; text-align: left; }
         .name-input { width: 100%; padding: 12px; margin-bottom: 15px; background: rgba(0,242,255,0.1); border: 1px solid var(--neon); color: white; border-radius: 10px; font-weight: bold; box-sizing: border-box; }
         .score-input { width: 65px; padding: 12px; text-align: center; font-weight: bold; font-size: 1.4em; background: #000; border: 1px solid var(--neon); color: white; border-radius: 10px; }
         
+        /* SWITCH */
         .switch { position: relative; display: inline-block; width: 44px; height: 22px; vertical-align: middle; margin-right: 10px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: #334155; transition: .4s; border-radius: 22px; }
@@ -69,14 +74,11 @@
         input:checked + .slider { background: var(--neon); }
         input:checked + .slider:before { transform: translateX(22px); }
 
-        /* TIKET MODÁL */
+        /* TIKET */
         #cart { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: 92%; max-width: 450px; background: #1e293b; border: 2px solid var(--neon); border-radius: 25px; padding: 25px; display: none; z-index: 1000; box-shadow: 0 0 50px rgba(0,0,0,0.9); }
-        .close-cart { position: absolute; top: 15px; right: 20px; font-size: 1.5em; cursor: pointer; opacity: 0.5; }
-        .close-cart:hover { opacity: 1; }
-        
+        .close-cart { position: absolute; top: 15px; right: 20px; font-size: 1.8em; cursor: pointer; opacity: 0.5; color: white; }
         .btn-add { width: 100%; background: var(--neon); color: black; border: none; padding: 15px; border-radius: 12px; font-weight: bold; cursor: pointer; margin-top: 15px; }
         .btn-send { background: var(--neon); color: black; border: none; padding: 12px 25px; border-radius: 15px; font-weight: bold; cursor: pointer; }
-        .btn-download { background: rgba(255,255,255,0.1); color: white; border: 1px solid white; padding: 8px 15px; border-radius: 10px; margin-top: 15px; cursor: pointer; font-size: 0.9em; }
 
         .bet-row { background: rgba(255,255,255,0.03); padding: 12px; border-radius: 12px; margin-bottom: 8px; border-left: 3px solid var(--neon); display: flex; flex-direction: column; gap: 4px; }
         .bet-main { display: flex; justify-content: space-between; font-weight: bold; }
@@ -93,25 +95,19 @@
     </div>
 
     <div id="matchList"></div>
-    <div id="noMatch" style="display:none; opacity: 0.5; margin-top: 50px;">Žádné zápasy...</div>
+    <div id="noMatch" style="display:none; opacity: 0.5; margin-top: 50px;">Momentálně nejsou vypsány žádné zápasy...</div>
 
     <div id="cart">
         <span class="close-cart" onclick="closeCart()">×</span>
-        
         <div id="cartContent">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                 <div style="text-align:left;"><b id="cartCount">0 zápasů</b><br><span id="cartTotal" style="color:var(--neon); font-size:1.4em;">0 Kč</span></div>
                 <button id="sendBtn" class="btn-send" onclick="odeslatTiket()">ODESLAT</button>
             </div>
         </div>
-
         <div id="qrArea" style="display:none; text-align:center; margin-top:10px;">
-            <div id="qrStatus" style="margin-bottom:15px;"></div>
-            <div style="background:white; padding:15px; border-radius:15px; display:inline-block;">
-                <img id="qrImg" src="" style="width:180px; display:block;">
-            </div>
-            <br>
-            <button class="btn-download" onclick="downloadQR()">⬇️ STÁHNOUT QR</button>
+            <div id="qrStatus" style="margin-bottom:15px; font-weight:bold;"></div>
+            <div style="background:white; padding:15px; border-radius:15px; display:inline-block;"><img id="qrImg" src="" style="width:180px; display:block;"></div>
             <p id="qrDesc" style="font-size:0.8em; margin-top:10px; opacity:0.7;"></p>
         </div>
     </div>
@@ -164,7 +160,7 @@
                         <div class="flag-container"><img class="flag-img" src="https://flagcdn.com/w160/${m.kodH}.png"><br><small>${m.hoste}</small></div>
                     </div>
                     <div id="det-${id}" class="details" onclick="event.stopPropagation()">
-                        <input type="text" id="name-${id}" class="name-input" placeholder="TVÉ JMÉNO / PŘEZDÍVKA">
+                        <input type="text" id="name-${id}" class="name-input" placeholder="TVÉ JMÉNO">
                         <div style="display:flex; justify-content:center; align-items:center; gap:15px; margin-bottom:15px;">
                             <div style="text-align:center;"><small style="display:block;opacity:0.6;">${m.domaci}</small><input type="number" id="sD-${id}" class="score-input" min="0"></div>
                             <div style="font-weight:bold; font-size:1.5em; margin-top:20px;">:</div>
@@ -173,77 +169,49 @@
                         <input type="text" id="p-${id}" placeholder="Tip na střelce" style="width:100%; padding:12px; margin:10px 0; background:#000; border:1px solid #333; color:white; border-radius:10px;">
                         <div style="margin:15px 0; display:flex; align-items:center;">
                             <label class="switch"><input type="checkbox" id="h-${id}"><span class="slider"></span></label>
-                            <span style="font-size:0.85em; opacity:0.7;">Skrýt můj tip</span>
+                            <span style="font-size:0.85em; opacity:0.7;">Skrýt můj tip před začátkem</span>
                         </div>
-                        <button class="btn-add" onclick="pridat('${id}')">PŘIDAT NA TIKET</button>
+                        <button class="btn-add" onclick="pridat('${id}')">PŘIDAT NA TIKET (20 Kč)</button>
                         <div id="bets-${id}" style="margin-top:25px;"></div>
                     </div>`;
                 list.appendChild(card);
                 if(m.sazky) Object.values(m.sazky).forEach(s => {
-                    const row = `<div class="bet-row"><div class="bet-main"><span>${s.jmeno}</span><span style="color:var(--neon)">${(s.skryt && !isClosed) ? '??:??' : s.skore}</span></div><div class="bet-player">🏒 ${(s.skryt && !isClosed) ? '*******' : (s.strelec || '---')}</div></div>`;
+                    const status = s.stav === "✅" ? "✅" : "⏳";
+                    const row = `<div class="bet-row"><div class="bet-main"><span>${status} ${s.jmeno}</span><span style="color:var(--neon)">${(s.skryt && !isClosed) ? '??:??' : s.skore}</span></div><div class="bet-player">🏒 ${(s.skryt && !isClosed) ? '*******' : (s.strelec || '---')}</div></div>`;
                     document.getElementById(`bets-${id}`).innerHTML += row;
                 });
             });
         });
 
         function toggle(id) { const el = document.getElementById(`det-${id}`); el.style.display = (el.style.display === 'block') ? 'none' : 'block'; }
-        
-        function closeCart() { document.getElementById('cart').style.display = 'none'; resetCartState(); }
-
-        function resetCartState() {
-            const btn = document.getElementById('sendBtn');
-            btn.disabled = false; btn.innerText = "ODESLAT"; btn.style.opacity = "1";
-            document.getElementById('cartContent').style.display = 'block';
-            document.getElementById('qrArea').style.display = 'none';
-        }
+        function closeCart() { document.getElementById('cart').style.display = 'none'; }
 
         function pridat(id) {
             const jm = document.getElementById(`name-${id}`).value;
             const sD = document.getElementById(`sD-${id}`).value, sH = document.getElementById(`sH-${id}`).value, p = document.getElementById(`p-${id}`).value;
             if(!jm || sD === "" || sH === "" || p === "") return alert("Vyplň vše!");
             kosik[id] = { jmeno: jm, skore: `${sD}:${sH}`, strelec: p, skryt: document.getElementById(`h-${id}`).checked };
-            toggle(id);
-            document.getElementById('cart').style.display = 'block';
-            resetCartState();
+            toggle(id); document.getElementById('cart').style.display = 'block';
             document.getElementById('cartCount').innerText = `${Object.keys(kosik).length} zápasů`;
             document.getElementById('cartTotal').innerText = `${Object.keys(kosik).length * 20} Kč`;
+            document.getElementById('sendBtn').disabled = false; document.getElementById('sendBtn').innerText = "ODESLAT";
+            document.getElementById('cartContent').style.display = 'block'; document.getElementById('qrArea').style.display = 'none';
         }
 
         function odeslatTiket() {
             const btn = document.getElementById('sendBtn');
-            btn.disabled = true; btn.innerText = "ODESÍLÁM..."; btn.style.opacity = "0.5";
-            
-            let jmenoProQR = "";
+            btn.disabled = true; btn.innerText = "ODESÍLÁM...";
+            let jm = "";
             Object.entries(kosik).forEach(([mid, d]) => { 
                 db.ref(`sazkyData/zapasy/${mid}/sazky`).push({ ...d, stav: "⏳" }); 
-                jmenoProQR = d.jmeno;
+                jm = d.jmeno;
             });
-            
             const tot = Object.keys(kosik).length * 20;
-            const qrUrl = `https://api.paylibo.com/paylibo/generator/czech/image?accountNumber=222333444&bankCode=0800&amount=${tot}&currency=CZK&message=Sazka_${jmenoProQR}`;
-            
             document.getElementById('cartContent').style.display = 'none';
-            document.getElementById('qrStatus').innerHTML = "<span style='color:#27ae60; font-weight:bold;'>✅ TIPY ODESLÁNY!</span>";
-            document.getElementById('qrImg').src = qrUrl;
-            document.getElementById('qrDesc').innerText = `Částka: ${tot} Kč | Zpráva: Sazka_${jmenoProQR}`;
+            document.getElementById('qrStatus').innerHTML = "<span style='color:#27ae60'>✅ TIPY ODESLÁNY!</span>";
+            document.getElementById('qrImg').src = `https://api.paylibo.com/paylibo/generator/czech/image?accountNumber=222333444&bankCode=0800&amount=${tot}&currency=CZK&message=Sazka_${jm}`;
             document.getElementById('qrArea').style.display = 'block';
-            
             kosik = {};
-        }
-
-        async function downloadQR() {
-            const img = document.getElementById('qrImg');
-            try {
-                const response = await fetch(img.src);
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'QR_Platba_Sazka.png';
-                document.body.appendChild(a);
-                a.click();
-                a.remove();
-            } catch (e) { alert("Chyba při stahování. Zkuste podržet prst na QR kódu a uložit ručně."); }
         }
 
         setInterval(() => {
@@ -255,7 +223,6 @@
                 else {
                     const h = Math.floor(diff/3600000), m = Math.floor((diff%3600000)/60000), s = Math.floor((diff%60000)/1000);
                     el.innerText = `⏱️ ${h}h ${m}m ${s}s`;
-                    if(diff < 1800000) el.classList.add('urgent');
                 }
             });
         }, 1000);
