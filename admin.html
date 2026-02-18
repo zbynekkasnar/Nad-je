@@ -55,15 +55,26 @@
             db.ref('sazkyData').update({ domaci: d, hoste: h, deadline: dl || "", seznamSazek: null, posledniStrelec: "" }); alert("Uloženo!");
         }
 
-        function vyhodnotit() {
+    function vyhodnotit() {
             const vysledek = `${document.getElementById('real_domaci').value}:${document.getElementById('real_hoste').value}`;
             const sText = document.getElementById('real_strelec').value;
             const sNorm = normalize(sText).split(',').map(s => s.trim());
             
             db.ref('sazkyData').once('value', (snapshot) => {
-                const data = snapshot.val(); if(!data || !data.seznamSazek) return alert("Nejsou sázky.");
-                const seznam = Object.entries(data.seznamSazek); const celkovyBank = (data.prevedenyBank || 0) + (seznam.length * 20);
+                const data = snapshot.val(); 
+                if(!data || !data.seznamSazek) return alert("Nejsou sázky k vyhodnocení.");
+
+                const seznam = Object.entries(data.seznamSazek);
                 
+                // --- OPRAVA LOGIKY JACKPOTU ---
+                // Spočítáme sázky jen z těch, co ještě nemají stav "❌" nebo "VÝHRA"
+                // Aby se při opakovaném kliknutí bank nenafukoval do nekonečna
+                const noveSazky = seznam.filter(i => !i[1].stav || i[1].stav.includes("⏳"));
+                const penizeZInkasovanychSazek = noveSazky.length * 20;
+                
+                const celkovyBank = (data.prevedenyBank || 0) + penizeZInkasovanychSazek;
+                // ------------------------------
+
                 const trefiliSkore = seznam.filter(i => i[1].skore === vysledek);
                 const trefiliOboji = trefiliSkore.filter(i => {
                     const tip = normalize(i[1].strelec);
@@ -74,14 +85,22 @@
                 let updates = { posledniStrelec: sText };
 
                 if (vyherci.length > 0) {
-                    const podil = Math.floor(celkovyBank / vyherci.length); const vIds = vyherci.map(v => v[0]);
-                    seznam.forEach(([key, s]) => { updates[`seznamSazek/${key}/stav`] = vIds.includes(key) ? `VÝHRA! 🎉 (+${podil} Kč)` : "❌"; });
-                    updates['prevedenyBank'] = 0;
+                    const podil = Math.floor(celkovyBank / vyherci.length);
+                    const vIds = vyherci.map(v => v[0]);
+                    seznam.forEach(([key, s]) => { 
+                        updates[`seznamSazek/${key}/stav`] = vIds.includes(key) ? `VÝHRA! 🎉 (+${podil} Kč)` : "❌"; 
+                    });
+                    updates['prevedenyBank'] = 0; // Jackpot se vyplatil
                 } else {
-                    seznam.forEach(([key, s]) => { updates[`seznamSazek/${key}/stav`] = "❌"; }); updates['prevedenyBank'] = celkovyBank;
+                    // Nikdo nevyhrál - bank se uloží pro příště
+                    seznam.forEach(([key, s]) => { updates[`seznamSazek/${key}/stav`] = "❌"; });
+                    updates['prevedenyBank'] = celkovyBank;
                 }
+
                 db.ref('historieSazek').push({ zapas: `${data.domaci} VS ${data.hoste}`, vysledek, strelci: sText, sazky: data.seznamSazek });
-                db.ref('sazkyData').update(updates).then(() => alert("Vyhodnoceno!"));
+                db.ref('sazkyData').update(updates).then(() => {
+                    alert(`Vyhodnoceno! Celkový bank v tomto kole byl: ${celkovyBank} Kč.`);
+                });
             });
         }
         function jenSmazatSazky() { if(confirm("Smazat?")) db.ref('sazkyData/seznamSazek').remove(); }
