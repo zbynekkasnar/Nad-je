@@ -16,19 +16,37 @@
         .bank-info { background: #2c3e50; color: #f1c40f; text-align: center; padding: 15px; border-radius: 10px; margin-bottom: 20px; font-size: 1.4em; font-weight: bold; width: 100%; max-width: 470px; }
         .countdown { background: #e74c3c; color: white; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-weight: bold; font-family: monospace; font-size: 1.2em; text-align: center; }
         .zapas-nazev { text-align: center; font-size: 1.6em; font-weight: bold; margin-bottom: 15px; color: #2c3e50; }
-        .no-match { text-align: center; padding: 20px; color: #7f8c8d; font-style: italic; font-size: 1.2em; }
+        .no-match { text-align: center; padding: 20px; color: #7f8c8d; font-style: italic; font-size: 1.2em; line-height: 1.5; }
         .score-input { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 10px 0; }
         input { padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; width: 100%; box-sizing: border-box; outline: none; }
         input[type="number"] { width: 70px; text-align: center; font-weight: bold; }
-        .privacy-box { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 10px 0; font-size: 0.9em; color: #555; }
+        
+        /* MODERNÍ PŘEPÍNAČ (SWITCH) */
+        .switch-container { display: flex; flex-direction: column; align-items: center; gap: 8px; margin: 15px 0; background: #f8f9fa; padding: 12px; border-radius: 12px; border: 1px solid #eee; }
+        .switch-label { font-size: 0.85em; font-weight: bold; color: #34495e; text-transform: uppercase; }
+        .switch { position: relative; display: inline-block; width: 60px; height: 30px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 22px; width: 22px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: #3498db; }
+        input:checked + .slider:before { transform: translateX(30px); }
+        .status-text { font-size: 0.8em; font-weight: bold; margin-top: 5px; }
+        .status-public { color: #3498db; }
+        .status-private { color: #e67e22; }
+
         button#btnOdeslat { background: #28a745; color: white; border: none; padding: 15px; cursor: pointer; width: 100%; border-radius: 8px; font-weight: bold; font-size: 1.1em; margin-top: 10px; }
+        button:disabled { background: #ccc !important; cursor: not-allowed; }
+        
         table { width: 100%; max-width: 500px; border-collapse: collapse; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
         th, td { padding: 12px 10px; text-align: center; border-bottom: 1px solid #eee; font-size: 0.85em; }
         th { background: #34495e; color: white; text-transform: uppercase; }
+        .win { background: #d4edda !important; font-weight: bold; }
+        
         .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.85); align-items: center; justify-content: center; }
         .modal-content { background-color: white; padding: 25px; border-radius: 20px; text-align: center; max-width: 320px; width: 85%; }
         .modal-content img { width: 100%; height: auto; border-radius: 10px; margin: 15px 0; }
         .close-btn { background: #34495e; color: white; padding: 12px; border: none; border-radius: 8px; width: 100%; font-weight: bold; }
+        
         .footer-links { margin-top: 30px; display: flex; gap: 20px; }
         .footer-links a { text-decoration: none; color: #7f8c8d; font-weight: bold; }
     </style>
@@ -66,16 +84,21 @@
                 </div>
                 <input type="text" id="tip_strelec" placeholder="Tip na střelce" style="margin-top:10px">
                 
-                <div class="privacy-box">
-                    <input type="checkbox" id="verejna_sazka" checked>
-                    <label for="verejna_sazka">Veřejná sázka</label>
+                <div class="switch-container">
+                    <span class="switch-label">Režim sázky:</span>
+                    <label class="switch">
+                        <input type="checkbox" id="verejna_sazka" checked onchange="updateSwitchText()">
+                        <span class="slider"></span>
+                    </label>
+                    <span id="switchStatus" class="status-text status-public">🔓 VEŘEJNÝ TIP (všichni vidí)</span>
                 </div>
+                
                 <button id="btnOdeslat" onclick="ulozitSazku()">ODESLAT SÁZKU (20 Kč)</button>
             </div>
 
-            <div id="zapasZadny" class="no-match">
+            <div id="zapasZadny" class="no-match" style="display:none;">
                 📭 Aktuálně není vypsán žádný zápas.<br>
-                Zastav se později!
+                Zastav se u nás později!
             </div>
         </div>
     </div>
@@ -89,7 +112,7 @@
 
     <div class="footer-links">
         <a href="statistiky.html">📊 Statistiky</a>
-        <a href="admin.html" style="opacity: 0.2;">⚙️</a>
+        <a href="admin.html" style="opacity: 0.1;">⚙️</a>
     </div>
 
     <script>
@@ -106,7 +129,18 @@
         const db = firebase.database();
         let aktualniDeadline = null;
 
-        // Odpočet
+        function updateSwitchText() {
+            const isPublic = document.getElementById('verejna_sazka').checked;
+            const statusText = document.getElementById('switchStatus');
+            if (isPublic) {
+                statusText.innerText = "🔓 VEŘEJNÝ TIP (všichni vidí)";
+                statusText.className = "status-text status-public";
+            } else {
+                statusText.innerText = "🔒 SKRYTÝ TIP (odhalí se u výkopu)";
+                statusText.className = "status-text status-private";
+            }
+        }
+
         setInterval(() => {
             if (!aktualniDeadline) return;
             const rozdil = new Date(aktualniDeadline).getTime() - new Date().getTime();
@@ -121,10 +155,9 @@
             document.getElementById('timerDisplay').innerText = `Do výkopu: ${h}h ${m}m ${s}s`;
         }, 1000);
 
-        // Hlavní načítání
         db.ref('sazkyData').on('value', (snapshot) => {
             const data = snapshot.val();
-            if (!data || !data.domaci || data.domaci === "") {
+            if (!data || !data.domaci || data.domaci.trim() === "") {
                 document.getElementById('zapasAktivni').style.display = 'none';
                 document.getElementById('zapasZadny').style.display = 'block';
                 document.getElementById('tabulkaSazek').style.display = 'none';
@@ -133,11 +166,9 @@
                 return;
             }
 
-            // Pokud zápas existuje
             document.getElementById('zapasAktivni').style.display = 'block';
             document.getElementById('zapasZadny').style.display = 'none';
             document.getElementById('tabulkaSazek').style.display = 'table';
-            
             document.getElementById('txtDomaci').innerText = data.domaci;
             document.getElementById('txtHoste').innerText = data.hoste;
             aktualniDeadline = data.deadline;
