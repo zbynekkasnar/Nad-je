@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minulé kolo - NADĚJE</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <style>
+        :root { --bg: #f0f2f5; --box: #ffffff; --text: #2c3e50; --table-border: #eeeeee; }
+        [data-theme="dark"] { --bg: #121212; --box: #1e1e1e; --text: #e0e0e0; --table-border: #333333; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); padding: 15px; display: flex; flex-direction: column; align-items: center; transition: 0.3s; }
+        .container { width: 100%; max-width: 500px; background: var(--box); border-radius: 15px; padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+        h2 { text-align: center; margin-top: 0; color: #3498db; }
+        .match-info { text-align: center; background: #34495e; color: white; padding: 15px; border-radius: 10px; margin-bottom: 20px; }
+        .result-badge { font-size: 1.5em; font-weight: bold; color: #f1c40f; display: block; margin-top: 5px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 12px 8px; text-align: center; border-bottom: 1px solid var(--table-border); font-size: 0.85em; }
+        th { background: #f8f9fa; color: #7f8c8d; }
+        [data-theme="dark"] th { background: #2d2d2d; color: #aaa; }
+        .win { background: #d4edda !important; color: #155724 !important; font-weight: bold; }
+        [data-theme="dark"] .win { background: #1b4721 !important; color: #ffffff !important; }
+        .back-link { margin-top: 25px; text-decoration: none; color: #3498db; font-weight: bold; }
+    </style>
+</head>
+<body data-theme="light">
+    <div class="container">
+        <h2>⏪ Minulé kolo</h2>
+        <div id="loading" style="text-align:center;">Načítám poslední výsledek...</div>
+        <div id="content" style="display:none;">
+            <div class="match-info">
+                <span id="matchName" style="font-size: 1.1em; font-weight: bold;"></span>
+                <span id="matchResult" class="result-badge"></span>
+                <div id="matchScorers" style="font-size: 0.85em; opacity: 0.9; margin-top: 5px;"></div>
+            </div>
+            <table>
+                <thead><tr><th>Sázkař</th><th>Tip</th><th>Střelec</th><th>Stav</th></tr></thead>
+                <tbody id="historyBody"></tbody>
+            </table>
+        </div>
+        <a href="index.html" class="back-link">← Zpět na sázky</a>
+    </div>
+
+    <script>
+        const firebaseConfig = { apiKey: "AIzaSyC-NCdmsgA42FxnopKm92m1y5gUGw_z_uE", authDomain: "nadeje-208bd.firebaseapp.com", databaseURL: "https://nadeje-208bd-default-rtdb.europe-west1.firebasedatabase.app", projectId: "nadeje-208bd", storageBucket: "nadeje-208bd.firebasestorage.app", messagingSenderId: "688478977789", appId: "1:688478977789:web:512d1520cf96c9e59cc894" };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // Dark mode sync
+        if (localStorage.getItem('theme') === 'dark') document.body.setAttribute('data-theme', 'dark');
+
+        const normalize = (str) => str ? str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim() : "";
+
+        db.ref('historieSazek').limitToLast(1).on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (!data) {
+                document.getElementById('loading').innerText = "Zatím neproběhl žádný zápas.";
+                return;
+            }
+
+            const lastKey = Object.keys(data)[0];
+            const match = data[lastKey];
+
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('content').style.display = 'block';
+            document.getElementById('matchName').innerText = match.zapas;
+            document.getElementById('matchResult').innerText = match.vysledek;
+            document.getElementById('matchScorers').innerText = "Střelci: " + (match.strelci || "-");
+
+            const vStrelciNorm = normalize(match.strelci || "").split(',').map(s => s.trim());
+            const tbody = document.getElementById('historyBody');
+            tbody.innerHTML = "";
+
+            if (match.sazky) {
+                Object.values(match.sazky).forEach(s => {
+                    const tr = document.createElement('tr');
+                    if (s.stav && s.stav.includes("VÝHRA")) tr.className = "win";
+                    
+                    const tipNorm = normalize(s.strelec);
+                    const trefilS = tipNorm !== "" && vStrelciNorm.some(v => tipNorm.includes(v) || v.includes(tipNorm));
+
+                    tr.innerHTML = `<td>${s.jmeno}</td><td>${s.skore}</td><td>${trefilS ? '🎯 '+s.strelec : s.strelec}</td><td>${s.stav}</td>`;
+                    tbody.appendChild(tr);
+                });
+            }
+        });
+    </script>
+</body>
+</html>
