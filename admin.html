@@ -23,19 +23,24 @@
         <input type="password" id="adminPass" placeholder="Heslo" style="width: 200px; margin-bottom: 10px;">
         <button class="btn btn-blue" onclick="checkPass()" style="width: 200px;">Vstoupit</button>
     </div>
+
     <div class="admin-box">
         <h1>🛠 Administrace</h1>
-        <h3>1. Nový zápas</h3>
+        
+        <h3>1. Nový zápas / Další kolo</h3>
+        <p style="font-size: 0.75em; color: #e67e22;">(Kliknutím sem se potvrdí jackpot z minulého kola)</p>
         <label>Deadline:</label><input type="datetime-local" id="set_deadline">
         <label>Týmy:</label>
         <div style="display:flex; gap:10px;"><input type="text" id="set_domaci" placeholder="Domácí"><input type="text" id="set_hoste" placeholder="Hosté"></div>
-        <button class="btn btn-blue" onclick="nastavitZapas()">🚀 NASTAVIT / VYPINOUT</button>
-        <h3>2. Vyhodnocení</h3>
-        <label>Skóre:</label><div style="display:flex; gap:10px; align-items:center;"><input type="number" id="real_domaci" value="0"> : <input type="number" id="real_hoste" value="0"></div>
-        <label>Střelci (odděluj čárkou):</label><input type="text" id="real_strelec" placeholder="Haraslín, Kuchta">
-        <button class="btn btn-red" onclick="vyhodnotit()">🏆 VYHODNOTIT DLE PRAVIDEL</button>
+        <button class="btn btn-blue" onclick="nastavitZapas()">🚀 NASTAVIT NOVÉ KOLO</button>
+
+        <h3>2. Vyhodnocení (Ruční oprava)</h3>
+        <label>Skutečné skóre:</label>
+        <div style="display:flex; gap:10px; align-items:center;"><input type="number" id="real_domaci" value="0"> : <input type="number" id="real_hoste" value="0"></div>
+        <label>Střelci zápasu (čárka):</label><input type="text" id="real_strelec" placeholder="Haraslín, Kuchta">
+        <button class="btn btn-red" onclick="vyhodnotit()">🏆 VYHODNOTIT / OPRAVIT</button>
+
         <h3>3. Údržba</h3>
-        <button class="btn btn-blue" onclick="jenSmazatSazky()">🧹 SMAZAT SÁZKY</button>
         <button class="btn btn-grey" onclick="vynulovatJackpot()">💰 VYNULOVAT JACKPOT</button>
         <button class="btn btn-dark" onclick="smazatStatistiky()">❌ SMAZAT HISTORII</button>
         <a href="index.html" style="display:block; text-align:center; margin-top:20px; color:#7f8c8d; text-decoration:none;">Zpět na sázky</a>
@@ -51,30 +56,45 @@
         function checkPass() { if(document.getElementById('adminPass').value === "fotbal2024") document.getElementById('authOverlay').style.display = 'none'; }
 
         function nastavitZapas() {
-            const d = document.getElementById('set_domaci').value.trim(); const h = document.getElementById('set_hoste').value.trim(); const dl = document.getElementById('set_deadline').value;
-            db.ref('sazkyData').update({ domaci: d, hoste: h, deadline: dl || "", seznamSazek: null, posledniStrelec: "" }); alert("Uloženo!");
+            const d = document.getElementById('set_domaci').value.trim();
+            const h = document.getElementById('set_hoste').value.trim();
+            const dl = document.getElementById('set_deadline').value;
+
+            db.ref('sazkyData').once('value', (snapshot) => {
+                const data = snapshot.val();
+                let novyJackpot = data.prevedenyBank || 0;
+
+                if (data.seznamSazek) {
+                    const seznam = Object.values(data.seznamSazek);
+                    const vyherceExistuje = seznam.some(s => s.stav && s.stav.includes("VÝHRA"));
+                    
+                    if (!vyherceExistuje) {
+                        novyJackpot += (seznam.length * 20);
+                    } else {
+                        novyJackpot = 0; 
+                    }
+                }
+
+                db.ref('sazkyData').update({
+                    domaci: d, hoste: h, deadline: dl || "",
+                    seznamSazek: null, posledniStrelec: "",
+                    prevedenyBank: novyJackpot
+                }).then(() => alert("Kolo uzavřeno. Jackpot pro nové kolo: " + novyJackpot + " Kč"));
+            });
         }
 
-    function vyhodnotit() {
+        function vyhodnotit() {
             const vysledek = `${document.getElementById('real_domaci').value}:${document.getElementById('real_hoste').value}`;
             const sText = document.getElementById('real_strelec').value;
             const sNorm = normalize(sText).split(',').map(s => s.trim());
             
             db.ref('sazkyData').once('value', (snapshot) => {
-                const data = snapshot.val(); 
+                const data = snapshot.val();
                 if(!data || !data.seznamSazek) return alert("Nejsou sázky k vyhodnocení.");
-
+                
                 const seznam = Object.entries(data.seznamSazek);
+                const celkovyBank = (data.prevedenyBank || 0) + (seznam.length * 20);
                 
-                // --- OPRAVA LOGIKY JACKPOTU ---
-                // Spočítáme sázky jen z těch, co ještě nemají stav "❌" nebo "VÝHRA"
-                // Aby se při opakovaném kliknutí bank nenafukoval do nekonečna
-                const noveSazky = seznam.filter(i => !i[1].stav || i[1].stav.includes("⏳"));
-                const penizeZInkasovanychSazek = noveSazky.length * 20;
-                
-                const celkovyBank = (data.prevedenyBank || 0) + penizeZInkasovanychSazek;
-                // ------------------------------
-
                 const trefiliSkore = seznam.filter(i => i[1].skore === vysledek);
                 const trefiliOboji = trefiliSkore.filter(i => {
                     const tip = normalize(i[1].strelec);
@@ -87,24 +107,20 @@
                 if (vyherci.length > 0) {
                     const podil = Math.floor(celkovyBank / vyherci.length);
                     const vIds = vyherci.map(v => v[0]);
-                    seznam.forEach(([key, s]) => { 
-                        updates[`seznamSazek/${key}/stav`] = vIds.includes(key) ? `VÝHRA! 🎉 (+${podil} Kč)` : "❌"; 
+                    seznam.forEach(([key, s]) => {
+                        updates[`seznamSazek/${key}/stav`] = vIds.includes(key) ? `VÝHRA! 🎉 (+${podil} Kč)` : "❌";
                     });
-                    updates['prevedenyBank'] = 0; // Jackpot se vyplatil
                 } else {
-                    // Nikdo nevyhrál - bank se uloží pro příště
                     seznam.forEach(([key, s]) => { updates[`seznamSazek/${key}/stav`] = "❌"; });
-                    updates['prevedenyBank'] = celkovyBank;
                 }
 
-                db.ref('historieSazek').push({ zapas: `${data.domaci} VS ${data.hoste}`, vysledek, strelci: sText, sazky: data.seznamSazek });
                 db.ref('sazkyData').update(updates).then(() => {
-                    alert(`Vyhodnoceno! Celkový bank v tomto kole byl: ${celkovyBank} Kč.`);
+                    alert(`Vypočítaný bank pro toto kolo: ${celkovyBank} Kč.`);
                 });
             });
         }
-        function jenSmazatSazky() { if(confirm("Smazat?")) db.ref('sazkyData/seznamSazek').remove(); }
-        function vynulovatJackpot() { if(confirm("Vynulovat?")) db.ref('sazkyData/prevedenyBank').set(0); }
+
+        function vynulovatJackpot() { if(confirm("Vynulovat jackpot?")) db.ref('sazkyData/prevedenyBank').set(0); }
         function smazatStatistiky() { if(confirm("Smazat historii?")) db.ref('historieSazek').remove(); }
     </script>
 </body>
