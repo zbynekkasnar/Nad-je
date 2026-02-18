@@ -3,37 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sázková kancelář NADĚJE - ONLINE</title>
+    <title>Sázková kancelář NADĚJE</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-    
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; padding: 20px; display: flex; flex-direction: column; align-items: center; padding-bottom: 80px; margin: 0; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; padding: 15px; display: flex; flex-direction: column; align-items: center; margin: 0; padding-bottom: 80px; }
         .main-wrapper { width: 100%; max-width: 500px; box-shadow: 0 4px 25px rgba(0,0,0,0.1); border-radius: 15px; overflow: hidden; background: white; margin-bottom: 20px; }
         .logo-container { background: white; width: 100%; text-align: center; padding: 15px 0; border-bottom: 1px solid #eee; }
         .main-logo { max-width: 70%; height: auto; display: block; margin: 0 auto; }
-        .header-image { width: 100%; height: 180px; object-fit: cover; display: block; background-color: #ddd; }
+        .header-image { width: 100%; height: 180px; object-fit: cover; display: none; background-color: #ddd; }
         .content-box { padding: 20px; }
         .bank-info { background: #2c3e50; color: #f1c40f; text-align: center; padding: 15px; border-radius: 10px; margin-bottom: 20px; font-size: 1.4em; font-weight: bold; width: 100%; max-width: 470px; }
-        .zapas-nazev { text-align: center; font-size: 1.6em; font-weight: bold; margin-bottom: 15px; display: flex; justify-content: center; gap: 15px; align-items: center; }
-        .vs-label { color: #e74c3c; font-size: 0.7em; background: #fceaea; padding: 2px 8px; border-radius: 5px; }
+        .zapas-nazev { text-align: center; font-size: 1.6em; font-weight: bold; margin-bottom: 15px; }
         .score-input { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 10px 0; }
-        input { padding: 12px; border: 2px solid #ddd; border-radius: 8px; outline: none; }
-        input[type="number"] { width: 65px; text-align: center; font-size: 1.2em; }
-        input[type="text"] { width: 100%; box-sizing: border-box; margin-bottom: 10px; }
-        .hide-option { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 15px; font-size: 0.9em; color: #555; cursor: pointer; }
-        button { background: #28a745; color: white; border: none; padding: 15px; cursor: pointer; width: 100%; border-radius: 8px; font-weight: bold; font-size: 1.1em; transition: 0.2s; }
-        button:hover { background: #218838; }
+        input { padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; width: 100%; box-sizing: border-box; }
+        input[type="number"] { width: 65px; text-align: center; }
+        button { background: #28a745; color: white; border: none; padding: 15px; cursor: pointer; width: 100%; border-radius: 8px; font-weight: bold; font-size: 1.1em; margin-top: 10px; }
+        table { width: 100%; max-width: 500px; border-collapse: collapse; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        th, td { padding: 10px; text-align: center; border-bottom: 1px solid #eee; font-size: 0.9em; }
+        th { background: #34495e; color: white; }
+        .win { background: #d4edda !important; font-weight: bold; }
         #adminPanel { display: none; border: 2px dashed #e74c3c; background: #fff9f9; padding: 20px; border-radius: 15px; width: 100%; max-width: 460px; margin-bottom: 20px; }
-        .admin-toggle { position: fixed; bottom: 20px; right: 20px; background: #34495e; color: white; width: 55px; height: 55px; border-radius: 50%; border: none; cursor: pointer; font-size: 24px; z-index: 100; }
-        table { width: 100%; max-width: 700px; border-collapse: collapse; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        th, td { padding: 12px; text-align: center; border-bottom: 1px solid #eee; }
-        th { background: #34495e; color: white; font-size: 0.8em; }
-        .win { background: #d4edda !important; font-weight: bold; color: #155724; }
-        .secret-cell { color: #999; font-style: italic; font-size: 0.8em; }
-        .btn-red { background: #e74c3c; margin-bottom: 10px; }
-        .btn-grey { background: #6c757d; }
-        .btn-delete { background: #ff4757; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
+        .admin-toggle { position: fixed; bottom: 20px; right: 20px; background: #34495e; color: white; width: 60px; height: 60px; border-radius: 50%; border: none; font-size: 24px; z-index: 100; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
     </style>
 </head>
 <body>
@@ -42,71 +33,51 @@
 
     <div class="main-wrapper">
         <div class="logo-container">
-            <img src="IMG_8423.jpeg" class="main-logo" alt="Sázková kancelář NADĚJE" onerror="this.alt='Sázková kancelář NADĚJE'">
+            <img src="image_b98bf9.png" class="main-logo" alt="NADĚJE" onerror="this.alt='Sázková kancelář NADĚJE'">
         </div>
-        <img id="hlavniObrazek" src="" class="header-image" style="display:none">
-        
+        <img id="hlavniObrazek" src="" class="header-image">
         <div class="content-box">
             <div id="zobrazenyZapas" class="zapas-nazev">
-                <span id="txtDomaci">...</span> <span class="vs-label">VS</span> <span id="txtHoste">...</span>
+                <span id="txtDomaci">Načítání...</span> VS <span id="txtHoste">...</span>
             </div>
-            
-            <input type="text" id="jmeno" placeholder="Tvé jméno">
+            <input type="text" id="jmeno" placeholder="Tvé jméno" style="margin-bottom:10px">
             <div class="score-input">
                 <input type="number" id="tip_domaci" min="0" value="0">
                 <span>:</span>
                 <input type="number" id="tip_hoste" min="0" value="0">
             </div>
-            <input type="text" id="tip_strelec" placeholder="Tip na střelce">
-            
-            <label class="hide-option">
-                <input type="checkbox" id="skrytTip"> Skrýt můj tip před ostatními 🕵️
-            </label>
-
+            <input type="text" id="tip_strelec" placeholder="Tip na střelce" style="margin-top:10px">
             <button onclick="ulozitSazku()">Odeslat sázku (20 Kč)</button>
         </div>
     </div>
 
     <div id="adminPanel">
-        <h3 style="text-align:center; margin-top:0;">🛠 Administrace</h3>
-        <input type="text" id="set_url" placeholder="URL fotky zápasu">
-        <div style="display:flex; gap:5px; margin-bottom:10px;">
-            <input type="text" id="set_domaci" placeholder="Domácí tým">
-            <input type="text" id="set_hoste" placeholder="Hostující tým">
-        </div>
-        <button onclick="nastavitZapas()" class="btn-grey" style="margin-bottom: 15px;">Aktualizovat zápas</button>
-        <button onclick="odkrytAdmin()" class="btn-grey" style="margin-bottom: 20px; background: #5d6d7e;">Zobrazit skryté tipy (Admin)</button>
-        
+        <h3>🛠 Administrace</h3>
+        <input type="text" id="set_domaci" placeholder="Domácí tým" style="margin-bottom:5px">
+        <input type="text" id="set_hoste" placeholder="Hosté tým" style="margin-bottom:5px">
+        <input type="text" id="set_url" placeholder="URL obrázku" style="margin-bottom:10px">
+        <button onclick="nastavitZapas()" style="background:#6c757d">Nastavit zápas</button>
+        <hr>
         <div class="score-input">
-            <input type="number" id="real_domaci" min="0" value="0">
-            <span>:</span>
+            <input type="number" id="real_domaci" min="0" value="0"> : 
             <input type="number" id="real_hoste" min="0" value="0">
         </div>
-        <button onclick="vyhodnotit()" class="btn-red">Vyhodnotit & Jackpot</button>
-        <div style="display:flex; gap:10px">
-            <button onclick="smazatSazky()" class="btn-grey" style="flex:1">Nové kolo</button>
-            <button onclick="zavritAdmin()" class="btn-grey" style="flex:1">Zavřít</button>
-        </div>
+        <button onclick="vyhodnotit()" style="background:#e74c3c">Vyhodnotit & Jackpot</button>
+        <button onclick="smazatSazky()" style="background:#6c757d; margin-top:5px">Nové kolo (Smazat sázky)</button>
+        <button onclick="document.getElementById('adminPanel').style.display='none'" style="background:#34495e">Zavřít</button>
     </div>
 
     <table>
         <thead>
-            <tr>
-                <th>Sázkař</th>
-                <th>Tip</th>
-                <th>Střelec</th>
-                <th>Stav</th>
-                <th id="th-akce" style="display:none">Akce</th>
-            </tr>
+            <tr><th>Sázkař</th><th>Tip</th><th>Střelec</th><th>Stav</th></tr>
         </thead>
         <tbody id="tabulkaBody"></tbody>
     </table>
 
-    <button class="admin-toggle" onclick="otevritAdmin()" title="Administrace">⚙️</button>
+    <button class="admin-toggle" onclick="otevritAdmin()">⚙️</button>
 
     <script>
-        // --- TVÁ KONFIGURACE FIREBASE ---
-                 const firebaseConfig = {
+        const firebaseConfig = {
             apiKey: "AIzaSyC-NCdmsgA42FxnopKm92m1y5gUGw_z_uE",
             authDomain: "nadeje-208bd.firebaseapp.com",
             databaseURL: "https://nadeje-208bd-default-rtdb.europe-west1.firebasedatabase.app",
@@ -116,154 +87,87 @@
             appId: "1:688478977789:web:512d1520cf96c9e59cc894"
         };
 
-
-        // Inicializace Firebase
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        
         const ADMIN_HESLO = "fotbal2024";
-        const VKLAD = 20;
-        let adminMode = false;
-        let vyhodnoceno = false;
 
-        // Synchronizace dat v reálném čase
         db.ref('sazkyData').on('value', (snapshot) => {
             const data = snapshot.val();
-            if (data) vykresliWeb(data);
+            if (data) {
+                document.getElementById('txtDomaci').innerText = data.domaci || "Tým A";
+                document.getElementById('txtHoste').innerText = data.hoste || "Tým B";
+                if(data.foto) {
+                    document.getElementById('hlavniObrazek').src = data.foto;
+                    document.getElementById('hlavniObrazek').style.display = 'block';
+                }
+                
+                const seznam = data.seznamSazek ? Object.values(data.seznamSazek) : [];
+                const bank = (data.prevedenyBank || 0) + (seznam.length * 20);
+                document.getElementById('bankDisplay').innerText = `💰 Celkový bank: ${bank} Kč`;
+
+                const tbody = document.getElementById('tabulkaBody');
+                tbody.innerHTML = "";
+                if (data.seznamSazek) {
+                    Object.values(data.seznamSazek).forEach(s => {
+                        const tr = document.createElement("tr");
+                        if (s.stav && s.stav.includes("VÝHRA")) tr.className = "win";
+                        tr.innerHTML = `<td>${s.jmeno}</td><td>${s.skore}</td><td>${s.strelec}</td><td>${s.stav || '⏳'}</td>`;
+                        tbody.appendChild(tr);
+                    });
+                }
+            }
         });
-
-        function vykresliWeb(data) {
-            document.getElementById('txtDomaci').innerText = data.domaci || "Tým A";
-            document.getElementById('txtHoste').innerText = data.hoste || "Tým B";
-            
-            const imgEl = document.getElementById('hlavniObrazek');
-            if (data.foto) {
-                imgEl.src = data.foto;
-                imgEl.style.display = 'block';
-            } else {
-                imgEl.style.display = 'none';
-            }
-            
-            const seznam = data.seznamSazek ? Object.values(data.seznamSazek) : [];
-            const bank = (data.prevedenyBank || 0) + (seznam.length * VKLAD);
-            document.getElementById('bankDisplay').innerText = `💰 Celkový bank: ${bank} Kč`;
-
-            const tbody = document.getElementById('tabulkaBody');
-            tbody.innerHTML = "";
-            
-            if (data.seznamSazek) {
-                Object.keys(data.seznamSazek).forEach(key => {
-                    const s = data.seznamSazek[key];
-                    const tr = document.createElement("tr");
-                    if (s.stav && s.stav.includes("VÝHRA")) tr.className = "win";
-                    
-                    const zobrazit = !s.skryto || adminMode || (data.stavZapasu === 'vyhodnoceno');
-                    
-                    tr.innerHTML = `
-                        <td>${s.jmeno}</td>
-                        <td class="${zobrazit ? '' : 'secret-cell'}">${zobrazit ? s.skore : '🙈 Skryto'}</td>
-                        <td class="${zobrazit ? '' : 'secret-cell'}">${zobrazit ? s.strelec : '🙈 Skryto'}</td>
-                        <td>${s.stav || '⏳ Vsadil'}</td>
-                        <td style="display:${adminMode ? 'table-cell' : 'none'}">
-                            <button class="btn-delete" onclick="smazatJednuSazku('${key}')">Smazat</button>
-                        </td>
-                    `;
-                    tbody.appendChild(tr);
-                });
-            }
-        }
 
         function ulozitSazku() {
             const jmeno = document.getElementById('jmeno').value;
             if(!jmeno) return alert("Zadej jméno!");
-            
             db.ref('sazkyData/seznamSazek').push({
                 jmeno,
                 skore: `${document.getElementById('tip_domaci').value}:${document.getElementById('tip_hoste').value}`,
                 strelec: document.getElementById('tip_strelec').value || "-",
-                skryto: document.getElementById('skrytTip').checked,
                 stav: "⏳ Vsadil"
             });
-
             document.getElementById('jmeno').value = "";
-            document.getElementById('tip_strelec').value = "";
-            document.getElementById('skrytTip').checked = false;
+        }
+
+        function otevritAdmin() {
+            if (prompt("Heslo:") === ADMIN_HESLO) {
+                document.getElementById('adminPanel').style.display = 'block';
+            }
+        }
+
+        function nastavitZapas() {
+            db.ref('sazkyData').update({
+                domaci: document.getElementById('set_domaci').value,
+                hoste: document.getElementById('set_hoste').value,
+                foto: document.getElementById('set_url').value
+            });
         }
 
         function vyhodnotit() {
-            const rd = document.getElementById('real_domaci').value;
-            const rh = document.getElementById('real_hoste').value;
-            const vysledek = `${rd}:${rh}`;
-            
+            const vysledek = `${document.getElementById('real_domaci').value}:${document.getElementById('real_hoste').value}`;
             db.ref('sazkyData').once('value', (snapshot) => {
                 const data = snapshot.val();
-                const seznamS entries = data.seznamSazek ? Object.entries(data.seznamSazek) : [];
-                const celkovyBank = (data.prevedenyBank || 0) + (seznamS entries.length * VKLAD);
-                
-                const vyherci = seznamS entries.filter(item => item[1].skore === vysledek);
-                
+                if(!data || !data.seznamSazek) return;
+                const seznamEntries = Object.entries(data.seznamSazek);
+                const celkovyBank = (data.prevedenyBank || 0) + (seznamEntries.length * 20);
+                const vyherci = seznamEntries.filter(i => i[1].skore === vysledek);
                 let updates = {};
                 if (vyherci.length > 0) {
                     const podil = Math.floor(celkovyBank / vyherci.length);
-                    seznamS entries.forEach(([key, s]) => {
-                        updates[`seznamSazek/${key}/stav`] = (s.skore === vysledek) ? `VÝHRA! 🎉 (+${podil} Kč)` : "Prohra ❌";
+                    seznamEntries.forEach(([key, s]) => {
+                        updates[`seznamSazek/${key}/stav`] = (s.skore === vysledek) ? `VÝHRA! 🎉 (+${podil})` : "❌";
                     });
                     updates['prevedenyBank'] = 0;
                 } else {
-                    seznamS entries.forEach(([key, s]) => {
-                        updates[`seznamSazek/${key}/stav`] = "Nikdo netrefil ❌";
-                    });
+                    seznamEntries.forEach(([key, s]) => { updates[`seznamSazek/${key}/stav`] = "❌"; });
                     updates['prevedenyBank'] = celkovyBank;
                 }
-                
-                updates['stavZapasu'] = 'vyhodnoceno';
                 db.ref('sazkyData').update(updates);
             });
         }
 
-        function nastavitZapas() {
-            const updates = {};
-            if(document.getElementById('set_domaci').value) updates['domaci'] = document.getElementById('set_domaci').value;
-            if(document.getElementById('set_hoste').value) updates['hoste'] = document.getElementById('set_hoste').value;
-            if(document.getElementById('set_url').value) updates['foto'] = document.getElementById('set_url').value;
-            updates['stavZapasu'] = 'sazi_se';
-            db.ref('sazkyData').update(updates);
-        }
-
-        function smazatSazky() {
-            if(confirm("Vymazat seznam sázkařů pro nové kolo?")) {
-                db.ref('sazkyData/seznamSazek').remove();
-                db.ref('sazkyData').update({ stavZapasu: 'sazi_se' });
-            }
-        }
-
-        function smazatJednuSazku(key) {
-            if(confirm("Opravdu smazat tuto sázku?")) {
-                db.ref(`sazkyData/seznamSazek/${key}`).remove();
-            }
-        }
-
-        function otevritAdmin() {
-            const h = prompt("Zadej administrátorské heslo:");
-            if (h === ADMIN_HESLO) {
-                adminMode = true;
-                document.getElementById('adminPanel').style.display = 'block';
-                document.getElementById('th-akce').style.display = 'table-cell';
-                aktualizovatWeb(); // Re-render pro zobrazení smazat tlačítek
-            }
-        }
-
-        function zavritAdmin() {
-            adminMode = false;
-            document.getElementById('adminPanel').style.display = 'none';
-            document.getElementById('th-akce').style.display = 'none';
-            aktualizovatWeb();
-        }
-
-        function odkrytAdmin() {
-            adminMode = true;
-            aktualizovatWeb();
-        }
+        function smazatSazky() { if(confirm("Smazat sázky?")) db.ref('sazkyData/seznamSazek').remove(); }
     </script>
 </body>
 </html>
