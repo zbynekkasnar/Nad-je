@@ -3,72 +3,93 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Statistiky - NADĚJE</title>
+    <title>STATISTIKY - KANCELÁŘ NADĚJE</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; padding: 15px; display: flex; flex-direction: column; align-items: center; }
-        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 500px; margin-bottom: 20px; }
-        h1 { color: #2c3e50; } h3 { border-bottom: 2px solid #f1c40f; padding-bottom: 8px; margin-top: 0; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #eee; font-size: 0.9em; }
-        th { background: #34495e; color: white; }
-        .val { font-weight: bold; text-align: center; color: #28a745; }
-        .back-btn { padding: 10px 20px; background: #34495e; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; }
+        :root { --neon: #00f2ff; --dark: #0f172a; --gold: #ffd700; }
+        body { background: var(--dark); color: white; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 15px; text-align: center; }
+        
+        .stats-container { max-width: 600px; margin: 0 auto; }
+        .stat-card { 
+            background: rgba(255,255,255,0.05); border-radius: 20px; border: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 25px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        h2 { color: var(--neon); text-transform: uppercase; font-size: 1.2em; margin-bottom: 15px; letter-spacing: 2px; }
+        
+        .stat-row { 
+            display: flex; justify-content: space-between; padding: 10px; 
+            border-bottom: 1px solid rgba(255,255,255,0.05); 
+        }
+        .stat-row:last-child { border: none; }
+        .rank { color: var(--neon); font-weight: bold; width: 30px; }
+        .name { flex-grow: 1; text-align: left; padding-left: 10px; }
+        .value { font-weight: bold; color: var(--gold); }
+
+        .header-logo { max-width: 200px; margin-bottom: 20px; filter: drop-shadow(0 0 10px var(--neon)); opacity: 0.7; }
+        .btn-back { display: inline-block; margin-top: 20px; color: white; text-decoration: none; font-size: 0.9em; opacity: 0.5; }
     </style>
 </head>
 <body>
-    <h1>📊 Statistiky NADĚJE</h1>
-    <div class="card">
-        <h3>🎯 Experti (Trefy)</h3>
-        <table><thead><tr><th>Jméno</th><th style="text-align:center">Trefy</th></tr></thead><tbody id="trefyBody"></tbody></table>
+
+    <a href="index.html"><img src="IMG_8423.jpeg" alt="Logo" class="header-logo"></a>
+    
+    <div class="stats-container">
+        <div class="stat-card">
+            <h2>💰 BANKOVNÍ LUPIČI</h2>
+            <div id="leaderboard-money">Načítám...</div>
+        </div>
+
+        <div class="stat-card">
+            <h2>🎯 MISTŘI VÝSLEDKŮ</h2>
+            <div id="leaderboard-score">Načítám...</div>
+        </div>
+
+        <div class="stat-card">
+            <h2>🏒 KRÁLOVÉ STŘELCŮ</h2>
+            <div id="leaderboard-players">Načítám...</div>
+        </div>
     </div>
-    <div class="card">
-        <h3>💰 Výherci (Peníze)</h3>
-        <table><thead><tr><th>Jméno</th><th style="text-align:center">Kč</th></tr></thead><tbody id="vyhryBody"></tbody></table>
-    </div>
-    <div class="card">
-        <h3>⚽ Lovci střelců</h3>
-        <table><thead><tr><th>Jméno</th><th style="text-align:center">Góly</th></tr></thead><tbody id="strelciBody"></tbody></table>
-    </div>
-    <a href="index.html" class="back-btn">⬅ Zpět</a>
+
+    <a href="index.html" class="btn-back">← ZPĚT NA SÁZKY</a>
 
     <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyC-NCdmsgA42FxnopKm92m1y5gUGw_z_uE",
-            authDomain: "nadeje-208bd.firebaseapp.com",
-            databaseURL: "https://nadeje-208bd-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "nadeje-208bd",
-            storageBucket: "nadeje-208bd.firebasestorage.app",
-            messagingSenderId: "688478977789",
-            appId: "1:688478977789:web:512d1520cf96c9e59cc894"
-        };
+        const firebaseConfig = { apiKey: "AIzaSyC-NCdmsgA42FxnopKm92m1y5gUGw_z_uE", authDomain: "nadeje-208bd.firebaseapp.com", databaseURL: "https://nadeje-208bd-default-rtdb.europe-west1.firebasedatabase.app", projectId: "nadeje-208bd", storageBucket: "nadeje-208bd.firebasestorage.app", messagingSenderId: "688478977789", appId: "1:688478977789:web:512d1520cf96c9e59cc894" };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        db.ref('historieSazek').on('value', (snapshot) => {
-            const historie = snapshot.val();
-            if (!historie) return;
-            const stats = {};
-            Object.values(historie).forEach(z => {
-                const sZapasu = z.strelecZapasu ? z.strelecZapasu.toLowerCase().trim() : null;
-                if (z.sazky) {
-                    Object.values(z.sazky).forEach(s => {
-                        if (!stats[s.jmeno]) stats[s.jmeno] = { trefy: 0, vyhry: 0, strelci: 0 };
-                        if (s.skore === z.vysledek) { stats[s.jmeno].trefy++; stats[s.jmeno].vyhry += z.vyhraNaHlavu; }
-                        if (sZapasu && s.strelec && s.strelec.toLowerCase().trim() === sZapasu) stats[s.jmeno].strelci++;
-                    });
-                }
-            });
-            const data = Object.entries(stats).map(([jmeno, d]) => ({ jmeno, ...d }));
+        db.ref('sazkyData/stats').on('value', snap => {
+            const stats = snap.val() || {};
             
-            vykresli('trefyBody', [...data].sort((a,b)=>b.trefy-a.trefy), 'trefy', 'x');
-            vykresli('vyhryBody', [...data].sort((a,b)=>b.vyhry-a.vyhry), 'vyhry', ' Kč');
-            vykresli('strelciBody', [...data].filter(h=>h.strelci>0).sort((a,b)=>b.strelci-a.strelci), 'strelci', 'x');
+            // Převedeme objekty na pole a seřadíme
+            renderTable('leaderboard-money', stats, 'vyhry', ' Kč');
+            renderTable('leaderboard-score', stats, 'trefeneSkore', 'x');
+            renderTable('leaderboard-players', stats, 'trefeniStrelci', 'x');
         });
 
-        function vykresli(id, data, klic, jedn) {
-            document.getElementById(id).innerHTML = data.map(h => `<tr><td>${h.jmeno}</td><td class="val">${h[klic]}${jedn}</td></tr>`).join('');
+        function renderTable(elementId, data, property, unit) {
+            const container = document.getElementById(elementId);
+            container.innerHTML = "";
+            
+            const sorted = Object.entries(data)
+                .map(([name, val]) => ({ name, value: val[property] || 0 }))
+                .filter(item => item.value > 0)
+                .sort((a, b) => b.value - a.value);
+
+            if (sorted.length === 0) {
+                container.innerHTML = "<small style='opacity:0.3'>Zatím žádné záznamy</small>";
+                return;
+            }
+
+            sorted.forEach((item, index) => {
+                const row = `
+                    <div class="stat-row">
+                        <span class="rank">${index + 1}.</span>
+                        <span class="name">${item.name}</span>
+                        <span class="value">${item.value}${unit}</span>
+                    </div>`;
+                container.innerHTML += row;
+            });
         }
     </script>
 </body>
