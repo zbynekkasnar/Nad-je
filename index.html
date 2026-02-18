@@ -16,9 +16,22 @@
         .countdown { background: #e74c3c; color: white; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-weight: bold; font-family: monospace; font-size: 1.2em; text-align: center; }
         .zapas-nazev { text-align: center; font-size: 1.6em; font-weight: bold; margin-bottom: 15px; color: #2c3e50; }
         .no-match { text-align: center; padding: 20px; color: #7f8c8d; font-style: italic; font-size: 1.2em; line-height: 1.5; }
+        
+        /* Barometr nálady */
+        .mood-container { width: 100%; max-width: 500px; margin-bottom: 20px; text-align: center; }
+        .mood-title { font-size: 0.8em; font-weight: bold; color: #7f8c8d; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 1px; }
+        .mood-bar { display: flex; height: 25px; border-radius: 12px; overflow: hidden; box-shadow: inset 0 2px 4px rgba(0,0,0,0.1); background: #eee; }
+        .mood-part { display: flex; align-items: center; justify-content: center; color: white; font-size: 0.75em; font-weight: bold; transition: width 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .mood-1 { background: #3498db; } /* Výhra domácí */
+        .mood-0 { background: #95a5a6; } /* Remíza */
+        .mood-2 { background: #e74c3c; } /* Výhra hosté */
+        .mood-legend { display: flex; justify-content: space-between; margin-top: 5px; font-size: 0.7em; color: #95a5a6; padding: 0 5px; font-weight: bold; }
+
         .score-input { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 10px 0; }
         input { padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; width: 100%; box-sizing: border-box; outline: none; }
         input[type="number"] { width: 70px; text-align: center; font-weight: bold; }
+        
+        /* Switch pro soukromí */
         .switch-container { display: flex; flex-direction: column; align-items: center; gap: 8px; margin: 15px 0; background: #f8f9fa; padding: 12px; border-radius: 12px; border: 1px solid #eee; }
         .switch-label { font-size: 0.85em; font-weight: bold; color: #34495e; text-transform: uppercase; }
         .switch { position: relative; display: inline-block; width: 60px; height: 30px; }
@@ -30,16 +43,20 @@
         .status-text { font-size: 0.8em; font-weight: bold; margin-top: 5px; }
         .status-public { color: #3498db; }
         .status-private { color: #e67e22; }
+
         button#btnOdeslat { background: #28a745; color: white; border: none; padding: 15px; cursor: pointer; width: 100%; border-radius: 8px; font-weight: bold; font-size: 1.1em; margin-top: 10px; }
         button:disabled { background: #ccc !important; cursor: not-allowed; }
-        table { width: 100%; max-width: 500px; border-collapse: collapse; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        
+        table { width: 100%; max-width: 500px; border-collapse: collapse; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-top: 10px; }
         th, td { padding: 12px 10px; text-align: center; border-bottom: 1px solid #eee; font-size: 0.85em; }
         th { background: #34495e; color: white; text-transform: uppercase; }
         .win { background: #d4edda !important; font-weight: bold; }
+        
         .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.85); align-items: center; justify-content: center; }
         .modal-content { background-color: white; padding: 25px; border-radius: 20px; text-align: center; max-width: 320px; width: 85%; }
         .modal-content img { width: 100%; height: auto; border-radius: 10px; margin: 15px 0; }
         .close-btn { background: #34495e; color: white; padding: 12px; border: none; border-radius: 8px; width: 100%; font-weight: bold; }
+        
         .footer-links { margin-top: 30px; display: flex; gap: 20px; }
         .footer-links a { text-decoration: none; color: #7f8c8d; font-weight: bold; }
     </style>
@@ -94,6 +111,20 @@
         </div>
     </div>
 
+    <div id="moodContainer" class="mood-container" style="display:none;">
+        <div class="mood-title">📊 Nálada v kanceláři</div>
+        <div class="mood-bar">
+            <div id="moodDomaci" class="mood-part mood-1" style="width: 33%"></div>
+            <div id="moodRemiza" class="mood-part mood-0" style="width: 34%"></div>
+            <div id="moodHoste" class="mood-part mood-2" style="width: 33%"></div>
+        </div>
+        <div class="mood-legend">
+            <span>DOMÁCÍ</span>
+            <span>REMÍZA</span>
+            <span>HOSTÉ</span>
+        </div>
+    </div>
+
     <table id="tabulkaSazek" style="display:none;">
         <thead>
             <tr><th>Sázkař</th><th>Tip</th><th>Střelec</th><th>Stav</th></tr>
@@ -143,22 +174,53 @@
 
         db.ref('sazkyData').on('value', (snapshot) => {
             const data = snapshot.val();
-            if (!data || !data.domaci || data.domaci.trim() === "") {
+            
+            const nemaDomaci = !data || !data.domaci || data.domaci.trim() === "";
+            const nemaHoste = !data || !data.hoste || data.hoste.trim() === "";
+
+            if (nemaDomaci || nemaHoste) {
                 document.getElementById('zapasAktivni').style.display = 'none';
                 document.getElementById('zapasZadny').style.display = 'block';
                 document.getElementById('tabulkaSazek').style.display = 'none';
+                document.getElementById('moodContainer').style.display = 'none';
                 document.getElementById('bankDisplay').innerText = `💰 Aktuální jackpot: ${data?.prevedenyBank || 0} Kč`;
                 return;
             }
+
             document.getElementById('zapasAktivni').style.display = 'block';
             document.getElementById('zapasZadny').style.display = 'none';
             document.getElementById('tabulkaSazek').style.display = 'table';
             document.getElementById('txtDomaci').innerText = data.domaci;
             document.getElementById('txtHoste').innerText = data.hoste;
             aktualniDeadline = data.deadline;
+            
             const seznam = data.seznamSazek ? Object.values(data.seznamSazek) : [];
             const bank = (data.prevedenyBank || 0) + (seznam.length * 20);
             document.getElementById('bankDisplay').innerText = `💰 Celkový bank: ${bank} Kč`;
+
+            // VÝPOČET BAROMETRU
+            if (seznam.length > 0) {
+                let d = 0, r = 0, h = 0;
+                seznam.forEach(s => {
+                    const skore = s.skore.split(':');
+                    const home = parseInt(skore[0]);
+                    const away = parseInt(skore[1]);
+                    if (home > away) d++; else if (home < away) h++; else r++;
+                });
+                document.getElementById('moodContainer').style.display = 'block';
+                const pD = Math.round((d / seznam.length) * 100);
+                const pH = Math.round((h / seznam.length) * 100);
+                const pR = 100 - pD - pH;
+                document.getElementById('moodDomaci').style.width = pD + "%";
+                document.getElementById('moodDomaci').innerText = pD > 10 ? pD + "%" : "";
+                document.getElementById('moodRemiza').style.width = pR + "%";
+                document.getElementById('moodRemiza').innerText = pR > 10 ? pR + "%" : "";
+                document.getElementById('moodHoste').style.width = pH + "%";
+                document.getElementById('moodHoste').innerText = pH > 10 ? pH + "%" : "";
+            } else {
+                document.getElementById('moodContainer').style.display = 'none';
+            }
+
             const deadlineProsel = data.deadline && new Date() > new Date(data.deadline);
             const tbody = document.getElementById('tabulkaBody');
             tbody.innerHTML = "";
