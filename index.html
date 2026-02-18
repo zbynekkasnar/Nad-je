@@ -90,7 +90,7 @@
             const rozdil = new Date(aktualniDeadline).getTime() - new Date().getTime();
             if (rozdil <= 0) { document.getElementById('timerDisplay').innerText = "UZAVŘENO"; document.getElementById('btnOdeslat').disabled = true; return; }
             const h = Math.floor(rozdil / 3600000); const m = Math.floor((rozdil % 3600000) / 60000); const s = Math.floor((rozdil % 60000) / 1000);
-            document.getElementById('timerDisplay').innerText = `Do výkopu: ${h}h ${m}m ${s}s`;
+            document.getElementById('timerDisplay').innerText = `Do začátku zápasu: ${h}h ${m}m ${s}s`;
         }, 1000);
 
         db.ref('sazkyData').on('value', (snapshot) => {
