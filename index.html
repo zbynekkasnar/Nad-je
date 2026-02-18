@@ -11,22 +11,20 @@
         .main-wrapper { width: 100%; max-width: 500px; box-shadow: 0 4px 25px rgba(0,0,0,0.1); border-radius: 15px; overflow: hidden; background: white; margin-bottom: 20px; }
         .logo-container { background: white; width: 100%; text-align: center; padding: 15px 0; border-bottom: 1px solid #eee; }
         .main-logo { max-width: 80%; height: auto; display: block; margin: 0 auto; }
-        .header-image { width: 100%; height: 200px; object-fit: cover; display: none; background-color: #ddd; }
+        .header-image { width: 100%; height: 250px; object-fit: cover; display: block; background-color: #ddd; }
         .content-box { padding: 20px; }
         .bank-info { background: #2c3e50; color: #f1c40f; text-align: center; padding: 15px; border-radius: 10px; margin-bottom: 20px; font-size: 1.4em; font-weight: bold; width: 100%; max-width: 470px; }
         .countdown { background: #e74c3c; color: white; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-weight: bold; font-family: monospace; font-size: 1.2em; text-align: center; }
         .zapas-nazev { text-align: center; font-size: 1.6em; font-weight: bold; margin-bottom: 15px; color: #2c3e50; }
+        .no-match { text-align: center; padding: 20px; color: #7f8c8d; font-style: italic; font-size: 1.2em; }
         .score-input { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 10px 0; }
         input { padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; width: 100%; box-sizing: border-box; outline: none; }
         input[type="number"] { width: 70px; text-align: center; font-weight: bold; }
         .privacy-box { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 10px 0; font-size: 0.9em; color: #555; }
-        .privacy-box input { width: auto; margin: 0; }
         button#btnOdeslat { background: #28a745; color: white; border: none; padding: 15px; cursor: pointer; width: 100%; border-radius: 8px; font-weight: bold; font-size: 1.1em; margin-top: 10px; }
-        button:disabled { background: #ccc !important; cursor: not-allowed; }
         table { width: 100%; max-width: 500px; border-collapse: collapse; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
         th, td { padding: 12px 10px; text-align: center; border-bottom: 1px solid #eee; font-size: 0.85em; }
         th { background: #34495e; color: white; text-transform: uppercase; }
-        .win { background: #d4edda !important; font-weight: bold; }
         .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.85); align-items: center; justify-content: center; }
         .modal-content { background-color: white; padding: 25px; border-radius: 20px; text-align: center; max-width: 320px; width: 85%; }
         .modal-content img { width: 100%; height: auto; border-radius: 10px; margin: 15px 0; }
@@ -52,29 +50,37 @@
         <div class="logo-container">
             <img src="IMG_8423.jpeg" class="main-logo" alt="NADĚJE">
         </div>
+        
         <img id="hlavniObrazek" src="" class="header-image">
+
         <div class="content-box">
-            <div id="timerDisplay" class="countdown">Načítám odpočet...</div>
-            <div class="zapas-nazev"><span id="txtDomaci">...</span> VS <span id="txtHoste">...</span></div>
-            
-            <input type="text" id="jmeno" placeholder="Tvé jméno">
-            <div class="score-input">
-                <input type="number" id="tip_domaci" min="0" value="0">
-                <span>:</span>
-                <input type="number" id="tip_hoste" min="0" value="0">
+            <div id="zapasAktivni" style="display:none;">
+                <div id="timerDisplay" class="countdown">Načítám odpočet...</div>
+                <div class="zapas-nazev"><span id="txtDomaci">...</span> VS <span id="txtHoste">...</span></div>
+                
+                <input type="text" id="jmeno" placeholder="Tvé jméno">
+                <div class="score-input">
+                    <input type="number" id="tip_domaci" min="0" value="0">
+                    <span>:</span>
+                    <input type="number" id="tip_hoste" min="0" value="0">
+                </div>
+                <input type="text" id="tip_strelec" placeholder="Tip na střelce" style="margin-top:10px">
+                
+                <div class="privacy-box">
+                    <input type="checkbox" id="verejna_sazka" checked>
+                    <label for="verejna_sazka">Veřejná sázka</label>
+                </div>
+                <button id="btnOdeslat" onclick="ulozitSazku()">ODESLAT SÁZKU (20 Kč)</button>
             </div>
-            <input type="text" id="tip_strelec" placeholder="Tip na střelce" style="margin-top:10px">
-            
-            <div class="privacy-box">
-                <input type="checkbox" id="verejna_sazka" checked>
-                <label for="verejna_sazka">Zobrazit můj tip ostatním ihned</label>
+
+            <div id="zapasZadny" class="no-match">
+                📭 Aktuálně není vypsán žádný zápas.<br>
+                Zastav se později!
             </div>
-            
-            <button id="btnOdeslat" onclick="ulozitSazku()">ODESLAT SÁZKU (20 Kč)</button>
         </div>
     </div>
 
-    <table>
+    <table id="tabulkaSazek" style="display:none;">
         <thead>
             <tr><th>Sázkař</th><th>Tip</th><th>Střelec</th><th>Stav</th></tr>
         </thead>
@@ -100,6 +106,7 @@
         const db = firebase.database();
         let aktualniDeadline = null;
 
+        // Odpočet
         setInterval(() => {
             if (!aktualniDeadline) return;
             const rozdil = new Date(aktualniDeadline).getTime() - new Date().getTime();
@@ -114,11 +121,25 @@
             document.getElementById('timerDisplay').innerText = `Do výkopu: ${h}h ${m}m ${s}s`;
         }, 1000);
 
+        // Hlavní načítání
         db.ref('sazkyData').on('value', (snapshot) => {
             const data = snapshot.val();
-            if (!data) return;
-            document.getElementById('txtDomaci').innerText = data.domaci || "Tým A";
-            document.getElementById('txtHoste').innerText = data.hoste || "Tým B";
+            if (!data || !data.domaci || data.domaci === "") {
+                document.getElementById('zapasAktivni').style.display = 'none';
+                document.getElementById('zapasZadny').style.display = 'block';
+                document.getElementById('tabulkaSazek').style.display = 'none';
+                document.getElementById('hlavniObrazek').style.display = 'none';
+                document.getElementById('bankDisplay').innerText = `💰 Aktuální jackpot: ${data?.prevedenyBank || 0} Kč`;
+                return;
+            }
+
+            // Pokud zápas existuje
+            document.getElementById('zapasAktivni').style.display = 'block';
+            document.getElementById('zapasZadny').style.display = 'none';
+            document.getElementById('tabulkaSazek').style.display = 'table';
+            
+            document.getElementById('txtDomaci').innerText = data.domaci;
+            document.getElementById('txtHoste').innerText = data.hoste;
             aktualniDeadline = data.deadline;
             
             if(data.foto) {
