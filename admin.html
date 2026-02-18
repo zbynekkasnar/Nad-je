@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin NADĚJE - Čistá verze</title>
+    <title>Admin NADĚJE - Kompletní správa</title>
     <script src="stats.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -24,6 +24,7 @@
         .footer-link { margin-top: 20px; text-decoration: none; color: var(--primary); font-weight: bold; }
         #authOverlay { position: fixed; top:0; left:0; width:100%; height:100%; background:var(--bg); display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:1000; }
         .debug-info { font-size: 0.75em; margin-top: 4px; font-weight: bold; }
+        .status-ok { color: var(--success); } .status-error { color: var(--danger); }
     </style>
 </head>
 <body onload="initAdmin()">
@@ -56,12 +57,16 @@
             <input type="number" id="real_domaci" class="score-box" value="0"> : 
             <input type="number" id="real_hoste" class="score-box" value="0">
         </div>
+        <div id="remizaInfo" style="color:var(--danger); font-weight:bold; text-align:center; display:none; margin-bottom:10px;">⚠️ Remíza po prodloužení!</div>
+        <label>Střelci (X smaže chybu):</label>
         <div id="strelciContainer" class="strelci-seznam"></div>
-        <button class="btn btn-green" onclick="vyhodnotit()">🏆 VYHODNOTIT</button>
+        <button class="btn btn-green" onclick="vyhodnotit()">🏆 VYHODNOTIT A ARCHIVOVAT</button>
     </div>
 
     <div class="card" style="border-top-color: var(--danger);">
-        <button class="btn btn-red" onclick="smazatHistoriiStatistik()">SMAZAT STATISTIKY</button>
+        <h2>⚠️ Správa a Údržba</h2>
+        <button class="btn btn-dark" onclick="nulovatJackpot()">💰 NULOVAT JACKPOT</button>
+        <button class="btn btn-red" onclick="smazatHistoriiStatistik()" style="margin-top:20px; opacity:0.7;">SMAZAT STATISTIKY</button>
     </div>
 
     <a href="index.html" class="footer-link">← ZPĚT NA WEB</a>
@@ -76,15 +81,16 @@
         let listStrelcu = [];
         const norm = (s) => s ? s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim() : "";
 
-        // NAPLNĚNÍ SEZNAMU PŘI NAČTENÍ
         function initAdmin() {
             const list = document.getElementById('statyList');
-            vsechnyStaty.forEach(s => {
-                const opt = document.createElement('option');
-                opt.value = s.n;
-                opt.setAttribute('data-code', s.c);
-                list.appendChild(opt);
-            });
+            if(typeof vsechnyStaty !== 'undefined') {
+                vsechnyStaty.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s.n;
+                    opt.setAttribute('data-code', s.c);
+                    list.appendChild(opt);
+                });
+            }
         }
 
         function checkPass() { if(document.getElementById('adminPass').value === "fotbal2024") document.getElementById('authOverlay').style.display = 'none'; }
@@ -94,7 +100,6 @@
             const hVal = document.getElementById('set_hoste').value;
             const dKod = vsechnyStaty.find(s => norm(s.n) === norm(dVal))?.c || "";
             const hKod = vsechnyStaty.find(s => norm(s.n) === norm(hVal))?.c || "";
-            
             document.getElementById('debug_domaci').innerHTML = dKod ? "✅ Vlajka: " + dKod : "❌ Vlajka nenalezena";
             document.getElementById('debug_hoste').innerHTML = hKod ? "✅ Vlajka: " + hKod : "❌ Vlajka nenalezena";
         }
@@ -116,7 +121,9 @@
                     }
                 }
             }
-            if (isOvertime) { fD = Math.min(fD, fH); fH = fD; }
+            if (isOvertime) { fD = Math.min(fD, fH); fH = fD; document.getElementById('remizaInfo').style.display = 'block'; }
+            else { document.getElementById('remizaInfo').style.display = 'none'; }
+            
             document.getElementById('real_domaci').value = fD;
             document.getElementById('real_hoste').value = fH;
             renderStrelce();
@@ -131,12 +138,16 @@
             });
         }
 
-        function nastavitKolo() {
-            const d = document.getElementById('set_domaci').value, h = document.getElementById('set_hoste').value, dl = document.getElementById('set_deadline').value;
-            const kd = vsechnyStaty.find(s => norm(s.n) === norm(d))?.c || "";
-            const kh = vsechnyStaty.find(s => norm(s.n) === norm(h))?.c || "";
-            if(!d || !h || !dl) return alert("Chybí data!");
-            db.ref('sazkyData').update({ domaci:d, hoste:h, kodDomaci:kd, kodHoste:kh, deadline:dl, seznamSazek:null, posledniStrelec:"" }).then(() => alert("Vypsáno!"));
+        function nulovatJackpot() {
+            if(confirm("Opravdu chceš vymazat jackpot a začít od nuly?")) {
+                db.ref('sazkyData/jackpot').set(0).then(() => alert("Jackpot byl vynulován!"));
+            }
+        }
+
+        function smazatHistoriiStatistik() {
+            if(confirm("POZOR: Toto smaže celou historii sázek i statistik hráčů! Pokračovat?")) {
+                db.ref('historieSazek').remove().then(() => alert("Historie smazána."));
+            }
         }
 
         function vyhodnotit() {
@@ -152,8 +163,16 @@
                     updates[`seznamSazek/${key}/stav`] = vyhraSkore ? "VÝHRA! 🎉" : "❌";
                     db.ref('historieSazek').push({ jmeno: s.jmeno, trefilSkore: vyhraSkore, trefilStrelce: vyhraStrelec, datum: new Date().toISOString() });
                 });
-                db.ref('sazkyData').update(updates).then(() => alert("Vyhodnoceno!"));
+                db.ref('sazkyData').update(updates).then(() => alert("Vyhodnoceno a archivováno!"));
             });
+        }
+
+        function nastavitKolo() {
+            const d = document.getElementById('set_domaci').value, h = document.getElementById('set_hoste').value, dl = document.getElementById('set_deadline').value;
+            const kd = vsechnyStaty.find(s => norm(s.n) === norm(d))?.c || "";
+            const kh = vsechnyStaty.find(s => norm(s.n) === norm(h))?.c || "";
+            if(!d || !h || !dl) return alert("Chybí data!");
+            db.ref('sazkyData').update({ domaci:d, hoste:h, kodDomaci:kd, kodHoste:kh, deadline:dl, seznamSazek:null, posledniStrelec:"" }).then(() => alert("Kolo vypsáno!"));
         }
     </script>
 </body>
