@@ -167,7 +167,21 @@
             });
         }
 
-        function smazatSazky() { if(confirm("Smazat sázky?")) db.ref('sazkyData/seznamSazek').remove(); }
+        function smazatSazky() {
+    if (confirm("Chceš smazat i nahromaděný JACKPOT (vynulovat bank)?")) {
+        // Varianta A: Maže sázky i Jackpot
+        db.ref('sazkyData/seznamSazek').remove();
+        db.ref('sazkyData/prevedenyBank').set(0);
+        alert("Sázky i Jackpot byly vynulovány.");
+    } else {
+        if (confirm("Smazat jen seznam sázek a nechat Jackpot do dalšího kola?")) {
+            // Varianta B: Maže jen sázky, Jackpot zůstává
+            db.ref('sazkyData/seznamSazek').remove();
+            alert("Sázky smazány, Jackpot zůstává.");
+        }
+    }
+}
+
     </script>
 </body>
 </html>
