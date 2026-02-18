@@ -46,7 +46,7 @@
     </style>
 </head>
 <body>
-    <div id="qrModal" class="modal"><div class="modal-content"><h2 style="margin:0;">Sázka přijata! ✅</h2><p>Zaplať <b>20 Kč</b>:</p><img src="platba.png"><button class="close-btn" onclick="zavritQR()">ZAVŘÍT</button></div></div>
+    <div id="qrModal" class="modal"><div class="modal-content"><h2>Sázka přijata! ✅</h2><p>Zaplať 20 Kč:</p><img src="platba.png"><button class="close-btn" onclick="zavritQR()">ZAVŘÍT</button></div></div>
     <div class="bank-info" id="bankDisplay">💰 Načítání...</div>
     <div class="main-wrapper">
         <div class="logo-container"><img src="IMG_8423.jpeg" class="main-logo"></div>
@@ -78,13 +78,11 @@
         const db = firebase.database();
         let aktualniDeadline = null;
 
-        // Pomocná funkce na odstranění diakritiky
         const normalize = (str) => str ? str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim() : "";
 
         function updateSwitchText() {
             const isPublic = document.getElementById('verejna_sazka').checked;
             document.getElementById('switchStatus').innerText = isPublic ? "🔓 VEŘEJNÝ TIP" : "🔒 SKRYTÝ TIP";
-            document.getElementById('switchStatus').className = isPublic ? "status-text status-public" : "status-text status-private";
         }
 
         setInterval(() => {
@@ -92,7 +90,7 @@
             const rozdil = new Date(aktualniDeadline).getTime() - new Date().getTime();
             if (rozdil <= 0) { document.getElementById('timerDisplay').innerText = "UZAVŘENO"; document.getElementById('btnOdeslat').disabled = true; return; }
             const h = Math.floor(rozdil / 3600000); const m = Math.floor((rozdil % 3600000) / 60000); const s = Math.floor((rozdil % 60000) / 1000);
-            document.getElementById('timerDisplay').innerText = `Do začátku utkání: ${h}h ${m}m ${s}s`;
+            document.getElementById('timerDisplay').innerText = `Do výkopu: ${h}h ${m}m ${s}s`;
         }, 1000);
 
         db.ref('sazkyData').on('value', (snapshot) => {
@@ -120,8 +118,7 @@
             }
 
             const deadlineProsel = data.deadline && new Date() > new Date(data.deadline);
-            const vStrelciText = data.posledniStrelec || "";
-            const vStrelciNorm = normalize(vStrelciText).split(',').map(s => s.trim());
+            const vStrelciNorm = normalize(data.posledniStrelec || "").split(',').map(s => s.trim());
 
             const tbody = document.getElementById('tabulkaBody'); tbody.innerHTML = "";
             if (data.seznamSazek) {
