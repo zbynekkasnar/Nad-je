@@ -7,100 +7,65 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <style>
-        :root { --bg: #f0f2f5; --box: #ffffff; --text: #2c3e50; --bank-bg: #2c3e50; --bank-text: #f1c40f; --input-bg: #ffffff; --table-border: #eeeeee; }
-        [data-theme="dark"] { --bg: #121212; --box: #1e1e1e; --text: #e0e0e0; --bank-bg: #000000; --bank-text: #f1c40f; --input-bg: #2d2d2d; --table-border: #333333; }
+        :root { --bg: #f0f2f5; --box: #ffffff; --text: #2c3e50; --bank-bg: #2c3e50; --bank-text: #f1c40f; }
+        [data-theme="dark"] { --bg: #121212; --box: #1e1e1e; --text: #e0e0e0; --bank-bg: #000000; --bank-text: #f1c40f; }
 
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); padding: 15px; display: flex; flex-direction: column; align-items: center; margin: 0; padding-bottom: 50px; transition: 0.3s; }
-        .theme-toggle { position: fixed; top: 15px; right: 15px; background: var(--box); border: 1px solid var(--text); border-radius: 50%; width: 40px; height: 40px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2em; z-index: 2000; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); padding: 15px; display: flex; flex-direction: column; align-items: center; margin: 0; transition: 0.3s; }
+        .theme-toggle { position: fixed; top: 15px; right: 15px; background: var(--box); border: 1px solid var(--text); border-radius: 50%; width: 40px; height: 40px; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 2000; }
 
         .main-wrapper { width: 100%; max-width: 500px; box-shadow: 0 4px 25px rgba(0,0,0,0.2); border-radius: 15px; overflow: hidden; background: var(--box); margin-bottom: 20px; }
-        .logo-container { background: white; width: 100%; text-align: center; }
+        .logo-container { background: white; text-align: center; }
         .main-logo { width: 100%; height: auto; display: block; }
-        .content-box { padding: 20px; }
         
-        .bank-info { background: var(--bank-bg); color: var(--bank-text); text-align: center; padding: 15px; border-radius: 10px; margin-bottom: 10px; font-size: 1.4em; font-weight: bold; width: 100%; max-width: 470px; border: 1px solid var(--bank-text); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        .msg-dne { background: #fff3cd; color: #856404; padding: 12px; border-radius: 8px; margin-bottom: 15px; font-size: 0.95em; text-align: center; font-weight: bold; border-left: 5px solid #ffc107; display: none; width: 100%; max-width: 450px; }
-        [data-theme="dark"] .msg-dne { background: #332b00; color: #ffe082; }
+        .bank-info { background: var(--bank-bg); color: var(--bank-text); text-align: center; padding: 15px; border-radius: 10px; margin-bottom: 15px; font-size: 1.4em; font-weight: bold; width: 100%; max-width: 470px; }
+        
+        /* PLÁPOLÁNÍ VLAJEK */
+        .flag { width: 35px; border-radius: 2px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); animation: wave 3s ease-in-out infinite; }
+        @keyframes wave {
+            0%, 100% { transform: skewY(0deg); }
+            50% { transform: skewY(3deg) scaleX(1.02); }
+        }
 
-        .countdown { background: #e74c3c; color: white; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-weight: bold; text-align: center; }
-        .zapas-nazev { text-align: center; font-size: 1.6em; font-weight: bold; margin-bottom: 15px; }
-
-        /* HEZKÝ PŘEPÍNAČ */
-        .switch-container { display: flex; flex-direction: column; align-items: center; gap: 8px; margin: 15px 0; background: rgba(0,0,0,0.03); padding: 12px; border-radius: 12px; width: 100%; box-sizing: border-box; }
-        [data-theme="dark"] .switch-container { background: rgba(255,255,255,0.05); }
-        .switch { position: relative; display: inline-block; width: 60px; height: 30px; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
-        .slider:before { position: absolute; content: ""; height: 22px; width: 22px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
-        input:checked + .slider { background-color: #3498db; }
-        input:checked + .slider:before { transform: translateX(30px); }
-        .status-text { font-size: 0.85em; font-weight: bold; }
-
-        /* BAROMETR */
-        .mood-container { width: 100%; max-width: 500px; margin-bottom: 25px; text-align: center; }
-        .mood-bar { display: flex; height: 38px; border-radius: 20px; overflow: hidden; box-shadow: inset 0 2px 6px rgba(0,0,0,0.2); background: #eee; border: 1px solid #ddd; }
-        .mood-part { display: flex; align-items: center; justify-content: center; color: white; font-size: 0.75em; font-weight: bold; transition: width 1s; white-space: nowrap; overflow: hidden; text-shadow: 1px 1px 2px rgba(0,0,0,0.3); }
-        .mood-1 { background: linear-gradient(180deg, #3498db 0%, #2980b9 100%); }
-        .mood-0 { background: linear-gradient(180deg, #bdc3c7 0%, #95a5a6 100%); }
-        .mood-2 { background: linear-gradient(180deg, #e74c3c 0%, #c0392b 100%); }
-
-        .match-score { background-color: rgba(52, 152, 219, 0.15) !important; }
-        .match-total { background-color: rgba(155, 89, 182, 0.2) !important; }
-
-        input[type="text"], input[type="number"] { padding: 12px; border: 2px solid #ddd; border-radius: 8px; width: 100%; box-sizing: border-box; background: var(--input-bg); color: var(--text); margin-bottom: 10px; font-size: 16px; outline: none; }
+        .zapas-nazev { display: flex; align-items: center; justify-content: center; font-size: 1.4em; font-weight: bold; margin-bottom: 15px; gap: 15px; }
+        
+        input[type="text"], input[type="number"] { padding: 12px; border: 2px solid #ddd; border-radius: 8px; width: 100%; box-sizing: border-box; margin-bottom: 10px; font-size: 16px; background: var(--box); color: var(--text); }
         button#btnOdeslat { background: #27ae60; color: white; border: none; padding: 16px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1.1em; }
-        
-        table { width: 100%; max-width: 500px; border-collapse: collapse; background: var(--box); border-radius: 12px; overflow: hidden; margin-top: 20px; }
-        th, td { padding: 14px 10px; text-align: center; border-bottom: 1px solid var(--table-border); font-size: 0.9em; }
-        th { background: #34495e; color: white; }
-        .win { background: #27ae60 !important; color: white !important; font-weight: bold; }
 
-        .footer { margin: 40px 0; display: flex; gap: 20px; align-items: center; }
-        .footer a { text-decoration: none; color: var(--text); font-weight: bold; opacity: 0.7; font-size: 0.85em; }
+        table { width: 100%; max-width: 500px; border-collapse: collapse; background: var(--box); border-radius: 12px; overflow: hidden; margin-top: 20px; }
+        th, td { padding: 14px 10px; text-align: center; border-bottom: 1px solid #eee; }
+        th { background: #34495e; color: white; font-size: 0.8em; }
+        .win { background: #27ae60 !important; color: white !important; }
+        
+        .footer { margin: 30px 0; display: flex; gap: 20px; }
+        .footer a { text-decoration: none; color: var(--text); font-weight: bold; opacity: 0.7; }
     </style>
 </head>
 <body data-theme="light">
 
     <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">🌙</button>
-    <div id="zpravaDne" class="msg-dne"></div>
     <div class="bank-info" id="bankDisplay">💰 Načítání banku...</div>
 
     <div class="main-wrapper">
-        <div class="logo-container"><img src="IMG_8423.jpeg" class="main-logo" alt="Logo"></div>
-        <div class="content-box">
+        <div class="logo-container"><img src="IMG_8423.jpeg" class="main-logo"></div>
+        <div class="content-box" style="padding: 20px;">
             <div id="zapasAktivni" style="display:none;">
-                <div id="timerDisplay" class="countdown"></div>
-                <div class="zapas-nazev"><span id="txtDomaci"></span> VS <span id="txtHoste"></span></div>
+                <div id="timerDisplay" style="text-align:center; font-weight:bold; color:#e74c3c; margin-bottom:10px;"></div>
+                <div class="zapas-nazev">
+                    <img id="flagDomaci" src="" class="flag" style="display:none;">
+                    <span id="txtDomaci"></span> VS <span id="txtHoste"></span>
+                    <img id="flagHoste" src="" class="flag" style="display:none;">
+                </div>
                 
                 <input type="text" id="jmeno" placeholder="Tvé jméno">
-                
-                <div style="display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:10px;">
-                    <input type="number" id="tip_domaci" placeholder="Domácí" min="0" oninput="this.value = Math.abs(this.value)" style="text-align:center; margin-bottom:0;">
-                    <span style="font-size: 1.5em; font-weight: bold; color: var(--text);">:</span>
-                    <input type="number" id="tip_hoste" placeholder="Hosté" min="0" oninput="this.value = Math.abs(this.value)" style="text-align:center; margin-bottom:0;">
+                <div style="display:flex; gap:10px;">
+                    <input type="number" id="tip_domaci" placeholder="0" style="text-align:center;">
+                    <input type="number" id="tip_hoste" placeholder="0" style="text-align:center;">
                 </div>
-
                 <input type="text" id="tip_strelec" placeholder="Tip na střelce">
                 
-                <div class="switch-container">
-                    <label class="switch">
-                        <input type="checkbox" id="jeVerejne" onchange="updateSwitchText()" checked>
-                        <span class="slider"></span>
-                    </label>
-                    <span id="switchStatus" class="status-text">🔓 VEŘEJNÝ TIP</span>
-                </div>
-
                 <button id="btnOdeslat" onclick="ulozitSazku()">ODESLAT SÁZKU (20 Kč)</button>
             </div>
-            <div id="zapasZadny" style="display:none; text-align: center; padding: 20px;">📭 Aktuálně není vypsán žádný zápas.</div>
-        </div>
-    </div>
-
-    <div id="moodContainer" class="mood-container" style="display:none;">
-        <div class="mood-bar">
-            <div id="moodDomaci" class="mood-part mood-1"></div>
-            <div id="moodRemiza" class="mood-part mood-0"></div>
-            <div id="moodHoste" class="mood-part mood-2"></div>
+            <div id="zapasZadny" style="display:none; text-align: center;">📭 Aktuálně není vypsán žádný zápas.</div>
         </div>
     </div>
 
@@ -110,9 +75,9 @@
     </table>
 
     <div class="footer">
-        <a href="minule-kolo.html">⏪ MINULÉ KOLO</a>
-        <a href="statistiky.html">📊 STATISTIKY</a>
-        <a href="admin.html" style="font-size: 1.2em;">⚙️</a>
+        <a href="minule-kolo.html">⏪ MINULÉ</a>
+        <a href="statistiky.html">📊 STATY</a>
+        <a href="admin.html">⚙️</a>
     </div>
 
     <script>
@@ -120,100 +85,33 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
         let deadline = null;
-        let aktualniSazkyData = [];
-
-        const normalize = (str) => str ? str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim() : "";
-
-        function updateSwitchText() {
-            const isPublic = document.getElementById('jeVerejne').checked;
-            document.getElementById('switchStatus').innerText = isPublic ? "🔓 VEŘEJNÝ TIP" : "🔒 SOUKROMÝ TIP";
-        }
 
         function toggleTheme() {
-            const currentTheme = document.body.getAttribute('data-theme');
-            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-            document.body.setAttribute('data-theme', newTheme);
-            document.getElementById('themeBtn').innerText = newTheme === 'light' ? '🌙' : '☀️';
-            localStorage.setItem('theme', newTheme);
+            const t = document.body.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+            document.body.setAttribute('data-theme', t);
+            localStorage.setItem('theme', t);
         }
 
         db.ref('sazkyData').on('value', (snapshot) => {
-            const data = snapshot.val();
-            if(!data) return;
+            const data = snapshot.val(); if(!data) return;
             
-            if(data.zpravaDne) { document.getElementById('zpravaDne').innerText = "📢 " + data.zpravaDne; document.getElementById('zpravaDne').style.display = 'block'; }
-            else { document.getElementById('zpravaDne').style.display = 'none'; }
-
-            if(data.domaci && data.domaci.trim() !== "") {
+            if(data.domaci) {
                 document.getElementById('zapasAktivni').style.display = 'block';
-                document.getElementById('zapasZadny').style.display = 'none';
                 document.getElementById('txtDomaci').innerText = data.domaci;
                 document.getElementById('txtHoste').innerText = data.hoste;
-                
-                // AUTOMATICKÉ PLACEHOLDERY TÝMŮ
-                document.getElementById('tip_domaci').placeholder = data.domaci;
-                document.getElementById('tip_hoste').placeholder = data.hoste;
-                
+                if(data.kodDomaci) { document.getElementById('flagDomaci').src = `https://flagcdn.com/w40/${data.kodDomaci.toLowerCase()}.png`; document.getElementById('flagDomaci').style.display = 'block'; }
+                if(data.kodHoste) { document.getElementById('flagHoste').src = `https://flagcdn.com/w40/${data.kodHoste.toLowerCase()}.png`; document.getElementById('flagHoste').style.display = 'block'; }
                 deadline = data.deadline;
-            } else {
-                document.getElementById('zapasAktivni').style.display = 'none';
-                document.getElementById('zapasZadny').style.display = 'block';
             }
 
-            aktualniSazkyData = data.seznamSazek ? Object.values(data.seznamSazek) : [];
-            document.getElementById('bankDisplay').innerText = `💰 Bank: ${(data.prevedenyBank || 0) + (aktualniSazkyData.length * 20)} Kč`;
-
-            if(aktualniSazkyData.length > 0) {
-                let d=0, r=0, h=0;
-                aktualniSazkyData.forEach(s => { const res=s.skore.split(':'); if(parseInt(res[0])>parseInt(res[1])) d++; else if(parseInt(res[0])<parseInt(res[1])) h++; else r++; });
-                document.getElementById('moodContainer').style.display = 'block';
-                const pD=Math.round((d/aktualniSazkyData.length)*100), pR=Math.round((r/aktualniSazkyData.length)*100), pH=100-pD-pR;
-                document.getElementById('moodDomaci').style.width=pD+"%"; document.getElementById('moodDomaci').innerText=pD>20?data.domaci+" "+pD+"%":"";
-                document.getElementById('moodRemiza').style.width=pR+"%"; document.getElementById('moodRemiza').innerText=pR>20?"Remíza "+pR+"%":"";
-                document.getElementById('moodHoste').style.width=pH+"%"; document.getElementById('moodHoste').innerText=pH>20?data.hoste+" "+pH+"%":"";
-            }
-
-            const ted = new Date().getTime();
-            const casUzavierky = data.deadline ? new Date(data.deadline).getTime() : 0;
-            const jePoUzavierke = ted >= casUzavierky;
-            const vStrelciNorm = normalize(data.posledniStrelec || "").split(',').map(s => s.trim());
-
-            const countsSkore = {};
-            const countsTotal = {};
-            if(jePoUzavierke) {
-                aktualniSazkyData.forEach(s => {
-                    countsSkore[s.skore] = (countsSkore[s.skore] || 0) + 1;
-                    const fullId = s.skore + "|" + normalize(s.strelec);
-                    countsTotal[fullId] = (countsTotal[fullId] || 0) + 1;
-                });
-            }
+            const sazky = data.seznamSazek ? Object.values(data.seznamSazek) : [];
+            document.getElementById('bankDisplay').innerText = `💰 Bank: ${(data.prevedenyBank || 0) + (sazky.length * 20)} Kč`;
 
             const tbody = document.getElementById('tabulkaBody'); tbody.innerHTML = "";
-            [...aktualniSazkyData].reverse().forEach(s => {
+            [...sazky].reverse().forEach(s => {
                 const tr = document.createElement('tr');
                 if(s.stav && s.stav.includes("VÝHRA")) tr.className="win";
-                
-                const zobrazitVse = jePoUzavierke || s.verejne === true;
-                const tipSkore = zobrazitVse ? s.skore : "🕵️";
-                let textStrelec = "";
-                let classShoda = "";
-
-                if (zobrazitVse) {
-                    const tipNorm = normalize(s.strelec);
-                    const trefilS = tipNorm !== "" && vStrelciNorm.some(v => tipNorm.includes(v) || v.includes(tipNorm));
-                    textStrelec = trefilS ? '🎯 ' + s.strelec : s.strelec;
-                    
-                    if (jePoUzavierke) {
-                        const fullId = s.skore + "|" + tipNorm;
-                        if (countsTotal[fullId] > 1) classShoda = "match-total";
-                        else if (countsSkore[s.skore] > 1) classShoda = "match-score";
-                    }
-                } else {
-                    textStrelec = "🔒 Skryto";
-                }
-
-                if (classShoda) tr.classList.add(classShoda);
-                tr.innerHTML = `<td>${s.jmeno}${classShoda === 'match-total' ? ' 👥' : ''}</td><td>${tipSkore}</td><td>${textStrelec}</td><td>${s.stav || '⏳'}</td>`;
+                tr.innerHTML = `<td>${s.jmeno}</td><td>${s.skore}</td><td>${s.strelec}</td><td>${s.stav||"⏳"}</td>`;
                 tbody.appendChild(tr);
             });
         });
@@ -221,42 +119,16 @@
         setInterval(() => {
             if(!deadline) return;
             const diff = new Date(deadline) - new Date();
-            if(diff<=0) { document.getElementById('timerDisplay').innerText="SÁZKY UZAVŘENY"; document.getElementById('btnOdeslat').disabled=true; }
-            else { 
-                const h=Math.floor(diff/3600000), m=Math.floor((diff%3600000)/60000), s=Math.floor((diff%60000)/1000); 
-                document.getElementById('timerDisplay').innerText=`Konec sázek: ${h}h ${m}m ${s}s`; 
-            }
+            document.getElementById('timerDisplay').innerText = diff <= 0 ? "SÁZKY UZAVŘENY" : `Konec sázek za: ${Math.floor(diff/3600000)}h ${Math.floor((diff%3600000)/60000)}m`;
+            if(diff <= 0) document.getElementById('btnOdeslat').disabled = true;
         }, 1000);
 
         function ulozitSazku() {
-            const j = document.getElementById('jmeno').value.trim();
-            const dG = document.getElementById('tip_domaci').value;
-            const hG = document.getElementById('tip_hoste').value;
-            const s = document.getElementById('tip_strelec').value.trim();
-            const v = document.getElementById('jeVerejne').checked;
-
-            if(!j || dG==="" || hG==="" || !s) return alert("⚠️ Vyplň všechna pole!");
-
-            const noveSkore = dG + ":" + hG;
-            const novyStrelecNorm = normalize(s);
-            
-            const shoda = aktualniSazkyData.find(stara => 
-                stara.skore === noveSkore && normalize(stara.strelec) === novyStrelecNorm
-            );
-
-            if (shoda) {
-                const potvrdit = confirm(`⚠️ POZOR: Přesně tento tip už někdo vsadil.\n\nPokud oba vyhrajete, budete se o bank dělit.\nChceš sázku přesto odeslat?`);
-                if (!potvrdit) return;
-            }
-
-            db.ref('sazkyData/seznamSazek').push({ jmeno: j, skore: noveSkore, strelec: s, verejne: v, stav: "⏳ Vsadil" }).then(() => {
-                alert("✅ Sázka uložena!");
-                document.getElementById('tip_strelec').value = "";
-            });
+            const j=document.getElementById('jmeno').value.trim(), d=document.getElementById('tip_domaci').value, h=document.getElementById('tip_hoste').value, s=document.getElementById('tip_strelec').value.trim();
+            if(!j || d==="" || h==="" || !s) return alert("Vyplň vše!");
+            db.ref('sazkyData/seznamSazek').push({ jmeno:j, skore:d+":"+h, strelec:s, stav:"⏳ Vsadil" }).then(() => alert("✅ Vsadis!"));
         }
-
-        const savedTheme = localStorage.getItem('theme') || 'light';
-        document.body.setAttribute('data-theme', savedTheme);
+        document.body.setAttribute('data-theme', localStorage.getItem('theme') || 'light');
     </script>
 </body>
 </html>
