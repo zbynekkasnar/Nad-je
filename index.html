@@ -8,56 +8,98 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <style>
-        :root { --neon: #00f2ff; --dark: #0f172a; }
-        body { background: var(--dark); color: white; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; text-align: center; min-height: 100vh; display: flex; flex-direction: column; align-items: center; }
+        :root { --neon: #00f2ff; --dark: #0f172a; --glass: rgba(255, 255, 255, 0.05); }
         
-        /* LOGO IMG_8423 */
-        .header-logo { max-width: 280px; width: 85%; filter: drop-shadow(0 0 10px var(--neon)); margin-bottom: 25px; }
-        
+        body { 
+            background: var(--dark); color: white; font-family: 'Segoe UI', sans-serif; 
+            margin: 0; padding: 15px; text-align: center; min-height: 100vh;
+            display: flex; flex-direction: column; align-items: center;
+            overflow-x: hidden;
+        }
+
+        /* ANIMOVANÉ LOGO IMG_8423 */
+        .header-logo { 
+            max-width: 320px; 
+            width: 85%; 
+            filter: drop-shadow(0 0 15px var(--neon)); 
+            margin-bottom: 25px;
+            opacity: 0; /* Začíná neviditelné */
+            transform: scale(0.8); /* Začíná menší */
+            animation: logoIntro 2.5s ease-out forwards;
+        }
+
+        @keyframes logoIntro {
+            0% { opacity: 0; transform: scale(0.8) translateY(-20px); }
+            50% { opacity: 1; transform: scale(1.05) translateY(0); }
+            100% { opacity: 0.5; transform: scale(1); } /* Končí na 50% průhlednosti */
+        }
+
+        .header-logo:hover {
+            opacity: 1; /* Při najetí myší se rozsvítí naplno */
+            transition: 0.5s;
+        }
+
+        /* BANK BOX */
         .bank-box { 
             background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(0,242,255,0.1));
-            border: 1px solid var(--neon); border-radius: 20px; padding: 25px;
-            min-width: 280px; margin-bottom: 40px; box-shadow: 0 0 25px rgba(0, 242, 255, 0.15);
+            border: 1px solid var(--neon); border-radius: 20px; padding: 20px;
+            min-width: 280px; margin-bottom: 35px; box-shadow: 0 0 25px rgba(0, 242, 255, 0.15);
         }
-        .bank-box span { font-size: 2.8em; font-weight: bold; text-shadow: 0 0 10px var(--neon); }
+        .bank-box span { font-size: 2.6em; font-weight: bold; text-shadow: 0 0 10px var(--neon); }
 
-        /* HLÁŠKA KDYŽ NENÍ ZÁPAS */
-        .no-match-box { 
-            margin-top: 50px; padding: 40px 20px; border-radius: 20px;
-            background: rgba(255,255,255,0.02); border: 1px dashed rgba(255,255,255,0.1);
-            max-width: 500px; width: 90%;
-        }
-        .no-match-box p { font-style: italic; opacity: 0.6; font-size: 1.1em; letter-spacing: 1px; }
-
-        /* ZÁPASY */
+        /* MATCH CARD */
         #matchList { width: 100%; max-width: 600px; }
         .match-card {
-            background: rgba(255,255,255,0.05); border-radius: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);
-            margin-bottom: 15px; padding: 20px; cursor: pointer; transition: 0.3s;
+            background: rgba(255,255,255,0.05); border-radius: 20px; border-bottom: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 20px; padding: 20px; cursor: pointer; transition: 0.3s; position: relative;
         }
-        .flag-img { width: 75px; height: auto; border-radius: 4px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        .match-card:hover { background: rgba(255,255,255,0.1); }
+        
+        /* 3D VLAJKY */
+        .flag-container { perspective: 1000px; filter: drop-shadow(0 8px 15px rgba(0,0,0,0.4)); }
+        .flag-img {
+            width: 80px; height: auto; border-radius: 4px;
+            animation: flagWave 4s ease-in-out infinite;
+            transform-origin: left center;
+        }
+        @keyframes flagWave {
+            0%, 100% { transform: rotateY(0deg) rotateX(0deg) skewY(0deg); }
+            50% { transform: rotateY(20deg) rotateX(-5deg) skewY(-2deg) scale(1.05); }
+        }
+
         .vs { background: var(--neon); color: black; border-radius: 50%; width: 35px; height: 35px; line-height: 35px; font-weight: bold; margin: 0 20px; display: inline-block; }
 
-        /* FORMULÁŘ SÁZKY */
-        .details { display: none; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); margin-top: 20px; text-align: left; }
-        input { width: 100%; padding: 14px; margin: 8px 0; border-radius: 10px; border: 1px solid #333; background: #000; color: white; box-sizing: border-box; font-size: 16px; }
-        .btn-add { width: 100%; background: var(--neon); color: black; border: none; padding: 15px; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        /* TIMER */
+        .timer-box { font-size: 0.8em; font-weight: bold; color: var(--neon); background: rgba(0,0,0,0.4); padding: 5px 12px; border-radius: 20px; }
+        .urgent { color: #ff4444 !important; animation: pulse 1s infinite; }
+        @keyframes pulse { 50% { opacity: 0.6; } }
+
+        /* SÁZKOVÝ FORMULÁŘ */
+        .details { display: none; padding-top: 25px; border-top: 1px solid rgba(255,255,255,0.1); margin-top: 20px; text-align: left; }
+        .score-input {
+            width: 65px; padding: 12px; text-align: center; font-weight: bold; font-size: 1.4em;
+            background: #000; border: 1px solid var(--neon); color: white; border-radius: 10px;
+        }
+        input[type="text"] { width: 100%; padding: 12px; margin: 10px 0; border-radius: 10px; border: 1px solid #333; background: #000; color: white; box-sizing: border-box; }
+
+        /* PŘEPÍNAČ (SWITCH) */
+        .switch { position: relative; display: inline-block; width: 44px; height: 22px; vertical-align: middle; margin-right: 10px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: #334155; transition: .4s; border-radius: 22px; }
+        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background: var(--neon); }
+        input:checked + .slider:before { transform: translateX(22px); }
 
         /* TIKET */
         #cart { 
-            position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%);
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
             width: 90%; max-width: 480px; background: #1e293b; border: 2px solid var(--neon);
             border-radius: 25px; padding: 20px; display: none; box-shadow: 0 -10px 40px rgba(0,0,0,0.8); z-index: 1000;
         }
-
-        /* ADMIN LINK - OZUBENÉ KOLEČKO */
-        .admin-link { 
-            margin-top: auto; padding: 40px 0; opacity: 0.3; transition: 0.3s; 
-            text-decoration: none; color: white; font-size: 1.5em;
-        }
-        .admin-link:hover { opacity: 1; color: var(--neon); }
-
-        .bet-row { background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; margin-bottom: 6px; display: flex; justify-content: space-between; font-size: 0.9em; }
+        .btn-add { width: 100%; background: var(--neon); color: black; border: none; padding: 15px; border-radius: 12px; font-weight: bold; cursor: pointer; margin-top: 15px; font-size: 1em; }
+        
+        .bet-row { background: rgba(255,255,255,0.05); padding: 10px; border-radius: 10px; margin-bottom: 5px; display: flex; justify-content: space-between; font-size: 0.9em; border-left: 3px solid var(--neon); }
+        .admin-link { margin-top: auto; padding: 30px; opacity: 0.2; text-decoration: none; font-size: 1.5em; color: white; }
     </style>
 </head>
 <body>
@@ -65,27 +107,20 @@
     <img src="IMG_8423.jpeg" alt="KANCELÁŘ NADĚJE" class="header-logo">
 
     <div class="bank-box">
-        <small style="display:block; opacity:0.5; margin-bottom:8px; letter-spacing:2px;">AKTUÁLNÍ BANK</small>
+        <small style="display:block; opacity:0.5; margin-bottom:5px; letter-spacing:2px;">CELKOVÝ BANK</small>
         <span id="mainBank">0</span> Kč
     </div>
 
     <div id="matchList"></div>
-
-    <div id="noMatch" class="no-match-box" style="display:none;">
-        <p>Momentálně není vypsán žádný zápas.<br>Kancelář připravuje další hokejové pecky...</p>
-    </div>
+    <div id="noMatch" style="display:none; opacity: 0.5; font-style: italic; margin-top: 50px;">Momentálně se žádné zápasy nepřipravují...</div>
 
     <div id="cart">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-            <div style="text-align:left;">
-                <b id="cartCount">0 zápasů</b><br>
-                <span id="cartTotal" style="color:var(--neon); font-size:1.4em; font-weight:bold;">0 Kč</span>
-            </div>
-            <button class="btn-add" style="width:auto; padding: 12px 25px;" onclick="odeslatTiket()">ODESLAT</button>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="text-align:left;"><b id="cartCount">0 zápasů</b><br><span id="cartTotal" style="color:var(--neon); font-size:1.4em;">0 Kč</span></div>
+            <button class="btn-add" style="width:auto; padding: 12px 25px; margin:0;" onclick="odeslatTiket()">ODESLAT TIKET</button>
         </div>
-        <div id="qrArea" style="display:none; background:white; color:black; padding:15px; border-radius:15px;">
-            <img id="qrImg" src="" style="width:160px;"><br>
-            <small id="qrDesc" style="font-weight:bold;"></small>
+        <div id="qrArea" style="display:none; margin-top:15px; background:white; color:black; padding:15px; border-radius:15px; text-align:center;">
+            <img id="qrImg" src="" style="width:160px;"><br><small id="qrDesc"></small>
         </div>
     </div>
 
@@ -96,64 +131,64 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
         let kosik = {};
+        let activeTimers = {};
 
         db.ref('sazkyData').on('value', snap => {
             const data = snap.val() || {};
             document.getElementById('mainBank').innerText = data.prevedenyBank || 0;
-            
             const list = document.getElementById('matchList');
             const noMatch = document.getElementById('noMatch');
             list.innerHTML = "";
+            activeTimers = {};
 
-            if (!data.zapasy || Object.keys(data.zapasy).length === 0) {
-                noMatch.style.display = "block";
-                return;
-            }
-
+            if (!data.zapasy) { noMatch.style.display = "block"; return; }
             noMatch.style.display = "none";
+
             Object.entries(data.zapasy).forEach(([id, m]) => {
+                activeTimers[id] = m.deadline;
                 const isClosed = Date.now() > new Date(m.deadline).getTime();
-                const mBank = m.sazky ? Object.keys(m.sazky).length * 20 : 0;
                 
                 const card = document.createElement('div');
                 card.className = "match-card";
-                card.onclick = () => { if(!isClosed) toggle(id); };
+                card.onclick = () => { if(!isClosed) toggle(id); else alert("Zápas už začal!"); };
                 card.innerHTML = `
-                    <div style="color:var(--neon); font-size:0.75em; margin-bottom:12px; font-weight:bold;">BANK ZÁPASU: ${mBank} Kč</div>
-                    <div style="display:flex; justify-content:center; align-items:center;">
-                        <div style="width:110px;"><img class="flag-img" src="https://flagcdn.com/w160/${m.kodD || 'un'}.png"><br><b style="display:block;margin-top:5px;">${m.domaci}</b></div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                        <div style="color:var(--neon); font-size:0.75em; font-weight:bold;">V BANKU: ${m.sazky ? Object.keys(m.sazky).length * 20 : 0} Kč</div>
+                        <div id="t-${id}" class="timer-box">--:--:--</div>
+                    </div>
+                    <div style="display:flex; justify-content:center; align-items:center; gap:10px;">
+                        <div class="flag-container"><img class="flag-img" src="https://flagcdn.com/w160/${m.kodD}.png"><br><small>${m.domaci}</small></div>
                         <div class="vs">VS</div>
-                        <div style="width:110px;"><img class="flag-img" src="https://flagcdn.com/w160/${m.kodH || 'un'}.png"><br><b style="display:block;margin-top:5px;">${m.hoste}</b></div>
+                        <div class="flag-container"><img class="flag-img" src="https://flagcdn.com/w160/${m.kodH}.png"><br><small>${m.hoste}</small></div>
                     </div>
                     <div id="det-${id}" class="details" onclick="event.stopPropagation()">
-                        <input type="text" id="s-${id}" placeholder="Tip skóre (např. 4:2)">
-                        <input type="text" id="p-${id}" placeholder="Tip střelec">
-                        <label style="font-size:0.85em; display:block; margin:10px 0; opacity:0.7;"><input type="checkbox" id="h-${id}"> Skrýt můj tip před výkopem</label>
-                        <button class="btn-add" onclick="pridat('${id}')">PŘIDAT NA TIKET (20 Kč)</button>
+                        <div style="display:flex; justify-content:center; align-items:center; gap:15px; margin-bottom:15px;">
+                            <div style="text-align:center;"><small style="display:block;opacity:0.6;margin-bottom:5px;">${m.domaci}</small><input type="number" min="0" id="sD-${id}" class="score-input"></div>
+                            <div style="font-weight:bold; font-size:1.5em; margin-top:20px;">:</div>
+                            <div style="text-align:center;"><small style="display:block;opacity:0.6;margin-bottom:5px;">${m.hoste}</small><input type="number" min="0" id="sH-${id}" class="score-input"></div>
+                        </div>
+                        <input type="text" id="p-${id}" placeholder="Jméno střelce">
+                        <div style="margin:15px 0; display:flex; align-items:center;">
+                            <label class="switch"><input type="checkbox" id="h-${id}"><span class="slider"></span></label>
+                            <span style="font-size:0.85em; opacity:0.7;">Skrýt můj tip před výkopem</span>
+                        </div>
+                        <button class="btn-add" onclick="pridat('${id}')">PŘIDAT NA TIKET</button>
                         <div id="bets-${id}" style="margin-top:20px;"></div>
                     </div>`;
                 list.appendChild(card);
-                
-                if(m.sazky) {
-                    const bCont = document.getElementById(`bets-${id}`);
-                    Object.values(m.sazky).forEach(s => {
-                        const row = document.createElement('div'); row.className = 'bet-row';
-                        row.innerHTML = `<span><b>${s.jmeno}</b></span> <span>${(s.skryt && !isClosed) ? '??:??' : s.skore}</span>`;
-                        bCont.appendChild(row);
-                    });
-                }
+                if(m.sazky) Object.values(m.sazky).forEach(s => {
+                    const row = `<div class="bet-row"><span><b>${s.jmeno}</b></span> <span>${(s.skryt && !isClosed) ? '??:??' : s.skore}</span></div>`;
+                    document.getElementById(`bets-${id}`).innerHTML += row;
+                });
             });
         });
 
-        function toggle(id) {
-            const el = document.getElementById(`det-${id}`);
-            el.style.display = el.style.display === 'block' ? 'none' : 'block';
-        }
+        function toggle(id) { const el = document.getElementById(`det-${id}`); el.style.display = (el.style.display === 'block') ? 'none' : 'block'; }
 
         function pridat(id) {
-            const s = document.getElementById(`s-${id}`).value;
-            if(!s) return alert("Zadej skóre!");
-            kosik[id] = { skore: s, strelec: document.getElementById(`p-${id}`).value, skryt: document.getElementById(`h-${id}`).checked };
+            const sD = document.getElementById(`sD-${id}`).value, sH = document.getElementById(`sH-${id}`).value;
+            if(sD === "" || sH === "") return alert("Zadej skóre!");
+            kosik[id] = { skore: `${sD}:${sH}`, strelec: document.getElementById(`p-${id}`).value, skryt: document.getElementById(`h-${id}`).checked };
             document.getElementById('cart').style.display = 'block';
             document.getElementById('cartCount').innerText = `${Object.keys(kosik).length} zápasů na tiketu`;
             document.getElementById('cartTotal').innerText = `${Object.keys(kosik).length * 20} Kč`;
@@ -161,15 +196,27 @@
 
         function odeslatTiket() {
             const jm = prompt("Tvé jméno:"); if(!jm) return;
-            Object.entries(kosik).forEach(([mid, data]) => {
-                db.ref(`sazkyData/zapasy/${mid}/sazky`).push({ jmeno: jm, ...data, stav: "⏳ Čeká" });
-            });
+            Object.entries(kosik).forEach(([mid, d]) => { db.ref(`sazkyData/zapasy/${mid}/sazky`).push({ jmeno: jm, ...d, stav: "⏳" }); });
             const tot = Object.keys(kosik).length * 20;
             document.getElementById('qrArea').style.display = 'block';
             document.getElementById('qrImg').src = `https://api.paylibo.com/paylibo/generator/czech/image?accountNumber=222333444&bankCode=0800&amount=${tot}&currency=CZK&message=Sazka_${jm}`;
             document.getElementById('qrDesc').innerText = `Sazka_${jm} | ${tot} Kč`;
             kosik = {};
         }
+
+        setInterval(() => {
+            const now = Date.now();
+            Object.entries(activeTimers).forEach(([id, deadline]) => {
+                const el = document.getElementById(`t-${id}`); if(!el) return;
+                const diff = new Date(deadline).getTime() - now;
+                if(diff <= 0) { el.innerText = "ZAVŘENO"; el.closest('.match-card').style.opacity = "0.5"; }
+                else {
+                    const h = Math.floor(diff/3600000), m = Math.floor((diff%3600000)/60000), s = Math.floor((diff%60000)/1000);
+                    el.innerText = `⏱️ ${h}h ${m}m ${s}s`;
+                    if(diff < 1800000) el.classList.add('urgent');
+                }
+            });
+        }, 1000);
     </script>
 </body>
 </html>
