@@ -3,138 +3,100 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin NADĚJE - Kancelář</title>
+    <title>Admin NADĚJE</title>
     <script src="stats.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; padding: 20px; }
-        .card { background: white; padding: 20px; border-radius: 15px; max-width: 600px; margin: 0 auto 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-        input, textarea, select { width: 100%; padding: 10px; margin: 10px 0; border-radius: 8px; border: 1px solid #ddd; }
-        .btn { padding: 10px 20px; border: none; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; margin: 5px; }
+        .card { background: white; padding: 20px; border-radius: 15px; max-width: 500px; margin: 0 auto 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        input, textarea { width: 100%; padding: 10px; margin: 5px 0; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; }
+        .btn { padding: 10px 15px; border: none; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; margin-top: 10px; width: 100%; }
         .btn-blue { background: #3498db; } .btn-green { background: #27ae60; } .btn-red { background: #e74c3c; } .btn-dark { background: #2c3e50; }
-        .match-row { border-bottom: 2px solid #eee; padding: 15px 0; }
-        .bet-item { display: flex; justify-content: space-between; background: #f9f9f9; padding: 8px; margin: 4px 0; border-radius: 5px; font-size: 0.85em; }
+        .bet-admin { background: #f9f9f9; padding: 8px; border-radius: 8px; margin-top: 5px; display: flex; justify-content: space-between; align-items: center; font-size: 0.8em; }
         #authOverlay { position: fixed; top:0; left:0; width:100%; height:100%; background:white; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:1000; }
     </style>
 </head>
 <body onload="initAdmin()">
-
     <div id="authOverlay">
         <h2>🔒 Kancelář Naděje</h2>
         <input type="password" id="adminPass" placeholder="Heslo" style="width:200px;">
-        <button class="btn btn-blue" onclick="checkPass()">VSTOUPIT</button>
+        <button class="btn btn-blue" onclick="check()" style="width:200px;">VSTOUPIT</button>
     </div>
 
     <div class="card">
-        <h2>🚀 Vypsat nový zápas</h2>
-        <input list="statyList" id="domaci" placeholder="Domácí">
-        <input list="statyList" id="hoste" placeholder="Hosté">
-        <input type="datetime-local" id="deadline">
-        <button class="btn btn-blue" onclick="pridatZapas()">VYPSAT ZÁPAS</button>
+        <h2>🚀 Vypsat zápas</h2>
+        <input list="statyList" id="d" placeholder="Domácí">
+        <input list="statyList" id="h" placeholder="Hosté">
+        <input type="datetime-local" id="dl">
+        <button class="btn btn-blue" onclick="addM()">VYPSAT</button>
     </div>
 
     <div id="adminMatches"></div>
-
-    <div class="card" style="text-align:center;">
-        <button class="btn btn-dark" onclick="db.ref('sazkyData/prevedenyBank').set(0)">VYNULOVAT HLAVNÍ BANK</button>
-        <a href="index.html" style="display:block; margin-top:10px;">Zpět na web</a>
-    </div>
-
     <datalist id="statyList"></datalist>
 
     <script>
         const firebaseConfig = { apiKey: "AIzaSyC-NCdmsgA42FxnopKm92m1y5gUGw_z_uE", authDomain: "nadeje-208bd.firebaseapp.com", databaseURL: "https://nadeje-208bd-default-rtdb.europe-west1.firebasedatabase.app", projectId: "nadeje-208bd", storageBucket: "nadeje-208bd.firebasestorage.app", messagingSenderId: "688478977789", appId: "1:688478977789:web:512d1520cf96c9e59cc894" };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
+        const norm = (s) => s ? s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim() : "";
 
-        function checkPass() { if(document.getElementById('adminPass').value === "fotbal2024") document.getElementById('authOverlay').style.display = 'none'; }
-        
-        function initAdmin() {
-            const list = document.getElementById('statyList');
-            vsechnyStaty.forEach(s => {
-                const o = document.createElement('option'); o.value = s.n; o.setAttribute('data-code', s.c);
-                list.appendChild(o);
-            });
-        }
+        function check() { if(document.getElementById('adminPass').value === "fotbal2024") document.getElementById('authOverlay').style.display='none'; }
+        function initAdmin() { const l = document.getElementById('statyList'); vsechnyStaty.forEach(s => { const o = document.createElement('option'); o.value=s.n; o.setAttribute('data-code', s.c); l.appendChild(o); }); }
 
-        function pridatZapas() {
-            const d = document.getElementById('domaci').value, h = document.getElementById('hoste').value, dl = document.getElementById('deadline').value;
-            const kd = vsechnyStaty.find(s => s.n === d)?.c || "";
-            const kh = vsechnyStaty.find(s => s.n === h)?.c || "";
+        function addM() {
+            const d = document.getElementById('d').value, h = document.getElementById('h').value, dl = document.getElementById('dl').value;
+            const kd = vsechnyStaty.find(s => s.n === d)?.c || "un";
+            const kh = vsechnyStaty.find(s => s.n === h)?.c || "un";
             db.ref('sazkyData/zapasy').push({ domaci: d, hoste: h, kodD: kd, kodH: kh, deadline: dl });
         }
 
         db.ref('sazkyData').on('value', snap => {
-            const data = snap.val();
-            renderAdminMatches(data.zapasy || {}, data.prevedenyBank || 0);
-        });
-
-        function renderAdminMatches(zapasy, mainBank) {
-            const container = document.getElementById('adminMatches');
-            container.innerHTML = "";
-            Object.entries(zapasy).forEach(([id, m]) => {
-                const div = document.createElement('div');
-                div.className = 'card match-row';
-                div.innerHTML = `
-                    <h3>${m.domaci} vs ${m.hoste}</h3>
-                    <textarea id="raw-${id}" placeholder="Vlož text z Livesportu..."></textarea>
-                    <button class="btn btn-dark" onclick="vyhodnotitZapas('${id}', ${mainBank})">VYHODNOTIT AUTO-PILOTEM</button>
-                    <button class="btn btn-red" onclick="db.ref('sazkyData/zapasy/${id}').remove()">SMAZAT ZÁPAS</button>
-                    <div id="sazky-${id}" style="margin-top:10px;"></div>
-                `;
-                container.appendChild(div);
-                const sazkyBox = document.getElementById(`sazky-${id}`);
+            const data = snap.val() || {};
+            const cont = document.getElementById('adminMatches'); cont.innerHTML = "";
+            if(data.zapasy) Object.entries(data.zapasy).forEach(([id, m]) => {
+                const div = document.createElement('div'); div.className = 'card';
+                div.innerHTML = `<h3>${m.domaci} - ${m.hoste}</h3>
+                    <textarea id="raw-${id}" placeholder="Livesport text..."></textarea>
+                    <button class="btn btn-dark" onclick="evalM('${id}', ${data.prevedenyBank || 0})">VYHODNOTIT</button>
+                    <button class="btn btn-red" onclick="db.ref('sazkyData/zapasy/${id}').remove()">SMAZAT</button>
+                    <div id="bets-${id}"></div>`;
+                cont.appendChild(div);
                 if(m.sazky) Object.entries(m.sazky).forEach(([sid, s]) => {
-                    const row = document.createElement('div');
-                    row.className = 'bet-item';
-                    row.innerHTML = `
-                        <span>${s.jmeno}: ${s.skore} (${s.strelec}) - <b>${s.stav}</b></span>
-                        <div>
-                            <button onclick="db.ref('sazkyData/zapasy/${id}/sazky/${sid}/stav').set('✅ ZAPLACENO')">OK</button>
-                            <button onclick="db.ref('sazkyData/zapasy/${id}/sazky/${sid}').remove()">🗑️</button>
-                        </div>
-                    `;
-                    sazkyBox.appendChild(row);
+                    const row = document.createElement('div'); row.className = 'bet-admin';
+                    row.innerHTML = `<span>${s.jmeno}: ${s.skore} (${s.stav})</span>
+                        <div><button onclick="db.ref('sazkyData/zapasy/${id}/sazky/${sid}/stav').set('✅ ZAPLACENO')">OK</button>
+                        <button onclick="db.ref('sazkyData/zapasy/${id}/sazky/${sid}').remove()">🗑️</button></div>`;
+                    document.getElementById(`bets-${id}`).appendChild(row);
                 });
             });
-        }
+        });
 
-        function vyhodnotitZapas(matchId, mainBank) {
-            const raw = document.getElementById(`raw-${matchId}`).value;
+        function evalM(mid, mainBank) {
+            const raw = document.getElementById(`raw-${mid}`).value;
             const lines = raw.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-            let fD = 0, fH = 0, strelci = [];
+            let fD = 0, fH = 0, goals = [];
             let isOT = raw.toUpperCase().includes("PRODLOUŽENÍ") || raw.toUpperCase().includes("NÁJEZDY");
-
             for (let i = 0; i < lines.length; i++) {
-                const match = lines[i].match(/^(\d+)\s*-\s*(\d+)$/);
-                if (match) {
-                    fD = parseInt(match[1]); fH = parseInt(match[2]);
-                    if (lines[i+1] && !lines[i+1].includes('+') && !lines[i+1].includes('(')) strelci.push(lines[i+1].toLowerCase());
-                }
+                const m = lines[i].match(/(\d+)\s*-\s*(\d+)/);
+                if (m) { fD = parseInt(m[1]); fH = parseInt(m[2]); if(lines[i+1] && !lines[i+1].includes('+')) goals.push(norm(lines[i+1])); }
             }
             if(isOT) { fD = Math.min(fD, fH); fH = fD; }
-            const vysledek = `${fD}:${fH}`;
+            const res = `${fD}:${fH}`;
 
-            db.ref(`sazkyData/zapasy/${matchId}`).once('value', snap => {
-                const m = snap.val();
-                const sazky = Object.entries(m.sazky || {});
+            db.ref(`sazkyData/zapasy/${mid}`).once('value', snap => {
+                const m = snap.val(); const sazky = Object.values(m.sazky || {});
                 const matchBank = sazky.length * 20;
-                let vyherciSkore = sazky.filter(([id, s]) => s.skore === vysledek);
-                let vyherciStřelec = vyherciSkore.filter(([id, s]) => strelci.some(real => real.includes(s.strelec.toLowerCase()) || s.strelec.toLowerCase().includes(real)));
+                let winnersSkore = sazky.filter(s => s.skore === res);
+                let winnersFull = winnersSkore.filter(s => goals.some(g => g.includes(norm(s.strelec)) || norm(s.strelec).includes(g)));
+                let finalWinners = winnersFull.length > 0 ? winnersFull : winnersSkore;
 
-                let finalVyherci = vyherciStřelec.length > 0 ? vyherciStřelec : vyherciSkore;
-                
-                if (finalVyherci.length > 0) {
-                    alert(`VÝHRA! Celkem ${finalVyherci.length} výherců bere ${matchBank + mainBank} Kč.`);
-                    db.ref('sazkyData/prevedenyBank').set(0);
+                if(finalWinners.length > 0) {
+                    alert("VÝHRA! Bank rozdělen."); db.ref('sazkyData/prevedenyBank').set(0);
                 } else {
-                    alert(`Nikdo nevyhrál. ${matchBank} Kč se přelévá do hlavního banku.`);
-                    db.ref('sazkyData/prevedenyBank').set(mainBank + matchBank);
+                    alert("Nikdo nevyhrál, bank se přelévá."); db.ref('sazkyData/prevedenyBank').set(mainBank + matchBank);
                 }
-
-                db.ref('sazkyData/posledniVysledek').set({ tymy: `${m.domaci} vs ${m.hoste}`, skore: vysledek, strelci: strelci.join(', ') });
-                db.ref(`sazkyData/zapasy/${matchId}`).remove();
+                db.ref(`sazkyData/zapasy/${mid}`).remove();
             });
         }
     </script>
