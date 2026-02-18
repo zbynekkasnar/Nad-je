@@ -17,14 +17,13 @@
         .zapas-nazev { text-align: center; font-size: 1.6em; font-weight: bold; margin-bottom: 15px; color: #2c3e50; }
         .no-match { text-align: center; padding: 20px; color: #7f8c8d; font-style: italic; font-size: 1.2em; line-height: 1.5; }
         
-        /* BAROMETR NÁLADY - UPRAVENÝ */
         .mood-container { width: 100%; max-width: 500px; margin-bottom: 25px; text-align: center; }
         .mood-title { font-size: 0.8em; font-weight: bold; color: #7f8c8d; text-transform: uppercase; margin-bottom: 10px; letter-spacing: 1px; }
-        .mood-bar { display: flex; height: 30px; border-radius: 15px; overflow: hidden; box-shadow: inset 0 2px 5px rgba(0,0,0,0.2); background: #eee; border: 1px solid #ddd; }
-        .mood-part { display: flex; align-items: center; justify-content: center; color: white; font-size: 0.7em; font-weight: bold; transition: width 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275); white-space: nowrap; overflow: hidden; }
-        .mood-1 { background: linear-gradient(to bottom, #3498db, #2980b9); border-right: 1px solid rgba(255,255,255,0.2); } /* VÝHRA */
-        .mood-0 { background: linear-gradient(to bottom, #95a5a6, #7f8c8d); border-right: 1px solid rgba(255,255,255,0.2); } /* REMÍZA */
-        .mood-2 { background: linear-gradient(to bottom, #e74c3c, #c0392b); } /* PROHRA */
+        .mood-bar { display: flex; height: 35px; border-radius: 18px; overflow: hidden; box-shadow: inset 0 2px 5px rgba(0,0,0,0.2); background: #eee; border: 1px solid #ddd; }
+        .mood-part { display: flex; align-items: center; justify-content: center; color: white; font-size: 0.75em; font-weight: bold; transition: width 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275); white-space: nowrap; overflow: hidden; padding: 0 5px; }
+        .mood-1 { background: linear-gradient(to bottom, #3498db, #2980b9); border-right: 1px solid rgba(255,255,255,0.2); }
+        .mood-0 { background: linear-gradient(to bottom, #95a5a6, #7f8c8d); border-right: 1px solid rgba(255,255,255,0.2); }
+        .mood-2 { background: linear-gradient(to bottom, #e74c3c, #c0392b); }
 
         .score-input { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 10px 0; }
         input { padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; width: 100%; box-sizing: border-box; outline: none; }
@@ -101,11 +100,11 @@
     </div>
 
     <div id="moodContainer" class="mood-container" style="display:none;">
-        <div class="mood-title">📊 Tip kanceláře</div>
+        <div class="mood-title">📊 Jak to vidí sázkaři</div>
         <div class="mood-bar">
-            <div id="moodDomaci" class="mood-part mood-1">VÝHRA</div>
+            <div id="moodDomaci" class="mood-part mood-1"></div>
             <div id="moodRemiza" class="mood-part mood-0">REMÍZA</div>
-            <div id="moodHoste" class="mood-part mood-2">PROHRA</div>
+            <div id="moodHoste" class="mood-part mood-2"></div>
         </div>
     </div>
 
@@ -137,34 +136,35 @@
             const rozdil = new Date(aktualniDeadline).getTime() - new Date().getTime();
             if (rozdil <= 0) { document.getElementById('timerDisplay').innerText = "UZAVŘENO"; document.getElementById('btnOdeslat').disabled = true; return; }
             const h = Math.floor(rozdil / 3600000); const m = Math.floor((rozdil % 3600000) / 60000); const s = Math.floor((rozdil % 60000) / 1000);
-            document.getElementById('timerDisplay').innerText = `Do výkopu: ${h}h ${m}m ${s}s`;
+            document.getElementById('timerDisplay').innerText = `Do výkopu: ${h}h ${m}s`;
         }, 1000);
 
         db.ref('sazkyData').on('value', (snapshot) => {
             const data = snapshot.val();
-            const nemaZapas = !data || !data.domaci || data.domaci.trim() === "";
-            
-            if (nemaZapas) {
+            if (!data || !data.domaci) {
                 document.getElementById('zapasAktivni').style.display = 'none'; document.getElementById('zapasZadny').style.display = 'block';
                 document.getElementById('tabulkaSazek').style.display = 'none'; document.getElementById('moodContainer').style.display = 'none';
                 document.getElementById('bankDisplay').innerText = `💰 Jackpot: ${data?.prevedenyBank || 0} Kč`; return;
             }
 
             document.getElementById('zapasAktivni').style.display = 'block'; document.getElementById('zapasZadny').style.display = 'none';
-            document.getElementById('tabulkaSazek').style.display = 'table'; document.getElementById('txtDomaci').innerText = data.domaci;
-            document.getElementById('txtHoste').innerText = data.hoste; aktualniDeadline = data.deadline;
+            document.getElementById('tabulkaSazek').style.display = 'table';
+            const nDomaci = data.domaci; const nHoste = data.hoste;
+            document.getElementById('txtDomaci').innerText = nDomaci;
+            document.getElementById('txtHoste').innerText = nHoste;
+            aktualniDeadline = data.deadline;
             
             const seznam = data.seznamSazek ? Object.values(data.seznamSazek) : [];
             const bank = (data.prevedenyBank || 0) + (seznam.length * 20);
             document.getElementById('bankDisplay').innerText = `💰 Celkový bank: ${bank} Kč`;
 
-            // VÝPOČET BAROMETRU S TEXTY
             if (seznam.length > 0) {
                 let d = 0, r = 0, h = 0;
                 seznam.forEach(s => {
                     const res = s.skore.split(':');
-                    const dG = parseInt(res[0]); const hG = parseInt(res[1]);
-                    if (dG > hG) d++; else if (dG < hG) h++; else r++;
+                    if (parseInt(res[0]) > parseInt(res[1])) d++; 
+                    else if (parseInt(res[0]) < parseInt(res[1])) h++; 
+                    else r++;
                 });
                 document.getElementById('moodContainer').style.display = 'block';
                 const pD = Math.round((d/seznam.length)*100);
@@ -175,9 +175,9 @@
                 const bR = document.getElementById('moodRemiza');
                 const bH = document.getElementById('moodHoste');
 
-                bD.style.width = pD + "%"; bD.innerText = pD > 15 ? `VÝHRA ${pD}%` : (pD > 5 ? pD+"%" : "");
-                bR.style.width = pR + "%"; bR.innerText = pR > 15 ? `REMÍZA ${pR}%` : (pR > 5 ? pR+"%" : "");
-                bH.style.width = pH + "%"; bH.innerText = pH > 15 ? `PROHRA ${pH}%` : (pH > 5 ? pH+"%" : "");
+                bD.style.width = pD + "%"; bD.innerText = pD > 20 ? `${nDomaci} ${pD}%` : (pD > 5 ? pD+"%" : "");
+                bR.style.width = pR + "%"; bR.innerText = pR > 20 ? `REMÍZA ${pR}%` : (pR > 5 ? pR+"%" : "");
+                bH.style.width = pH + "%"; bH.innerText = pH > 20 ? `${nHoste} ${pH}%` : (pH > 5 ? pH+"%" : "");
             }
 
             const deadlineProsel = data.deadline && new Date() > new Date(data.deadline);
