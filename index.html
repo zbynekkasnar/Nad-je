@@ -14,6 +14,8 @@
         .theme-toggle { position: fixed; top: 15px; right: 15px; background: var(--box); border: 1px solid var(--text); border-radius: 50%; width: 40px; height: 40px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2em; z-index: 2000; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
 
         .main-wrapper { width: 100%; max-width: 500px; box-shadow: 0 4px 25px rgba(0,0,0,0.2); border-radius: 15px; overflow: hidden; background: var(--box); margin-bottom: 20px; }
+        .logo-container { background: white; width: 100%; text-align: center; }
+        .main-logo { width: 100%; height: auto; display: block; }
         .content-box { padding: 20px; }
         .bank-info { background: var(--bank-bg); color: var(--bank-text); text-align: center; padding: 15px; border-radius: 10px; margin-bottom: 10px; font-size: 1.4em; font-weight: bold; width: 100%; max-width: 470px; border: 1px solid var(--bank-text); }
         .msg-dne { background: #fff3cd; color: #856404; padding: 12px; border-radius: 8px; margin-bottom: 15px; font-size: 0.95em; text-align: center; font-weight: bold; border-left: 5px solid #ffc107; display: none; width: 100%; max-width: 450px; }
@@ -22,23 +24,27 @@
         .countdown { background: #e74c3c; color: white; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-weight: bold; text-align: center; }
         .zapas-nazev { text-align: center; font-size: 1.6em; font-weight: bold; margin-bottom: 15px; }
 
+        /* HEZKÝ BAROMETR */
         .mood-container { width: 100%; max-width: 500px; margin-bottom: 25px; text-align: center; }
-        .mood-bar { display: flex; height: 35px; border-radius: 18px; overflow: hidden; background: #eee; border: 1px solid #ddd; }
-        .mood-part { display: flex; align-items: center; justify-content: center; color: white; font-size: 0.75em; font-weight: bold; transition: width 0.8s; white-space: nowrap; overflow: hidden; }
-        .mood-1 { background: #3498db; } .mood-0 { background: #95a5a6; } .mood-2 { background: #e74c3c; }
+        .mood-title { font-size: 0.8em; font-weight: bold; color: #7f8c8d; text-transform: uppercase; margin-bottom: 10px; letter-spacing: 1px; }
+        .mood-bar { display: flex; height: 35px; border-radius: 18px; overflow: hidden; box-shadow: inset 0 2px 5px rgba(0,0,0,0.2); background: #eee; border: 1px solid #ddd; }
+        .mood-part { display: flex; align-items: center; justify-content: center; color: white; font-size: 0.75em; font-weight: bold; transition: width 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275); white-space: nowrap; overflow: hidden; padding: 0 5px; }
+        .mood-1 { background: linear-gradient(to bottom, #3498db, #2980b9); border-right: 1px solid rgba(255,255,255,0.2); }
+        .mood-0 { background: linear-gradient(to bottom, #95a5a6, #7f8c8d); border-right: 1px solid rgba(255,255,255,0.2); }
+        .mood-2 { background: linear-gradient(to bottom, #e74c3c, #c0392b); }
 
-        input { padding: 12px; border: 2px solid #ddd; border-radius: 8px; width: 100%; box-sizing: border-box; background: var(--input-bg); color: var(--text); margin-bottom: 10px; border-color: var(--table-border); font-size: 16px; }
-        button#btnOdeslat { background: #28a745; color: white; border: none; padding: 15px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1.1em; }
-        button:disabled { background: #ccc; cursor: not-allowed; }
+        input { padding: 12px; border: 2px solid #ddd; border-radius: 8px; width: 100%; box-sizing: border-box; background: var(--input-bg); color: var(--text); margin-bottom: 10px; border-color: var(--table-border); font-size: 16px; outline: none; }
+        button#btnOdeslat { background: #28a745; color: white; border: none; padding: 15px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1.1em; transition: 0.2s; }
+        button#btnOdeslat:active { transform: scale(0.98); }
+        button:disabled { background: #ccc !important; cursor: not-allowed; }
         
-        table { width: 100%; max-width: 500px; border-collapse: collapse; background: var(--box); border-radius: 10px; overflow: hidden; margin-top: 20px; }
+        table { width: 100%; max-width: 500px; border-collapse: collapse; background: var(--box); border-radius: 10px; overflow: hidden; margin-top: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
         th, td { padding: 12px 10px; text-align: center; border-bottom: 1px solid var(--table-border); font-size: 0.85em; }
         th { background: #34495e; color: white; text-transform: uppercase; }
         .win { background: #27ae60 !important; color: white !important; font-weight: bold; }
-        
+
         .footer { margin-top: 30px; display: flex; gap: 20px; align-items: center; }
         .footer a { text-decoration: none; color: var(--text); font-weight: bold; opacity: 0.7; font-size: 0.9em; }
-        .footer a:hover { opacity: 1; }
     </style>
 </head>
 <body data-theme="light">
@@ -48,15 +54,15 @@
     <div class="bank-info" id="bankDisplay">💰 Načítání...</div>
 
     <div class="main-wrapper">
-        <div class="logo-container"><img src="IMG_8423.jpeg" style="width:100%; display: block;"></div>
+        <div class="logo-container"><img src="IMG_8423.jpeg" class="main-logo" alt="NADĚJE"></div>
         <div class="content-box">
             <div id="zapasAktivni" style="display:none;">
                 <div id="timerDisplay" class="countdown"></div>
                 <div class="zapas-nazev"><span id="txtDomaci"></span> VS <span id="txtHoste"></span></div>
                 <input type="text" id="jmeno" placeholder="Tvé jméno">
                 <div style="display:flex; gap:10px;">
-                    <input type="number" id="tip_domaci" placeholder="Skóre domácí" min="0" oninput="this.value = Math.abs(this.value)">
-                    <input type="number" id="tip_hoste" placeholder="Skóre hosté" min="0" oninput="this.value = Math.abs(this.value)">
+                    <input type="number" id="tip_domaci" placeholder="Skóre" min="0" oninput="this.value = Math.abs(this.value)">
+                    <input type="number" id="tip_hoste" placeholder="Skóre" min="0" oninput="this.value = Math.abs(this.value)">
                 </div>
                 <input type="text" id="tip_strelec" placeholder="Tip na střelce">
                 <button id="btnOdeslat" onclick="ulozitSazku()">ODESLAT SÁZKU (20 Kč)</button>
@@ -66,7 +72,12 @@
     </div>
 
     <div id="moodContainer" class="mood-container" style="display:none;">
-        <div class="mood-bar"><div id="moodDomaci" class="mood-part mood-1"></div><div id="moodRemiza" class="mood-part mood-0"></div><div id="moodHoste" class="mood-part mood-2"></div></div>
+        <div class="mood-title">📊 Jak to vidí sázkaři</div>
+        <div class="mood-bar">
+            <div id="moodDomaci" class="mood-part mood-1"></div>
+            <div id="moodRemiza" class="mood-part mood-0"></div>
+            <div id="moodHoste" class="mood-part mood-2"></div>
+        </div>
     </div>
 
     <table id="tabulkaSazek">
@@ -125,10 +136,15 @@
                 seznam.forEach(s => { const res=s.skore.split(':'); if(parseInt(res[0])>parseInt(res[1])) d++; else if(parseInt(res[0])<parseInt(res[1])) h++; else r++; });
                 document.getElementById('moodContainer').style.display = 'block';
                 const pD=Math.round((d/seznam.length)*100), pR=Math.round((r/seznam.length)*100), pH=100-pD-pR;
-                document.getElementById('moodDomaci').style.width=pD+"%"; document.getElementById('moodDomaci').innerText=pD>18?data.domaci+" "+pD+"%":"";
-                document.getElementById('moodRemiza').style.width=pR+"%"; document.getElementById('moodRemiza').innerText=pR>18?"REMÍZA "+pR+"%":"";
-                document.getElementById('moodHoste').style.width=pH+"%"; document.getElementById('moodHoste').innerText=pH>18?data.hoste+" "+pH+"%":"";
-            }
+                
+                const bD = document.getElementById('moodDomaci');
+                const bR = document.getElementById('moodRemiza');
+                const bH = document.getElementById('moodHoste');
+
+                bD.style.width=pD+"%"; bD.innerText=pD>20?data.domaci+" "+pD+"%":"";
+                bR.style.width=pR+"%"; bR.innerText=pR>20?"REMÍZA "+pR+"%":"";
+                bH.style.width=pH+"%"; bH.innerText=pH>20?data.hoste+" "+pH+"%":"";
+            } else { document.getElementById('moodContainer').style.display = 'none'; }
 
             const vStrelciNorm = normalize(data.posledniStrelec || "").split(',').map(s => s.trim());
             const tbody = document.getElementById('tabulkaBody'); tbody.innerHTML = "";
@@ -154,9 +170,9 @@
             const dG = document.getElementById('tip_domaci').value;
             const hG = document.getElementById('tip_hoste').value;
             const s = document.getElementById('tip_strelec').value.trim();
-            if(!j || dG==="" || hG==="" || !s) return alert("⚠️ Vyplň vše (jméno, skóre, střelce)!");
+            if(!j || dG==="" || hG==="" || !s) return alert("⚠️ Vyplň prosím vše (jméno, skóre, střelce)!");
             db.ref('sazkyData/seznamSazek').push({ jmeno:j, skore:dG+":"+hG, strelec:s, stav:"⏳ Vsadil" }).then(() => {
-                alert("✅ Odesláno!");
+                alert("✅ Sázka odeslána!");
                 document.getElementById('tip_strelec').value = "";
             });
         }
