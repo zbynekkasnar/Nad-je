@@ -16,13 +16,20 @@
         .countdown { background: #e74c3c; color: white; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-weight: bold; font-family: monospace; font-size: 1.2em; text-align: center; }
         .zapas-nazev { text-align: center; font-size: 1.6em; font-weight: bold; margin-bottom: 15px; color: #2c3e50; }
         .no-match { text-align: center; padding: 20px; color: #7f8c8d; font-style: italic; font-size: 1.2em; line-height: 1.5; }
-        .mood-container { width: 100%; max-width: 500px; margin-bottom: 20px; text-align: center; }
-        .mood-bar { display: flex; height: 25px; border-radius: 12px; overflow: hidden; background: #eee; }
-        .mood-part { display: flex; align-items: center; justify-content: center; color: white; font-size: 0.75em; font-weight: bold; transition: width 0.6s ease; }
-        .mood-1 { background: #3498db; } .mood-0 { background: #95a5a6; } .mood-2 { background: #e74c3c; }
+        
+        /* BAROMETR NÁLADY - UPRAVENÝ */
+        .mood-container { width: 100%; max-width: 500px; margin-bottom: 25px; text-align: center; }
+        .mood-title { font-size: 0.8em; font-weight: bold; color: #7f8c8d; text-transform: uppercase; margin-bottom: 10px; letter-spacing: 1px; }
+        .mood-bar { display: flex; height: 30px; border-radius: 15px; overflow: hidden; box-shadow: inset 0 2px 5px rgba(0,0,0,0.2); background: #eee; border: 1px solid #ddd; }
+        .mood-part { display: flex; align-items: center; justify-content: center; color: white; font-size: 0.7em; font-weight: bold; transition: width 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275); white-space: nowrap; overflow: hidden; }
+        .mood-1 { background: linear-gradient(to bottom, #3498db, #2980b9); border-right: 1px solid rgba(255,255,255,0.2); } /* VÝHRA */
+        .mood-0 { background: linear-gradient(to bottom, #95a5a6, #7f8c8d); border-right: 1px solid rgba(255,255,255,0.2); } /* REMÍZA */
+        .mood-2 { background: linear-gradient(to bottom, #e74c3c, #c0392b); } /* PROHRA */
+
         .score-input { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 10px 0; }
         input { padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; width: 100%; box-sizing: border-box; outline: none; }
         input[type="number"] { width: 70px; text-align: center; font-weight: bold; }
+        
         .switch-container { display: flex; flex-direction: column; align-items: center; gap: 8px; margin: 15px 0; background: #f8f9fa; padding: 12px; border-radius: 12px; border: 1px solid #eee; }
         .switch { position: relative; display: inline-block; width: 60px; height: 30px; }
         .switch input { opacity: 0; width: 0; height: 0; }
@@ -32,11 +39,15 @@
         input:checked + .slider:before { transform: translateX(30px); }
         .status-text { font-size: 0.8em; font-weight: bold; margin-top: 5px; }
         .status-public { color: #3498db; } .status-private { color: #e67e22; }
+
         button#btnOdeslat { background: #28a745; color: white; border: none; padding: 15px; cursor: pointer; width: 100%; border-radius: 8px; font-weight: bold; font-size: 1.1em; margin-top: 10px; }
+        button:disabled { background: #ccc !important; }
+        
         table { width: 100%; max-width: 500px; border-collapse: collapse; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
         th, td { padding: 12px 10px; text-align: center; border-bottom: 1px solid #eee; font-size: 0.85em; }
         th { background: #34495e; color: white; text-transform: uppercase; }
         .win { background: #d4edda !important; font-weight: bold; }
+        
         .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.85); align-items: center; justify-content: center; }
         .modal-content { background-color: white; padding: 25px; border-radius: 20px; text-align: center; max-width: 320px; width: 85%; }
         .modal-content img { width: 100%; height: auto; border-radius: 10px; margin: 15px 0; }
@@ -46,31 +57,67 @@
     </style>
 </head>
 <body>
-    <div id="qrModal" class="modal"><div class="modal-content"><h2>Sázka přijata! ✅</h2><p>Zaplať 20 Kč:</p><img src="platba.png"><button class="close-btn" onclick="zavritQR()">ZAVŘÍT</button></div></div>
+
+    <div id="qrModal" class="modal">
+        <div class="modal-content">
+            <h2>Sázka přijata! ✅</h2>
+            <p>Zaplať 20 Kč:</p>
+            <img src="platba.png">
+            <button class="close-btn" onclick="zavritQR()">ZAVŘÍT</button>
+        </div>
+    </div>
+
     <div class="bank-info" id="bankDisplay">💰 Načítání...</div>
+
     <div class="main-wrapper">
-        <div class="logo-container"><img src="IMG_8423.jpeg" class="main-logo"></div>
+        <div class="logo-container">
+            <img src="IMG_8423.jpeg" class="main-logo" alt="NADĚJE">
+        </div>
         <div class="content-box">
             <div id="zapasAktivni" style="display:none;">
                 <div id="timerDisplay" class="countdown">Načítám...</div>
                 <div class="zapas-nazev"><span id="txtDomaci">...</span> VS <span id="txtHoste">...</span></div>
                 <input type="text" id="jmeno" placeholder="Tvé jméno">
-                <div class="score-input"><input type="number" id="tip_domaci" value="0"><span>:</span><input type="number" id="tip_hoste" value="0"></div>
+                <div class="score-input">
+                    <input type="number" id="tip_domaci" value="0">
+                    <span>:</span>
+                    <input type="number" id="tip_hoste" value="0">
+                </div>
                 <input type="text" id="tip_strelec" placeholder="Tip na střelce">
                 <div class="switch-container">
-                    <label class="switch"><input type="checkbox" id="verejna_sazka" checked onchange="updateSwitchText()"><span class="slider"></span></label>
+                    <span style="font-size:0.85em; font-weight:bold;">REŽIM SÁZKY:</span>
+                    <label class="switch">
+                        <input type="checkbox" id="verejna_sazka" checked onchange="updateSwitchText()">
+                        <span class="slider"></span>
+                    </label>
                     <span id="switchStatus" class="status-text status-public">🔓 VEŘEJNÝ TIP</span>
                 </div>
                 <button id="btnOdeslat" onclick="ulozitSazku()">ODESLAT SÁZKU (20 Kč)</button>
             </div>
-            <div id="zapasZadny" class="no-match" style="display:none;">📭 Aktuálně není vypsán žádný zápas.</div>
+            <div id="zapasZadny" class="no-match" style="display:none;">
+                📭 Aktuálně není vypsán žádný zápas.
+            </div>
         </div>
     </div>
+
     <div id="moodContainer" class="mood-container" style="display:none;">
-        <div class="mood-bar"><div id="moodDomaci" class="mood-part mood-1"></div><div id="moodRemiza" class="mood-part mood-0"></div><div id="moodHoste" class="mood-part mood-2"></div></div>
+        <div class="mood-title">📊 Tip kanceláře</div>
+        <div class="mood-bar">
+            <div id="moodDomaci" class="mood-part mood-1">VÝHRA</div>
+            <div id="moodRemiza" class="mood-part mood-0">REMÍZA</div>
+            <div id="moodHoste" class="mood-part mood-2">PROHRA</div>
+        </div>
     </div>
-    <table id="tabulkaSazek" style="display:none;"><thead><tr><th>Sázkař</th><th>Tip</th><th>Střelec</th><th>Stav</th></tr></thead><tbody id="tabulkaBody"></tbody></table>
-    <div class="footer-links"><a href="statistiky.html">📊 Statistiky</a><a href="admin.html" style="opacity: 0.1;">⚙️</a></div>
+
+    <table id="tabulkaSazek" style="display:none;">
+        <thead><tr><th>Sázkař</th><th>Tip</th><th>Střelec</th><th>Stav</th></tr></thead>
+        <tbody id="tabulkaBody"></tbody>
+    </table>
+
+    <div class="footer-links">
+        <a href="statistiky.html">📊 Statistiky</a>
+        <a href="admin.html" style="opacity: 0.1;">⚙️</a>
+    </div>
 
     <script>
         const firebaseConfig = { apiKey: "AIzaSyC-NCdmsgA42FxnopKm92m1y5gUGw_z_uE", authDomain: "nadeje-208bd.firebaseapp.com", databaseURL: "https://nadeje-208bd-default-rtdb.europe-west1.firebasedatabase.app", projectId: "nadeje-208bd", storageBucket: "nadeje-208bd.firebasestorage.app", messagingSenderId: "688478977789", appId: "1:688478977789:web:512d1520cf96c9e59cc894" };
@@ -90,36 +137,51 @@
             const rozdil = new Date(aktualniDeadline).getTime() - new Date().getTime();
             if (rozdil <= 0) { document.getElementById('timerDisplay').innerText = "UZAVŘENO"; document.getElementById('btnOdeslat').disabled = true; return; }
             const h = Math.floor(rozdil / 3600000); const m = Math.floor((rozdil % 3600000) / 60000); const s = Math.floor((rozdil % 60000) / 1000);
-            document.getElementById('timerDisplay').innerText = `Do začátku zápasu: ${h}h ${m}m ${s}s`;
+            document.getElementById('timerDisplay').innerText = `Do výkopu: ${h}h ${m}m ${s}s`;
         }, 1000);
 
         db.ref('sazkyData').on('value', (snapshot) => {
             const data = snapshot.val();
             const nemaZapas = !data || !data.domaci || data.domaci.trim() === "";
+            
             if (nemaZapas) {
                 document.getElementById('zapasAktivni').style.display = 'none'; document.getElementById('zapasZadny').style.display = 'block';
                 document.getElementById('tabulkaSazek').style.display = 'none'; document.getElementById('moodContainer').style.display = 'none';
                 document.getElementById('bankDisplay').innerText = `💰 Jackpot: ${data?.prevedenyBank || 0} Kč`; return;
             }
+
             document.getElementById('zapasAktivni').style.display = 'block'; document.getElementById('zapasZadny').style.display = 'none';
             document.getElementById('tabulkaSazek').style.display = 'table'; document.getElementById('txtDomaci').innerText = data.domaci;
             document.getElementById('txtHoste').innerText = data.hoste; aktualniDeadline = data.deadline;
+            
             const seznam = data.seznamSazek ? Object.values(data.seznamSazek) : [];
             const bank = (data.prevedenyBank || 0) + (seznam.length * 20);
             document.getElementById('bankDisplay').innerText = `💰 Celkový bank: ${bank} Kč`;
 
+            // VÝPOČET BAROMETRU S TEXTY
             if (seznam.length > 0) {
                 let d = 0, r = 0, h = 0;
-                seznam.forEach(s => { const res = s.skore.split(':'); if (parseInt(res[0]) > parseInt(res[1])) d++; else if (parseInt(res[0]) < parseInt(res[1])) h++; else r++; });
+                seznam.forEach(s => {
+                    const res = s.skore.split(':');
+                    const dG = parseInt(res[0]); const hG = parseInt(res[1]);
+                    if (dG > hG) d++; else if (dG < hG) h++; else r++;
+                });
                 document.getElementById('moodContainer').style.display = 'block';
-                document.getElementById('moodDomaci').style.width = Math.round((d/seznam.length)*100) + "%";
-                document.getElementById('moodRemiza').style.width = Math.round((r/seznam.length)*100) + "%";
-                document.getElementById('moodHoste').style.width = Math.round((h/seznam.length)*100) + "%";
+                const pD = Math.round((d/seznam.length)*100);
+                const pR = Math.round((r/seznam.length)*100);
+                const pH = 100 - pD - pR;
+
+                const bD = document.getElementById('moodDomaci');
+                const bR = document.getElementById('moodRemiza');
+                const bH = document.getElementById('moodHoste');
+
+                bD.style.width = pD + "%"; bD.innerText = pD > 15 ? `VÝHRA ${pD}%` : (pD > 5 ? pD+"%" : "");
+                bR.style.width = pR + "%"; bR.innerText = pR > 15 ? `REMÍZA ${pR}%` : (pR > 5 ? pR+"%" : "");
+                bH.style.width = pH + "%"; bH.innerText = pH > 15 ? `PROHRA ${pH}%` : (pH > 5 ? pH+"%" : "");
             }
 
             const deadlineProsel = data.deadline && new Date() > new Date(data.deadline);
             const vStrelciNorm = normalize(data.posledniStrelec || "").split(',').map(s => s.trim());
-
             const tbody = document.getElementById('tabulkaBody'); tbody.innerHTML = "";
             if (data.seznamSazek) {
                 Object.values(data.seznamSazek).reverse().forEach(s => {
