@@ -28,10 +28,12 @@
     <div class="admin-box">
         <h1>🛠 Administrace</h1>
         <h3>1. Nový zápas</h3>
-        <label>Deadline:</label><input type="datetime-local" id="set_deadline">
+        <label>Deadline (začátek):</label><input type="datetime-local" id="set_deadline">
         <label>Týmy:</label>
-        <div class="score-row"><input type="text" id="set_domaci" placeholder="Domácí"><input type="text" id="set_hoste" placeholder="Hosté"></div>
-        <label>Foto URL:</label><input type="text" id="set_url" placeholder="https://...">
+        <div class="score-row">
+            <input type="text" id="set_domaci" placeholder="Domácí">
+            <input type="text" id="set_hoste" placeholder="Hosté">
+        </div>
         <button class="btn btn-blue" onclick="nastavitZapas()">🚀 NASTAVIT & PROMAZAT SÁZKY</button>
 
         <h3>2. Vyhodnocení</h3>
@@ -43,7 +45,7 @@
         <h3>3. Údržba</h3>
         <button class="btn btn-blue" onclick="jenSmazatSazky()">🧹 JEN SMAZAT SÁZKY</button>
         <button class="btn btn-grey" onclick="vynulovatJackpot()">💰 VYNULOVAT JACKPOT</button>
-        <button class="btn btn-dark" onclick="smazatStatistiky()">❌ SMAZAT STATISTIKY</button>
+        <button class="btn btn-dark" onclick="smazatStatistiky()">❌ SMAZAT HISTORII</button>
         <a href="index.html" style="display:block; text-align:center; margin-top:20px; color:#7f8c8d; text-decoration:none;">Zpět na sázky</a>
     </div>
 
@@ -64,7 +66,12 @@
         function nastavitZapas() {
             const d = document.getElementById('set_deadline').value;
             if(!d) return alert("Nastav deadline!");
-            db.ref('sazkyData').update({ domaci: document.getElementById('set_domaci').value, hoste: document.getElementById('set_hoste').value, foto: document.getElementById('set_url').value, deadline: d, seznamSazek: null });
+            db.ref('sazkyData').update({ 
+                domaci: document.getElementById('set_domaci').value, 
+                hoste: document.getElementById('set_hoste').value, 
+                deadline: d, 
+                seznamSazek: null 
+            });
             alert("Zápas nastaven!");
         }
 
