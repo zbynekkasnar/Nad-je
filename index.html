@@ -8,98 +8,62 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <style>
-        body {
-            background: #0f172a; /* To tmavé pozadí z původní verze */
-            color: white;
-            font-family: 'Segoe UI', sans-serif;
-            text-align: center;
-            margin: 0;
-            padding: 20px;
+        :root { --neon: #00f2ff; --dark: #0f172a; --glass: rgba(255, 255, 255, 0.05); }
+        body { background: var(--dark); color: white; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 15px; text-align: center; }
+        
+        .header-logo { max-width: 250px; filter: drop-shadow(0 0 10px var(--neon)); margin-bottom: 20px; }
+        
+        .bank-box { 
+            background: linear-gradient(180deg, var(--glass), rgba(0,242,255,0.1));
+            border: 1px solid var(--neon); border-radius: 20px; padding: 20px;
+            display: inline-block; min-width: 280px; margin-bottom: 30px;
+            box-shadow: 0 0 20px rgba(0, 242, 255, 0.2);
         }
+        .bank-box span { font-size: 2.5em; font-weight: bold; color: white; text-shadow: 0 0 10px var(--neon); }
 
-        /* VAŠE LOGO Z OBRÁZKU IMG_8423 */
-        .header-logo {
-            max-width: 280px;
-            height: auto;
-            margin-bottom: 20px;
-            filter: drop-shadow(0 0 10px rgba(0, 242, 255, 0.5));
+        .match-card {
+            background: var(--glass); border-radius: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 15px; padding: 15px; cursor: pointer; transition: 0.3s;
         }
+        .match-card:hover { background: rgba(255,255,255,0.1); }
 
-        /* PŮVODNÍ DESIGN BANKU */
-        .bank-box {
-            background: linear-gradient(180deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
-            border: 1px solid rgba(0, 242, 255, 0.4);
-            border-radius: 15px;
-            padding: 20px;
-            display: inline-block;
-            min-width: 250px;
-            margin-bottom: 30px;
-        }
-        .bank-box span { font-size: 2.2em; font-weight: bold; color: #00f2ff; }
+        .flag-img { width: 70px; height: auto; border-radius: 5px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+        .vs-circle { background: var(--neon); color: black; border-radius: 50%; width: 35px; height: 35px; line-height: 35px; font-weight: bold; margin: 0 15px; }
 
-        /* TABULKA ZÁPASŮ PODLE PŮVODNÍHO NÁVRHU */
-        .match-container {
-            max-width: 600px;
-            margin: 0 auto;
+        .details { display: none; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); margin-top: 15px; text-align: left; }
+        input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 10px; border: 1px solid #333; background: #000; color: white; box-sizing: border-box; }
+        
+        #cart { 
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            width: 90%; max-width: 480px; background: #1e293b; border: 2px solid var(--neon);
+            border-radius: 25px; padding: 20px; display: none; box-shadow: 0 -10px 30px rgba(0,0,0,0.8); z-index: 1000;
         }
-        .match-item {
-            background: rgba(255, 255, 255, 0.05);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 20px;
-            margin-bottom: 10px;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: 0.3s;
-        }
-        .match-item:hover { background: rgba(255, 255, 255, 0.1); }
-
-        .flags-row {
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-        .flag-box { width: 80px; }
-        .flag-box img { width: 100%; border-radius: 5px; box-shadow: 0 4px 8px rgba(0,0,0,0.5); }
-        .vs-circle { background: #00f2ff; color: black; border-radius: 50%; width: 30px; height: 30px; line-height: 30px; font-weight: bold; font-size: 0.8em; }
-
-        /* TIKET / KOŠÍK */
-        .cart-bottom {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 90%;
-            max-width: 450px;
-            background: #1e293b;
-            border: 1px solid #00f2ff;
-            border-radius: 15px;
-            padding: 15px;
-            display: none;
-            box-shadow: 0 -10px 20px rgba(0,0,0,0.5);
-        }
-        .btn-confirm { background: #00f2ff; color: black; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; }
-
-        .bet-detail { display: none; padding: 15px; border-top: 1px solid rgba(255,255,255,0.1); margin-top: 10px; }
-        input { background: #000; border: 1px solid #333; color: white; padding: 10px; border-radius: 5px; width: 80%; margin: 5px 0; text-align: center; }
+        .btn-confirm { background: var(--neon); color: black; border: none; padding: 15px 30px; border-radius: 12px; font-weight: bold; cursor: pointer; }
+        
+        .bet-row { background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 8px; margin-bottom: 5px; display: flex; justify-content: space-between; font-size: 0.9em; }
     </style>
 </head>
 <body>
 
-    <img src="IMG_8423.jpeg" alt="Kancelář Naděje" class="header-logo">
+    <img src="IMG_8423.jpeg" alt="KANCELÁŘ NADĚJE" class="header-logo">
 
     <div class="bank-box">
-        <div style="font-size: 0.8em; opacity: 0.6; margin-bottom: 5px;">HLAVNÍ BANK</div>
+        <small style="display:block; opacity:0.6; margin-bottom:5px; letter-spacing:1px;">CELKOVÝ BANK</small>
         <span id="mainBank">0</span> Kč
     </div>
 
-    <div class="match-container" id="matchList">
-        </div>
+    <div id="matchList"></div>
 
-    <div id="cart" class="cart-bottom">
+    <div id="cart">
         <div style="display:flex; justify-content:space-between; align-items:center;">
-            <div id="cartStats">0 zápasy | 0 Kč</div>
-            <button class="btn-confirm" onclick="poslatTiket()">ODESLAT TIKET</button>
+            <div id="cartInfo" style="text-align:left;">
+                <b id="cartCount">0 zápasů</b><br><span id="cartTotal" style="color:var(--neon); font-size:1.3em;">0 Kč</span>
+            </div>
+            <button class="btn-confirm" onclick="odeslatTiket()">ODESLAT TIKET</button>
+        </div>
+        <div id="qrArea" style="display:none; margin-top:15px; background:white; color:black; padding:15px; border-radius:15px;">
+            <img id="qrImg" src="" style="width:180px;"><br>
+            <small id="qrDesc" style="font-weight:bold;"></small>
         </div>
     </div>
 
@@ -112,32 +76,35 @@
         db.ref('sazkyData').on('value', snap => {
             const data = snap.val() || {};
             document.getElementById('mainBank').innerText = data.prevedenyBank || 0;
-            const list = document.getElementById('matchList');
-            list.innerHTML = "";
+            const list = document.getElementById('matchList'); list.innerHTML = "";
             
             if(data.zapasy) {
                 Object.entries(data.zapasy).forEach(([id, m]) => {
                     const isClosed = Date.now() > new Date(m.deadline).getTime();
-                    const item = document.createElement('div');
-                    item.className = "match-item";
-                    item.onclick = () => { if(!isClosed) toggle(id); };
-                    item.innerHTML = `
-                        <div class="flags-row">
-                            <div class="flag-box"><img src="https://flagcdn.com/w160/${m.kodD}.png"><br><small>${m.domaci}</small></div>
+                    const mBank = m.sazky ? Object.keys(m.sazky).length * 20 : 0;
+                    
+                    const card = document.createElement('div');
+                    card.className = "match-card";
+                    card.onclick = () => { if(!isClosed) toggle(id); };
+                    card.innerHTML = `
+                        <div style="color:var(--neon); font-size:0.7em; margin-bottom:10px;">ZÁPASOVÝ BANK: ${mBank} Kč</div>
+                        <div style="display:flex; justify-content:center; align-items:center;">
+                            <div><img class="flag-img" src="https://flagcdn.com/w160/${m.kodD}.png"><br><small>${m.domaci}</small></div>
                             <div class="vs-circle">VS</div>
-                            <div class="flag-box"><img src="https://flagcdn.com/w160/${m.kodH}.png"><br><small>${m.hoste}</small></div>
+                            <div><img class="flag-img" src="https://flagcdn.com/w160/${m.kodH}.png"><br><small>${m.hoste}</small></div>
                         </div>
-                        <div id="det-${id}" class="bet-detail" onclick="event.stopPropagation()">
-                            <input type="text" id="s-${id}" placeholder="Skóre">
-                            <input type="text" id="p-${id}" placeholder="Střelec">
-                            <button onclick="pridat('${id}')" style="background:#00f2ff; border:none; padding:8px 15px; border-radius:5px; margin-top:10px; cursor:pointer; font-weight:bold;">PŘIDAT</button>
-                            <div id="bets-${id}" style="font-size:0.8em; margin-top:15px; text-align:left; border-top:1px solid #333; padding-top:10px;"></div>
-                        </div>
-                    `;
-                    list.appendChild(item);
+                        <div id="det-${id}" class="details" onclick="event.stopPropagation()">
+                            <input type="text" id="s-${id}" placeholder="Tip na skóre">
+                            <input type="text" id="p-${id}" placeholder="Tip na střelce">
+                            <label style="font-size:0.8em;"><input type="checkbox" id="h-${id}"> Skrýt můj tip</label>
+                            <button onclick="pridat('${id}')" style="width:100%; background:var(--neon); border:none; padding:12px; border-radius:8px; margin-top:10px; font-weight:bold; cursor:pointer;">PŘIDAT NA TIKET</button>
+                            <div id="bets-${id}" style="margin-top:20px;"></div>
+                        </div>`;
+                    list.appendChild(card);
                     if(m.sazky) Object.values(m.sazky).forEach(s => {
-                        const row = `<div>${s.jmeno}: ${s.skryt && !isClosed ? '??:??' : s.skore}</div>`;
-                        document.getElementById(`bets-${id}`).innerHTML += row;
+                        const row = document.createElement('div'); row.className = 'bet-row';
+                        row.innerHTML = `<span>${s.jmeno}</span> <span>${(s.skryt && !isClosed) ? '??:??' : s.skore}</span>`;
+                        document.getElementById(`bets-${id}`).appendChild(row);
                     });
                 });
             }
@@ -151,17 +118,21 @@
         function pridat(id) {
             const s = document.getElementById(`s-${id}`).value;
             if(!s) return alert("Zadej skóre!");
-            kosik[id] = { skore: s, strelec: document.getElementById(`p-${id}`).value };
+            kosik[id] = { skore: s, strelec: document.getElementById(`p-${id}`).value, skryt: document.getElementById(`h-${id}`).checked };
             document.getElementById('cart').style.display = 'block';
-            document.getElementById('cartStats').innerText = `${Object.keys(kosik).length} zápasy | ${Object.keys(kosik).length * 20} Kč`;
+            document.getElementById('cartCount').innerText = `${Object.keys(kosik).length} zápasů`;
+            document.getElementById('cartTotal').innerText = `${Object.keys(kosik).length * 20} Kč`;
         }
 
-        function poslatTiket() {
+        function odeslatTiket() {
             const jm = prompt("Tvé jméno:"); if(!jm) return;
-            Object.entries(kosik).forEach(([mid, d]) => {
-                db.ref(`sazkyData/zapasy/${mid}/sazky`).push({ jmeno: jm, ...d, stav: "⏳" });
+            Object.entries(kosik).forEach(([mid, data]) => {
+                db.ref(`sazkyData/zapasy/${mid}/sazky`).push({ jmeno: jm, ...data, stav: "⏳" });
             });
-            alert("Vsadil jsi! Zaplať QR kódem v adminu.");
+            const tot = Object.keys(kosik).length * 20;
+            document.getElementById('qrArea').style.display = 'block';
+            document.getElementById('qrImg').src = `https://api.paylibo.com/paylibo/generator/czech/image?accountNumber=222333444&bankCode=0800&amount=${tot}&currency=CZK&message=Sazka_${jm}`;
+            document.getElementById('qrDesc').innerText = `Částka: ${tot} Kč | Zpráva: Sazka_${jm}`;
             kosik = {};
         }
     </script>
