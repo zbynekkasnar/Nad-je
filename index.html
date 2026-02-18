@@ -10,65 +10,66 @@
         body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; padding: 15px; display: flex; flex-direction: column; align-items: center; margin: 0; padding-bottom: 50px; }
         .main-wrapper { width: 100%; max-width: 500px; box-shadow: 0 4px 25px rgba(0,0,0,0.1); border-radius: 15px; overflow: hidden; background: white; margin-bottom: 20px; }
         .logo-container { background: white; width: 100%; text-align: center; padding: 15px 0; border-bottom: 1px solid #eee; }
-        .main-logo { max-width: 70%; height: auto; display: block; margin: 0 auto; }
-        .header-image { width: 100%; height: 180px; object-fit: cover; display: none; background-color: #ddd; }
+        .main-logo { max-width: 80%; height: auto; display: block; margin: 0 auto; }
+        .header-image { width: 100%; height: 200px; object-fit: cover; display: none; background-color: #ddd; }
         .content-box { padding: 20px; }
         .bank-info { background: #2c3e50; color: #f1c40f; text-align: center; padding: 15px; border-radius: 10px; margin-bottom: 20px; font-size: 1.4em; font-weight: bold; width: 100%; max-width: 470px; }
-        .deadline-info { background: #fdf3d8; color: #856404; padding: 10px; border-radius: 8px; font-size: 0.85em; margin-bottom: 15px; text-align: center; border: 1px solid #ffeeba; }
+        .countdown { background: #e74c3c; color: white; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-weight: bold; font-family: monospace; font-size: 1.2em; text-align: center; }
         .zapas-nazev { text-align: center; font-size: 1.6em; font-weight: bold; margin-bottom: 15px; color: #2c3e50; }
         .score-input { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 10px 0; }
         input { padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; width: 100%; box-sizing: border-box; outline: none; }
-        input:focus { border-color: #3498db; }
         input[type="number"] { width: 70px; text-align: center; font-weight: bold; }
-        button#btnOdeslat { background: #28a745; color: white; border: none; padding: 15px; cursor: pointer; width: 100%; border-radius: 8px; font-weight: bold; font-size: 1.1em; margin-top: 10px; transition: 0.2s; }
-        button#btnOdeslat:active { transform: scale(0.98); background: #218838; }
-        
+        .privacy-box { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 10px 0; font-size: 0.9em; color: #555; }
+        .privacy-box input { width: auto; margin: 0; }
+        button#btnOdeslat { background: #28a745; color: white; border: none; padding: 15px; cursor: pointer; width: 100%; border-radius: 8px; font-weight: bold; font-size: 1.1em; margin-top: 10px; }
+        button:disabled { background: #ccc !important; cursor: not-allowed; }
         table { width: 100%; max-width: 500px; border-collapse: collapse; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        th, td { padding: 12px 10px; text-align: center; border-bottom: 1px solid #eee; font-size: 0.9em; }
-        th { background: #34495e; color: white; text-transform: uppercase; font-size: 0.75em; }
-        .win { background: #d4edda !important; font-weight: bold; color: #155724; }
-        
-        /* MODAL QR PLATBA */
+        th, td { padding: 12px 10px; text-align: center; border-bottom: 1px solid #eee; font-size: 0.85em; }
+        th { background: #34495e; color: white; text-transform: uppercase; }
+        .win { background: #d4edda !important; font-weight: bold; }
         .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.85); align-items: center; justify-content: center; }
-        .modal-content { background-color: white; padding: 25px; border-radius: 20px; text-align: center; max-width: 320px; width: 85%; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .modal-content img { width: 100%; height: auto; border-radius: 10px; margin: 15px 0; border: 1px solid #eee; }
-        .close-btn { background: #34495e; color: white; padding: 12px 25px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px; }
-
+        .modal-content { background-color: white; padding: 25px; border-radius: 20px; text-align: center; max-width: 320px; width: 85%; }
+        .modal-content img { width: 100%; height: auto; border-radius: 10px; margin: 15px 0; }
+        .close-btn { background: #34495e; color: white; padding: 12px; border: none; border-radius: 8px; width: 100%; font-weight: bold; }
         .footer-links { margin-top: 30px; display: flex; gap: 20px; }
-        .footer-links a { text-decoration: none; color: #7f8c8d; font-weight: bold; font-size: 0.9em; }
+        .footer-links a { text-decoration: none; color: #7f8c8d; font-weight: bold; }
     </style>
 </head>
 <body>
 
     <div id="qrModal" class="modal">
         <div class="modal-content">
-            <h2 style="margin:0; color:#2c3e50;">Sázka přijata! ✅</h2>
-            <p style="color:#666; font-size: 0.9em; margin-top: 10px;">Prosím o zaplacení <b>20 Kč</b>:</p>
+            <h2 style="margin:0;">Sázka přijata! ✅</h2>
+            <p style="color:#666; font-size: 0.9em;">Prosím o zaplacení <b>20 Kč</b>:</p>
             <img src="platba.png" alt="QR kód">
-            <button class="close-btn" onclick="zavritQR()">HOTOVO / ZAVŘÍT</button>
+            <button class="close-btn" onclick="zavritQR()">ZAVŘÍT</button>
         </div>
     </div>
 
-    <div class="bank-info" id="bankDisplay">💰 Načítání banku...</div>
+    <div class="bank-info" id="bankDisplay">💰 Načítání...</div>
 
     <div class="main-wrapper">
         <div class="logo-container">
-            <img src="IMG_8423.jpeg" class="main-logo" alt="NADĚJE" onerror="this.alt='Sázková kancelář NADĚJE'">
+            <img src="IMG_8423.jpeg" class="main-logo" alt="NADĚJE">
         </div>
         <img id="hlavniObrazek" src="" class="header-image">
         <div class="content-box">
-            <div id="deadlineDisplay" class="deadline-info">Zjišťuji čas startu...</div>
-            <div id="zobrazenyZapas" class="zapas-nazev">
-                <span id="txtDomaci">...</span> VS <span id="txtHoste">...</span>
-            </div>
+            <div id="timerDisplay" class="countdown">Načítám odpočet...</div>
+            <div class="zapas-nazev"><span id="txtDomaci">...</span> VS <span id="txtHoste">...</span></div>
             
-            <input type="text" id="jmeno" placeholder="Tvé jméno" style="margin-bottom:10px">
+            <input type="text" id="jmeno" placeholder="Tvé jméno">
             <div class="score-input">
                 <input type="number" id="tip_domaci" min="0" value="0">
                 <span>:</span>
                 <input type="number" id="tip_hoste" min="0" value="0">
             </div>
-            <input type="text" id="tip_strelec" placeholder="Tip na střelce (nepovinné)" style="margin-top:10px">
+            <input type="text" id="tip_strelec" placeholder="Tip na střelce" style="margin-top:10px">
+            
+            <div class="privacy-box">
+                <input type="checkbox" id="verejna_sazka" checked>
+                <label for="verejna_sazka">Zobrazit můj tip ostatním ihned</label>
+            </div>
+            
             <button id="btnOdeslat" onclick="ulozitSazku()">ODESLAT SÁZKU (20 Kč)</button>
         </div>
     </div>
@@ -82,7 +83,7 @@
 
     <div class="footer-links">
         <a href="statistiky.html">📊 Statistiky</a>
-        <a href="admin.html" style="opacity: 0.3;">⚙️</a>
+        <a href="admin.html" style="opacity: 0.2;">⚙️</a>
     </div>
 
     <script>
@@ -95,89 +96,71 @@
             messagingSenderId: "688478977789",
             appId: "1:688478977789:web:512d1520cf96c9e59cc894"
         };
-
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
         let aktualniDeadline = null;
 
-        // Načítání dat v reálném čase
+        setInterval(() => {
+            if (!aktualniDeadline) return;
+            const rozdil = new Date(aktualniDeadline).getTime() - new Date().getTime();
+            if (rozdil <= 0) {
+                document.getElementById('timerDisplay').innerText = "ZÁPAS ZAČAL - UZAVŘENO";
+                document.getElementById('btnOdeslat').disabled = true;
+                return;
+            }
+            const h = Math.floor((rozdil / (1000*60*60)));
+            const m = Math.floor((rozdil % (1000*60*60)) / (1000*60));
+            const s = Math.floor((rozdil % (1000*60)) / 1000);
+            document.getElementById('timerDisplay').innerText = `Do výkopu: ${h}h ${m}m ${s}s`;
+        }, 1000);
+
         db.ref('sazkyData').on('value', (snapshot) => {
             const data = snapshot.val();
-            if (data) {
-                document.getElementById('txtDomaci').innerText = data.domaci || "Tým A";
-                document.getElementById('txtHoste').innerText = data.hoste || "Tým B";
-                aktualniDeadline = data.deadline;
-                
-                if(data.deadline) {
-                    const d = new Date(data.deadline);
-                    document.getElementById('deadlineDisplay').innerText = "Sázky končí: " + d.toLocaleString('cs-CZ', {day:'numeric', month:'numeric', hour:'2-digit', minute:'2-digit'});
-                } else {
-                    document.getElementById('deadlineDisplay').innerText = "Deadline není nastaven.";
-                }
+            if (!data) return;
+            document.getElementById('txtDomaci').innerText = data.domaci || "Tým A";
+            document.getElementById('txtHoste').innerText = data.hoste || "Tým B";
+            aktualniDeadline = data.deadline;
+            
+            if(data.foto) {
+                document.getElementById('hlavniObrazek').src = data.foto;
+                document.getElementById('hlavniObrazek').style.display = 'block';
+            } else { document.getElementById('hlavniObrazek').style.display = 'none'; }
+            
+            const seznam = data.seznamSazek ? Object.values(data.seznamSazek) : [];
+            const bank = (data.prevedenyBank || 0) + (seznam.length * 20);
+            document.getElementById('bankDisplay').innerText = `💰 Celkový bank: ${bank} Kč`;
 
-                if(data.foto) {
-                    document.getElementById('hlavniObrazek').src = data.foto;
-                    document.getElementById('hlavniObrazek').style.display = 'block';
-                } else {
-                    document.getElementById('hlavniObrazek').style.display = 'none';
-                }
-                
-                const seznam = data.seznamSazek ? Object.values(data.seznamSazek) : [];
-                const bank = (data.prevedenyBank || 0) + (seznam.length * 20);
-                document.getElementById('bankDisplay').innerText = `💰 Celkový bank: ${bank} Kč`;
-
-                const tbody = document.getElementById('tabulkaBody');
-                tbody.innerHTML = "";
-                if (data.seznamSazek) {
-                    // Seřadíme sázky od nejnovějších
-                    const serazeneSazky = Object.values(data.seznamSazek).reverse();
-                    serazeneSazky.forEach(s => {
-                        const tr = document.createElement("tr");
-                        if (s.stav && s.stav.includes("VÝHRA")) tr.className = "win";
-                        tr.innerHTML = `<td>${s.jmeno}</td><td>${s.skore}</td><td>${s.strelec}</td><td>${s.stav || '⏳'}</td>`;
-                        tbody.appendChild(tr);
-                    });
-                }
+            const deadlineProsel = data.deadline && new Date() > new Date(data.deadline);
+            const tbody = document.getElementById('tabulkaBody');
+            tbody.innerHTML = "";
+            if (data.seznamSazek) {
+                Object.values(data.seznamSazek).reverse().forEach(s => {
+                    const skryto = !deadlineProsel && !s.verejne;
+                    const tr = document.createElement("tr");
+                    if (s.stav && s.stav.includes("VÝHRA")) tr.className = "win";
+                    tr.innerHTML = `<td>${s.jmeno}</td><td>${skryto ? "🕵️ <i>Skryto</i>" : s.skore}</td><td>${skryto ? "🔒" : s.strelec}</td><td>${s.stav || '⏳'}</td>`;
+                    tbody.appendChild(tr);
+                });
             }
         });
 
         function ulozitSazku() {
-            // Kontrola času
-            if (aktualniDeadline && new Date() > new Date(aktualniDeadline)) {
-                alert("BOHUŽEL! Zápas už začal, sázky jsou uzavřeny.");
-                return;
-            }
-
             const jmeno = document.getElementById('jmeno').value.trim();
-            const tDomaci = document.getElementById('tip_domaci').value;
-            const tHoste = document.getElementById('tip_hoste').value;
-            const strelec = document.getElementById('tip_strelec').value.trim();
-
-            if(!jmeno) return alert("Zadej své jméno!");
-            
+            if(!jmeno) return alert("Zadej jméno!");
             db.ref('sazkyData/seznamSazek').push({
                 jmeno: jmeno,
-                skore: tDomaci + ":" + tHoste,
-                strelec: strelec || "-",
+                skore: document.getElementById('tip_domaci').value + ":" + document.getElementById('tip_hoste').value,
+                strelec: document.getElementById('tip_strelec').value.trim() || "-",
+                verejne: document.getElementById('verejna_sazka').checked,
                 stav: "⏳ Vsadil",
                 timestamp: firebase.database.ServerValue.TIMESTAMP
             }).then(() => {
-                // Vymazání políček po úspěšném odeslání
                 document.getElementById('jmeno').value = "";
-                document.getElementById('tip_domaci').value = "0";
-                document.getElementById('tip_hoste').value = "0";
                 document.getElementById('tip_strelec').value = "";
-                
-                // Zobrazení QR kódu
                 document.getElementById('qrModal').style.display = 'flex';
-            }).catch((error) => {
-                alert("Chyba při odesílání: " + error.message);
             });
         }
-
-        function zavritQR() {
-            document.getElementById('qrModal').style.display = 'none';
-        }
+        function zavritQR() { document.getElementById('qrModal').style.display = 'none'; }
     </script>
 </body>
 </html>
