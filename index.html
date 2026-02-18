@@ -14,18 +14,20 @@
         .theme-toggle { position: fixed; top: 15px; right: 15px; background: var(--box); border: 1px solid var(--text); border-radius: 50%; width: 40px; height: 40px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2em; z-index: 2000; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
 
         .main-wrapper { width: 100%; max-width: 500px; box-shadow: 0 4px 25px rgba(0,0,0,0.2); border-radius: 15px; overflow: hidden; background: var(--box); margin-bottom: 20px; }
+        .logo-container { background: white; width: 100%; text-align: center; }
+        .main-logo { width: 100%; height: auto; display: block; }
         .content-box { padding: 20px; }
         
         .bank-info { background: var(--bank-bg); color: var(--bank-text); text-align: center; padding: 15px; border-radius: 10px; margin-bottom: 10px; font-size: 1.4em; font-weight: bold; width: 100%; max-width: 470px; border: 1px solid var(--bank-text); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
         .msg-dne { background: #fff3cd; color: #856404; padding: 12px; border-radius: 8px; margin-bottom: 15px; font-size: 0.95em; text-align: center; font-weight: bold; border-left: 5px solid #ffc107; display: none; width: 100%; max-width: 450px; }
+        [data-theme="dark"] .msg-dne { background: #332b00; color: #ffe082; }
 
         .countdown { background: #e74c3c; color: white; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-weight: bold; text-align: center; }
         .zapas-nazev { text-align: center; font-size: 1.6em; font-weight: bold; margin-bottom: 15px; }
 
-        /* HEZKÝ PŘEPÍNAČ (SWITCH) */
+        /* HEZKÝ PŘEPÍNAČ */
         .switch-container { display: flex; flex-direction: column; align-items: center; gap: 8px; margin: 15px 0; background: rgba(0,0,0,0.03); padding: 12px; border-radius: 12px; width: 100%; box-sizing: border-box; }
         [data-theme="dark"] .switch-container { background: rgba(255,255,255,0.05); }
-        
         .switch { position: relative; display: inline-block; width: 60px; height: 30px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
@@ -46,7 +48,7 @@
         .match-total { background-color: rgba(155, 89, 182, 0.2) !important; }
 
         input[type="text"], input[type="number"] { padding: 12px; border: 2px solid #ddd; border-radius: 8px; width: 100%; box-sizing: border-box; background: var(--input-bg); color: var(--text); margin-bottom: 10px; font-size: 16px; outline: none; }
-        button#btnOdeslat { background: #27ae60; color: white; border: none; padding: 16px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1.1em; transition: 0.2s; }
+        button#btnOdeslat { background: #27ae60; color: white; border: none; padding: 16px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1.1em; }
         
         table { width: 100%; max-width: 500px; border-collapse: collapse; background: var(--box); border-radius: 12px; overflow: hidden; margin-top: 20px; }
         th, td { padding: 14px 10px; text-align: center; border-bottom: 1px solid var(--table-border); font-size: 0.9em; }
@@ -69,11 +71,15 @@
             <div id="zapasAktivni" style="display:none;">
                 <div id="timerDisplay" class="countdown"></div>
                 <div class="zapas-nazev"><span id="txtDomaci"></span> VS <span id="txtHoste"></span></div>
+                
                 <input type="text" id="jmeno" placeholder="Tvé jméno">
-                <div style="display:flex; gap:10px;">
-                    <input type="number" id="tip_domaci" placeholder="Skóre" min="0">
-                    <input type="number" id="tip_hoste" placeholder="Skóre" min="0">
+                
+                <div style="display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:10px;">
+                    <input type="number" id="tip_domaci" placeholder="Domácí" min="0" oninput="this.value = Math.abs(this.value)" style="text-align:center; margin-bottom:0;">
+                    <span style="font-size: 1.5em; font-weight: bold; color: var(--text);">:</span>
+                    <input type="number" id="tip_hoste" placeholder="Hosté" min="0" oninput="this.value = Math.abs(this.value)" style="text-align:center; margin-bottom:0;">
                 </div>
+
                 <input type="text" id="tip_strelec" placeholder="Tip na střelce">
                 
                 <div class="switch-container">
@@ -143,6 +149,11 @@
                 document.getElementById('zapasZadny').style.display = 'none';
                 document.getElementById('txtDomaci').innerText = data.domaci;
                 document.getElementById('txtHoste').innerText = data.hoste;
+                
+                // AUTOMATICKÉ PLACEHOLDERY TÝMŮ
+                document.getElementById('tip_domaci').placeholder = data.domaci;
+                document.getElementById('tip_hoste').placeholder = data.hoste;
+                
                 deadline = data.deadline;
             } else {
                 document.getElementById('zapasAktivni').style.display = 'none';
@@ -249,5 +260,3 @@
     </script>
 </body>
 </html>
-
-
