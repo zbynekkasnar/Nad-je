@@ -7,38 +7,17 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <style>
-        /* DEFINICE BAREV PRO OBA REŽIMY */
-        :root {
-            --bg: #f0f2f5;
-            --box: #ffffff;
-            --text: #2c3e50;
-            --bank-bg: #2c3e50;
-            --bank-text: #f1c40f;
-            --input-bg: #ffffff;
-            --table-border: #eeeeee;
-        }
-
-        [data-theme="dark"] {
-            --bg: #121212;
-            --box: #1e1e1e;
-            --text: #e0e0e0;
-            --bank-bg: #000000;
-            --bank-text: #f1c40f;
-            --input-bg: #2d2d2d;
-            --table-border: #333333;
-        }
+        :root { --bg: #f0f2f5; --box: #ffffff; --text: #2c3e50; --bank-bg: #2c3e50; --bank-text: #f1c40f; --input-bg: #ffffff; --table-border: #eeeeee; }
+        [data-theme="dark"] { --bg: #121212; --box: #1e1e1e; --text: #e0e0e0; --bank-bg: #000000; --bank-text: #f1c40f; --input-bg: #2d2d2d; --table-border: #333333; }
 
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); padding: 15px; display: flex; flex-direction: column; align-items: center; margin: 0; padding-bottom: 50px; transition: 0.3s; }
-        
-        /* TLAČÍTKO DARK MODE */
         .theme-toggle { position: fixed; top: 15px; right: 15px; background: var(--box); border: 1px solid var(--text); border-radius: 50%; width: 40px; height: 40px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2em; z-index: 2000; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
 
         .main-wrapper { width: 100%; max-width: 500px; box-shadow: 0 4px 25px rgba(0,0,0,0.2); border-radius: 15px; overflow: hidden; background: var(--box); margin-bottom: 20px; }
         .content-box { padding: 20px; }
-        
         .bank-info { background: var(--bank-bg); color: var(--bank-text); text-align: center; padding: 15px; border-radius: 10px; margin-bottom: 10px; font-size: 1.4em; font-weight: bold; width: 100%; max-width: 470px; border: 1px solid var(--bank-text); }
-        .msg-dne { background: #fff3cd; color: #856404; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 0.9em; text-align: center; font-weight: bold; border-left: 5px solid #ffc107; display: none; width: 100%; max-width: 450px; }
-        [data-theme="dark"] .msg-dne { background: #332b00; color: #ffe082; border-left-color: #f1c40f; }
+        .msg-dne { background: #fff3cd; color: #856404; padding: 12px; border-radius: 8px; margin-bottom: 15px; font-size: 0.95em; text-align: center; font-weight: bold; border-left: 5px solid #ffc107; display: none; width: 100%; max-width: 450px; }
+        [data-theme="dark"] .msg-dne { background: #332b00; color: #ffe082; }
 
         .countdown { background: #e74c3c; color: white; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-weight: bold; text-align: center; }
         .zapas-nazev { text-align: center; font-size: 1.6em; font-weight: bold; margin-bottom: 15px; }
@@ -48,19 +27,26 @@
         .mood-part { display: flex; align-items: center; justify-content: center; color: white; font-size: 0.75em; font-weight: bold; transition: width 0.8s; white-space: nowrap; overflow: hidden; }
         .mood-1 { background: #3498db; } .mood-0 { background: #95a5a6; } .mood-2 { background: #e74c3c; }
 
-        input { padding: 12px; border: 2px solid #ddd; border-radius: 8px; width: 100%; box-sizing: border-box; background: var(--input-bg); color: var(--text); margin-bottom: 10px; border-color: var(--table-border); }
-        button#btnOdeslat { background: #28a745; color: white; border: none; padding: 15px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        input { padding: 12px; border: 2px solid #ddd; border-radius: 8px; width: 100%; box-sizing: border-box; background: var(--input-bg); color: var(--text); margin-bottom: 10px; border-color: var(--table-border); font-size: 16px; }
+        input[type="number"] { -moz-appearance: textfield; }
+        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+        button#btnOdeslat { background: #28a745; color: white; border: none; padding: 15px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1.1em; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
         
         table { width: 100%; max-width: 500px; border-collapse: collapse; background: var(--box); border-radius: 10px; overflow: hidden; margin-top: 20px; }
         th, td { padding: 12px 10px; text-align: center; border-bottom: 1px solid var(--table-border); font-size: 0.85em; }
-        th { background: #34495e; color: white; }
-        .win { background: #27ae60 !important; color: white; }
+        th { background: #34495e; color: white; text-transform: uppercase; }
+        .win { background: #27ae60 !important; color: white !important; font-weight: bold; }
+        
+        .footer { margin-top: 30px; display: flex; gap: 20px; align-items: center; }
+        .footer a { text-decoration: none; color: var(--text); font-weight: bold; opacity: 0.7; font-size: 0.9em; }
+        .footer a:hover { opacity: 1; }
     </style>
 </head>
 <body data-theme="light">
 
     <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">🌙</button>
-
     <div id="zpravaDne" class="msg-dne"></div>
     <div class="bank-info" id="bankDisplay">💰 Načítání...</div>
 
@@ -68,14 +54,17 @@
         <div class="logo-container"><img src="IMG_8423.jpeg" style="width:100%; display: block;"></div>
         <div class="content-box">
             <div id="zapasAktivni" style="display:none;">
-                <div id="timerDisplay" class="countdown">Načítám...</div>
+                <div id="timerDisplay" class="countdown"></div>
                 <div class="zapas-nazev"><span id="txtDomaci"></span> VS <span id="txtHoste"></span></div>
                 <input type="text" id="jmeno" placeholder="Tvé jméno">
-                <div style="display:flex; gap:10px;"><input type="number" id="tip_domaci" value="0"><input type="number" id="tip_hoste" value="0"></div>
+                <div style="display:flex; gap:10px;">
+                    <input type="number" id="tip_domaci" placeholder="0" min="0" oninput="this.value = Math.abs(this.value)">
+                    <input type="number" id="tip_hoste" placeholder="0" min="0" oninput="this.value = Math.abs(this.value)">
+                </div>
                 <input type="text" id="tip_strelec" placeholder="Tip na střelce">
                 <button id="btnOdeslat" onclick="ulozitSazku()">ODESLAT SÁZKU (20 Kč)</button>
             </div>
-            <div id="zapasZadny" class="no-match" style="display:none; text-align: center;">📭 Aktuálně není vypsán žádný zápas.</div>
+            <div id="zapasZadny" class="no-match" style="display:none; text-align: center; padding: 20px;">📭 Aktuálně není vypsán žádný zápas.</div>
         </div>
     </div>
 
@@ -88,13 +77,19 @@
         <tbody id="tabulkaBody"></tbody>
     </table>
 
+    <div class="footer">
+        <a href="statistiky.html">📊 STATISTIKY</a>
+        <a href="admin.html" style="font-size: 1.2em;">⚙️</a>
+    </div>
+
     <script>
         const firebaseConfig = { apiKey: "AIzaSyC-NCdmsgA42FxnopKm92m1y5gUGw_z_uE", authDomain: "nadeje-208bd.firebaseapp.com", databaseURL: "https://nadeje-208bd-default-rtdb.europe-west1.firebasedatabase.app", projectId: "nadeje-208bd", storageBucket: "nadeje-208bd.firebasestorage.app", messagingSenderId: "688478977789", appId: "1:688478977789:web:512d1520cf96c9e59cc894" };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
         let deadline = null;
 
-        // LOGIKA DARK MODE
+        const normalize = (str) => str ? str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim() : "";
+
         function toggleTheme() {
             const currentTheme = document.body.getAttribute('data-theme');
             const newTheme = currentTheme === 'light' ? 'dark' : 'light';
@@ -103,7 +98,6 @@
             localStorage.setItem('theme', newTheme);
         }
         
-        // Načtení uloženého režimu
         const savedTheme = localStorage.getItem('theme') || 'light';
         document.body.setAttribute('data-theme', savedTheme);
         document.getElementById('themeBtn').innerText = savedTheme === 'light' ? '🌙' : '☀️';
@@ -134,15 +128,21 @@
                 seznam.forEach(s => { const res=s.skore.split(':'); if(parseInt(res[0])>parseInt(res[1])) d++; else if(parseInt(res[0])<parseInt(res[1])) h++; else r++; });
                 document.getElementById('moodContainer').style.display = 'block';
                 const pD=Math.round((d/seznam.length)*100), pR=Math.round((r/seznam.length)*100), pH=100-pD-pR;
-                document.getElementById('moodDomaci').style.width=pD+"%"; document.getElementById('moodDomaci').innerText=pD>15?data.domaci+" "+pD+"%":"";
-                document.getElementById('moodRemiza').style.width=pR+"%"; document.getElementById('moodRemiza').innerText=pR>15?"REMÍZA "+pR+"%":"";
-                document.getElementById('moodHoste').style.width=pH+"%"; document.getElementById('moodHoste').innerText=pH>15?data.hoste+" "+pH+"%":"";
+                document.getElementById('moodDomaci').style.width=pD+"%"; document.getElementById('moodDomaci').innerText=pD>18?data.domaci+" "+pD+"%":"";
+                document.getElementById('moodRemiza').style.width=pR+"%"; document.getElementById('moodRemiza').innerText=pR>18?"REMÍZA "+pR+"%":"";
+                document.getElementById('moodHoste').style.width=pH+"%"; document.getElementById('moodHoste').innerText=pH>18?data.hoste+" "+pH+"%":"";
             }
 
+            const vStrelciNorm = normalize(data.posledniStrelec || "").split(',').map(s => s.trim());
             const tbody = document.getElementById('tabulkaBody'); tbody.innerHTML = "";
             seznam.reverse().forEach(s => {
-                const tr = document.createElement('tr'); if(s.stav && s.stav.includes("VÝHRA")) tr.className="win";
-                tr.innerHTML = `<td>${s.jmeno}</td><td>${s.skore}</td><td>${s.strelec}</td><td>${s.stav || '⏳'}</td>`;
+                const tr = document.createElement('tr');
+                if(s.stav && s.stav.includes("VÝHRA")) tr.className="win";
+                
+                const tipNorm = normalize(s.strelec);
+                const trefilS = tipNorm !== "" && vStrelciNorm.some(v => tipNorm.includes(v) || v.includes(tipNorm));
+
+                tr.innerHTML = `<td>${s.jmeno}</td><td>${s.skore}</td><td>${trefilS ? '🎯 '+s.strelec : s.strelec}</td><td>${s.stav || '⏳'}</td>`;
                 tbody.appendChild(tr);
             });
         });
@@ -155,9 +155,17 @@
         }, 1000);
 
         function ulozitSazku() {
-            const j = document.getElementById('jmeno').value.trim(); if(!j) return alert("Zadej jméno!");
-            db.ref('sazkyData/seznamSazek').push({ jmeno:j, skore:document.getElementById('tip_domaci').value+":"+document.getElementById('tip_hoste').value, strelec:document.getElementById('tip_strelec').value, stav:"⏳ Vsadil" });
-            alert("Sázka odeslána!");
+            const j = document.getElementById('jmeno').value.trim();
+            const dG = document.getElementById('tip_domaci').value;
+            const hG = document.getElementById('tip_hoste').value;
+            const s = document.getElementById('tip_strelec').value.trim();
+
+            if(!j || dG==="" || hG==="" || !s) return alert("⚠️ Vyplň prosím všechna pole!");
+
+            db.ref('sazkyData/seznamSazek').push({ jmeno:j, skore:dG+":"+hG, strelec:s, stav:"⏳ Vsadil" }).then(() => {
+                alert("✅ Sázka odeslána!");
+                document.getElementById('tip_strelec').value = "";
+            });
         }
     </script>
 </body>
