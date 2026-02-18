@@ -199,20 +199,45 @@
         }
 
         function odeslatTiket() {
-            const btn = document.getElementById('sendBtn');
-            btn.disabled = true; btn.innerText = "ODESÍLÁM...";
-            let jm = "";
-            Object.entries(kosik).forEach(([mid, d]) => { 
-                db.ref(`sazkyData/zapasy/${mid}/sazky`).push({ ...d, stav: "⏳" }); 
-                jm = d.jmeno;
-            });
-            const tot = Object.keys(kosik).length * 20;
-            document.getElementById('cartContent').style.display = 'none';
-            document.getElementById('qrStatus').innerHTML = "<span style='color:#27ae60'>✅ TIPY ODESLÁNY!</span>";
-            document.getElementById('qrImg').src = `https://api.paylibo.com/paylibo/generator/czech/image?accountNumber=222333444&bankCode=0800&amount=${tot}&currency=CZK&message=Sazka_${jm}`;
-            document.getElementById('qrArea').style.display = 'block';
-            kosik = {};
-        }
+    const btn = document.getElementById('sendBtn');
+    btn.disabled = true;
+    btn.innerText = "ODESÍLÁM...";
+    
+    let jmenoSazkare = "";
+    // Odeslání všech sázek z košíku do Firebase
+    Object.entries(kosik).forEach(([mid, d]) => { 
+        db.ref(`sazkyData/zapasy/${mid}/sazky`).push({ ...d, stav: "⏳" }); 
+        jmenoSazkare = d.jmeno; // Vezmeme jméno pro zprávu pro příjemce
+    });
+
+    const celkovaCastka = Object.keys(kosik).length * 20;
+    const ucet = "295511827";
+    const banka = "0300";
+    const zprava = `Sazka_${jmenoSazkare}`.normalize("NFD").replace(/[\u0300-\u036f]/g, ""); // Odstranění diakritiky
+
+    // Skrytí košíku a zobrazení QR oblasti
+    document.getElementById('cartContent').style.display = 'none';
+    document.getElementById('qrStatus').innerHTML = "<span style='color:#27ae60'>✅ TIPY ODESLÁNY!</span>";
+    
+    // Generování QR kódu přes Paylibo API
+    const qrUrl = `https://api.paylibo.com/paylibo/generator/czech/image?accountNumber=${ucet}&bankCode=${banka}&amount=${celkovaCastka}&currency=CZK&message=${zprava}`;
+    
+    document.getElementById('qrImg').src = qrUrl;
+    
+    // Textový popis pod QR kód jako pojistka
+    document.getElementById('qrDesc').innerHTML = `
+        <strong>Částka: ${celkovaCastka} Kč</strong><br>
+        Číslo účtu: ${ucet}/${banka}<br>
+        Zpráva: ${zprava}<br>
+        <small style="display:block; margin-top:10px; color:var(--neon)">Po zaplacení vyčkej na potvrzení správcem (fajfka ✅).</small>
+    `;
+    
+    document.getElementById('qrArea').style.display = 'block';
+    
+    // Vyprázdnit košík pro další použití
+    kosik = {};
+}
+
 
         setInterval(() => {
             const now = Date.now();
