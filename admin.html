@@ -3,74 +3,69 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin NADĚJE - Kompletní správa</title>
+    <title>Admin NADĚJE - Kompletní</title>
     <script src="stats.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <style>
         :root { --primary: #3498db; --success: #27ae60; --danger: #e74c3c; --dark: #2c3e50; --bg: #f4f7f6; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: #333; padding: 20px; display: flex; flex-direction: column; align-items: center; }
-        .card { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); width: 100%; max-width: 500px; margin-bottom: 20px; border-top: 5px solid var(--primary); }
-        h2 { margin-top: 0; color: var(--dark); font-size: 1.3em; }
-        label { display: block; margin-top: 15px; font-weight: bold; font-size: 0.8em; color: #7f8c8d; }
-        input, textarea { width: 100%; padding: 12px; margin-top: 5px; border: 2px solid #edf2f7; border-radius: 10px; box-sizing: border-box; font-size: 16px; background: #f8fafc; }
-        .btn { padding: 15px; border: none; border-radius: 10px; color: white; font-weight: bold; width: 100%; cursor: pointer; margin-top: 12px; transition: 0.2s; }
-        .btn-blue { background: var(--primary); } .btn-green { background: var(--success); } .btn-dark { background: var(--dark); } .btn-red { background: var(--danger); }
-        .strelci-seznam { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; padding: 10px; background: #f1f3f5; border-radius: 10px; min-height: 40px; }
-        .strelec-tag { background: var(--dark); color: white; padding: 5px 12px; border-radius: 20px; display: flex; align-items: center; gap: 8px; font-size: 0.85em; }
-        .strelec-tag span { cursor: pointer; font-weight: bold; color: #ff7675; margin-left: 5px; }
-        .score-preview { display: flex; align-items: center; justify-content: center; gap: 15px; margin: 15px 0; }
-        .score-box { font-size: 1.8em; font-weight: bold; width: 65px; text-align: center; border: 2px solid var(--primary) !important; }
-        .footer-link { margin-top: 20px; text-decoration: none; color: var(--primary); font-weight: bold; }
-        #authOverlay { position: fixed; top:0; left:0; width:100%; height:100%; background:var(--bg); display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:1000; }
-        .debug-info { font-size: 0.75em; margin-top: 4px; font-weight: bold; }
-        .status-ok { color: var(--success); } .status-error { color: var(--danger); }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .card { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 20px rgba(0,0,0,0.05); width: 100%; max-width: 500px; margin-bottom: 20px; border-top: 5px solid var(--primary); }
+        h2 { margin-top: 0; color: var(--dark); }
+        input, textarea { width: 100%; padding: 12px; margin-top: 10px; border: 2px solid #edf2f7; border-radius: 10px; box-sizing: border-box; }
+        .btn { padding: 15px; border: none; border-radius: 10px; color: white; font-weight: bold; width: 100%; cursor: pointer; margin-top: 10px; }
+        .btn-blue { background: var(--primary); } .btn-green { background: var(--success); } .btn-red { background: var(--danger); } .btn-dark { background: var(--dark); }
+        .strelci-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+        .strelec-tag { background: var(--dark); color: white; padding: 6px 12px; border-radius: 20px; font-size: 0.85em; }
+        .score-row { display: flex; justify-content: center; align-items: center; gap: 15px; font-size: 2em; margin: 15px 0; }
+        table { width: 100%; margin-top: 15px; border-collapse: collapse; }
+        td { padding: 10px; border-bottom: 1px solid #eee; }
+        #authOverlay { position: fixed; top:0; left:0; width:100%; height:100%; background:white; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:1000; }
     </style>
 </head>
 <body onload="initAdmin()">
 
     <div id="authOverlay">
         <div class="card">
-            <h2>🔒 Admin Přihlášení</h2>
+            <h2>🔒 Admin Vstup</h2>
             <input type="password" id="adminPass" placeholder="Heslo">
             <button class="btn btn-blue" onclick="checkPass()">VSTOUPIT</button>
         </div>
     </div>
 
     <div class="card">
-        <h2>🏒 Vypsat nové kolo</h2>
-        <label>Uzávěrka sázek</label>
-        <input type="datetime-local" id="set_deadline">
-        <label>Týmy</label>
+        <h2>🚀 Vypsat zápas</h2>
         <input list="statyList" id="set_domaci" placeholder="Domácí" oninput="syncCodes()">
-        <div id="debug_domaci" class="debug-info"></div>
         <input list="statyList" id="set_hoste" placeholder="Hosté" oninput="syncCodes()">
-        <div id="debug_hoste" class="debug-info"></div>
-        <button class="btn btn-blue" onclick="nastavitKolo()">VYPSAT ZÁPAS</button>
+        <input type="datetime-local" id="set_deadline">
+        <button class="btn btn-blue" onclick="nastavitKolo()">VYPSAT NOVÉ KOLO</button>
+        <div id="debug" style="font-size: 0.7em; margin-top: 10px;"></div>
     </div>
 
     <div class="card" style="border-top-color: var(--success);">
         <h2>🤖 Auto-Pilot Vyhodnocení</h2>
         <textarea id="raw_data" placeholder="Vlož text z Livesportu..." style="height: 100px;"></textarea>
-        <button class="btn btn-dark" onclick="analyzovatText()">⚡ NAČÍST DATA</button>
-        <div class="score-preview">
-            <input type="number" id="real_domaci" class="score-box" value="0"> : 
-            <input type="number" id="real_hoste" class="score-box" value="0">
+        <button class="btn btn-dark" onclick="analyzovatText()">⚡ NAČÍST SKÓRE A JMÉNA</button>
+        <div class="score-row">
+            <input type="number" id="real_domaci" style="width: 60px; text-align: center;"> : 
+            <input type="number" id="real_hoste" style="width: 60px; text-align: center;">
         </div>
-        <div id="remizaInfo" style="color:var(--danger); font-weight:bold; text-align:center; display:none; margin-bottom:10px;">⚠️ Remíza po prodloužení!</div>
-        <label>Střelci (X smaže chybu):</label>
-        <div id="strelciContainer" class="strelci-seznam"></div>
-        <button class="btn btn-green" onclick="vyhodnotit()">🏆 VYHODNOTIT A ARCHIVOVAT</button>
+        <div id="remizaLabel" style="color:red; font-weight:bold; display:none; text-align:center;">Detekována remíza (prodl./nájezdy)!</div>
+        <div id="strelciContainer" class="strelci-list"></div>
+        <button class="btn btn-green" onclick="vyhodnotit()">🏆 VYHODNOTIT VŠE</button>
+    </div>
+
+    <div class="card">
+        <h2>💵 Sázky a platby</h2>
+        <table id="platbyTable"></table>
     </div>
 
     <div class="card" style="border-top-color: var(--danger);">
-        <h2>⚠️ Správa a Údržba</h2>
-        <button class="btn btn-dark" onclick="nulovatJackpot()">💰 NULOVAT JACKPOT</button>
-        <button class="btn btn-red" onclick="smazatHistoriiStatistik()" style="margin-top:20px; opacity:0.7;">SMAZAT STATISTIKY</button>
+        <button class="btn btn-dark" onclick="nulovatBank()">💰 NULOVAT BANK NA 0</button>
+        <button class="btn btn-red" onclick="smazatHistorii()">SMAZAT STATISTIKY</button>
     </div>
 
-    <a href="index.html" class="footer-link">← ZPĚT NA WEB</a>
-
+    <a href="index.html" style="margin-top: 20px; font-weight: bold; text-decoration: none; color: var(--primary);">← ZPĚT NA WEB</a>
     <datalist id="statyList"></datalist>
 
     <script>
@@ -83,87 +78,56 @@
 
         function initAdmin() {
             const list = document.getElementById('statyList');
-            if(typeof vsechnyStaty !== 'undefined') {
-                vsechnyStaty.forEach(s => {
-                    const opt = document.createElement('option');
-                    opt.value = s.n;
-                    opt.setAttribute('data-code', s.c);
-                    list.appendChild(opt);
-                });
-            }
+            if(window.vsechnyStaty) vsechnyStaty.forEach(s => {
+                const o = document.createElement('option'); o.value = s.n; o.setAttribute('data-code', s.c);
+                list.appendChild(o);
+            });
         }
 
         function checkPass() { if(document.getElementById('adminPass').value === "fotbal2024") document.getElementById('authOverlay').style.display = 'none'; }
 
-        function syncCodes() {
-            const dVal = document.getElementById('set_domaci').value;
-            const hVal = document.getElementById('set_hoste').value;
-            const dKod = vsechnyStaty.find(s => norm(s.n) === norm(dVal))?.c || "";
-            const hKod = vsechnyStaty.find(s => norm(s.n) === norm(hVal))?.c || "";
-            document.getElementById('debug_domaci').innerHTML = dKod ? "✅ Vlajka: " + dKod : "❌ Vlajka nenalezena";
-            document.getElementById('debug_hoste').innerHTML = hKod ? "✅ Vlajka: " + hKod : "❌ Vlajka nenalezena";
-        }
+        db.ref('sazkyData/seznamSazek').on('value', (snap) => {
+            const data = snap.val();
+            const table = document.getElementById('platbyTable'); table.innerHTML = "";
+            if(data) Object.entries(data).forEach(([id, s]) => {
+                const tr = document.createElement('tr');
+                const isPaid = s.stav && s.stav.includes("ZAPLACENO");
+                tr.innerHTML = `<td>${s.jmeno} (${s.skore})</td>
+                    <td><button onclick="pay('${id}', ${isPaid})" style="background:${isPaid?'#27ae60':'#95a5a6'}; color:white; border:none; padding:5px 10px; border-radius:5px;">${isPaid?'ANO':'NE'}</button></td>
+                    <td><button onclick="del('${id}')" style="background:red; color:white; border:none; padding:5px 10px; border-radius:5px;">🗑️</button></td>`;
+                table.appendChild(tr);
+            });
+        });
+
+        function pay(id, paid) { db.ref(`sazkyData/seznamSazek/${id}/stav`).set(paid ? "⏳ Vsadil" : "💵 ZAPLACENO"); }
+        function del(id) { if(confirm("Smazat?")) db.ref(`sazkyData/seznamSazek/${id}`).remove(); }
 
         function analyzovatText() {
             const raw = document.getElementById('raw_data').value;
             const lines = raw.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-            listStrelcu = [];
-            let fD = 0, fH = 0;
-            let isOvertime = raw.toUpperCase().includes("PRODLOUŽENÍ") || raw.toUpperCase().includes("NÁJEZDY");
-
+            listStrelcu = []; let fD = 0, fH = 0;
+            const isOT = raw.toUpperCase().includes("PRODLOUŽENÍ") || raw.toUpperCase().includes("NÁJEZDY");
             for (let i = 0; i < lines.length; i++) {
-                const match = lines[i].match(/^(\d+)\s*-\s*(\d+)$/);
-                if (match) {
-                    fD = parseInt(match[1]); fH = parseInt(match[2]);
-                    let pStrelec = lines[i + 1];
-                    if (pStrelec && !pStrelec.includes('+') && !pStrelec.includes('(') && !pStrelec.match(/^\d{2}:\d{2}$/)) {
-                        listStrelcu.push(pStrelec.replace(/\.$/, ''));
-                    }
+                const m = lines[i].match(/^(\d+)\s*-\s*(\d+)$/);
+                if (m) {
+                    fD = parseInt(m[1]); fH = parseInt(m[2]);
+                    let ps = lines[i + 1];
+                    if (ps && !ps.includes('+') && !ps.includes('(') && !ps.match(/^\d{2}:\d{2}$/)) listStrelcu.push(ps.replace(/\.$/, ''));
                 }
             }
-            if (isOvertime) { fD = Math.min(fD, fH); fH = fD; document.getElementById('remizaInfo').style.display = 'block'; }
-            else { document.getElementById('remizaInfo').style.display = 'none'; }
-            
+            if(isOT) { fD = Math.min(fD, fH); fH = fD; document.getElementById('remizaLabel').style.display = 'block'; }
+            else document.getElementById('remizaLabel').style.display = 'none';
             document.getElementById('real_domaci').value = fD;
             document.getElementById('real_hoste').value = fH;
             renderStrelce();
         }
 
         function renderStrelce() {
-            const container = document.getElementById('strelciContainer'); container.innerHTML = "";
-            [...new Set(listStrelcu)].forEach((s, index) => {
+            const c = document.getElementById('strelciContainer'); c.innerHTML = "";
+            [...new Set(listStrelcu)].forEach((s, i) => {
                 const tag = document.createElement('div'); tag.className = 'strelec-tag';
-                tag.innerHTML = `${s} <span onclick="listStrelcu.splice(${index}, 1); renderStrelce();">✕</span>`;
-                container.appendChild(tag);
-            });
-        }
-
-        function nulovatJackpot() {
-            if(confirm("Opravdu chceš vymazat jackpot a začít od nuly?")) {
-                db.ref('sazkyData/jackpot').set(0).then(() => alert("Jackpot byl vynulován!"));
-            }
-        }
-
-        function smazatHistoriiStatistik() {
-            if(confirm("POZOR: Toto smaže celou historii sázek i statistik hráčů! Pokračovat?")) {
-                db.ref('historieSazek').remove().then(() => alert("Historie smazána."));
-            }
-        }
-
-        function vyhodnotit() {
-            const rD = document.getElementById('real_domaci').value, rH = document.getElementById('real_hoste').value, vys = `${rD}:${rH}`;
-            db.ref('sazkyData').once('value', (snapshot) => {
-                const data = snapshot.val(); if(!data || !data.seznamSazek) return;
-                db.ref('sazkyData/posledniVysledek').set({ tymy: `${data.domaci} vs ${data.hoste}`, skore: vys, strelci: listStrelcu.join(', ') });
-                let updates = { posledniStrelec: listStrelcu.join(', ') };
-                Object.entries(data.seznamSazek).forEach(([key, s]) => {
-                    const vyhraSkore = (s.skore === vys);
-                    const tipStrelecNorm = norm(s.strelec);
-                    const vyhraStrelec = tipStrelecNorm !== "" && listStrelcu.some(v => norm(v).includes(tipStrelecNorm));
-                    updates[`seznamSazek/${key}/stav`] = vyhraSkore ? "VÝHRA! 🎉" : "❌";
-                    db.ref('historieSazek').push({ jmeno: s.jmeno, trefilSkore: vyhraSkore, trefilStrelce: vyhraStrelec, datum: new Date().toISOString() });
-                });
-                db.ref('sazkyData').update(updates).then(() => alert("Vyhodnoceno a archivováno!"));
+                tag.innerHTML = `${s} <span onclick="listStrelcu.splice(${i},1);renderStrelce();" style="color:red;cursor:pointer;">✕</span>`;
+                c.appendChild(tag);
             });
         }
 
@@ -172,8 +136,36 @@
             const kd = vsechnyStaty.find(s => norm(s.n) === norm(d))?.c || "";
             const kh = vsechnyStaty.find(s => norm(s.n) === norm(h))?.c || "";
             if(!d || !h || !dl) return alert("Chybí data!");
-            db.ref('sazkyData').update({ domaci:d, hoste:h, kodDomaci:kd, kodHoste:kh, deadline:dl, seznamSazek:null, posledniStrelec:"" }).then(() => alert("Kolo vypsáno!"));
+            db.ref('sazkyData').once('value', (snap) => {
+                const data = snap.val(); let bank = data.prevedenyBank || 0;
+                if(data.seznamSazek) {
+                    const sez = Object.values(data.seznamSazek);
+                    if(!sez.some(s => s.stav.includes("VÝHRA"))) bank += (sez.length * 20);
+                    else bank = 0;
+                }
+                db.ref('sazkyData').update({ domaci: d, hoste: h, kodDomaci: kd, kodHoste: kh, deadline: dl, seznamSazek: null, prevedenyBank: bank });
+                alert("Zápas vypsán!");
+            });
         }
+
+        function vyhodnotit() {
+            const rD = document.getElementById('real_domaci').value, rH = document.getElementById('real_hoste').value, vys = `${rD}:${rH}`;
+            db.ref('sazkyData').once('value', (snap) => {
+                const data = snap.val(); if(!data.seznamSazek) return;
+                db.ref('sazkyData/posledniVysledek').set({ tymy: `${data.domaci} vs ${data.hoste}`, skore: vys, strelci: listStrelcu.join(', ') });
+                const updates = {};
+                Object.entries(data.seznamSazek).forEach(([id, s]) => {
+                    const okSkore = (s.skore === vys);
+                    const okStrelec = s.strelec && listStrelcu.some(v => norm(v).includes(norm(s.strelec)));
+                    updates[`seznamSazek/${id}/stav`] = okSkore ? "VÝHRA! 🎉" : "❌";
+                    db.ref('historieSazek').push({ jmeno: s.jmeno, trefilSkore: okSkore, trefilStrelce: okStrelec });
+                });
+                db.ref('sazkyData').update(updates).then(() => alert("Vyhodnoceno!"));
+            });
+        }
+
+        function nulovatBank() { if(confirm("Nula?")) db.ref('sazkyData/prevedenyBank').set(0); }
+        function smazatHistorii() { if(confirm("Vše smazat?")) db.ref('historieSazek').remove(); }
     </script>
 </body>
 </html>
