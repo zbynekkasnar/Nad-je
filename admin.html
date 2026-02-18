@@ -29,12 +29,12 @@
         <h1>🛠 Administrace</h1>
         <h3>1. Nový zápas</h3>
         <label>Deadline (začátek):</label><input type="datetime-local" id="set_deadline">
-        <label>Týmy:</label>
+        <label>Týmy (nechej prázdné pro vypnutí sázek):</label>
         <div class="score-row">
             <input type="text" id="set_domaci" placeholder="Domácí">
             <input type="text" id="set_hoste" placeholder="Hosté">
         </div>
-        <button class="btn btn-blue" onclick="nastavitZapas()">🚀 NASTAVIT & PROMAZAT SÁZKY</button>
+        <button class="btn btn-blue" onclick="nastavitZapas()">🚀 NASTAVIT / VYPINOUT ZÁPAS</button>
 
         <h3>2. Vyhodnocení</h3>
         <label>Skóre:</label>
@@ -61,18 +61,37 @@
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        function checkPass() { if(document.getElementById('adminPass').value === "fotbal2024") document.getElementById('authOverlay').style.display = 'none'; }
+
+        function checkPass() { 
+            if(document.getElementById('adminPass').value === "fotbal2024") {
+                document.getElementById('authOverlay').style.display = 'none';
+            } else {
+                alert("Špatné heslo!");
+            }
+        }
 
         function nastavitZapas() {
-            const d = document.getElementById('set_deadline').value;
-            if(!d) return alert("Nastav deadline!");
+            const domaci = document.getElementById('set_domaci').value.trim();
+            const hoste = document.getElementById('set_hoste').value.trim();
+            const deadline = document.getElementById('set_deadline').value;
+
+            // Pokud jsou jména týmů vyplněná, vyžadujeme deadline
+            if ((domaci !== "" || hoste !== "") && !deadline) {
+                return alert("Pro nový zápas musíš nastavit deadline!");
+            }
+
             db.ref('sazkyData').update({ 
-                domaci: document.getElementById('set_domaci').value, 
-                hoste: document.getElementById('set_hoste').value, 
-                deadline: d, 
+                domaci: domaci, 
+                hoste: hoste, 
+                deadline: deadline || "", 
                 seznamSazek: null 
+            }).then(() => {
+                alert(domaci === "" ? "Sázky vypnuty!" : "Zápas nastaven!");
+                // Vyčistíme políčka
+                document.getElementById('set_domaci').value = "";
+                document.getElementById('set_hoste').value = "";
+                document.getElementById('set_deadline').value = "";
             });
-            alert("Zápas nastaven!");
         }
 
         function vyhodnotit() {
@@ -80,27 +99,58 @@
             const rs = document.getElementById('real_strelec').value.trim();
             db.ref('sazkyData').once('value', (snapshot) => {
                 const data = snapshot.val();
-                if(!data || !data.seznamSazek) return alert("Nejsou sázky.");
+                if(!data || !data.seznamSazek) return alert("Nejsou žádné sázky k vyhodnocení.");
+                
                 const seznam = Object.entries(data.seznamSazek);
                 const celkovyBank = (data.prevedenyBank || 0) + (seznam.length * 20);
                 const vyherci = seznam.filter(i => i[1].skore === vysledek);
-                let updates = {}; let podil = 0;
+                
+                let updates = {}; 
+                let podil = 0;
+
                 if (vyherci.length > 0) {
                     podil = Math.floor(celkovyBank / vyherci.length);
-                    seznam.forEach(([key, s]) => { updates[`seznamSazek/${key}/stav`] = (s.skore === vysledek) ? `VÝHRA! 🎉 (+${podil})` : "❌"; });
+                    seznam.forEach(([key, s]) => { 
+                        updates[`seznamSazek/${key}/stav`] = (s.skore === vysledek) ? `VÝHRA! 🎉 (+${podil} Kč)` : "❌ Prohra"; 
+                    });
                     updates['prevedenyBank'] = 0;
                 } else {
-                    seznam.forEach(([key, s]) => { updates[`seznamSazek/${key}/stav`] = "❌"; });
+                    seznam.forEach(([key, s]) => { 
+                        updates[`seznamSazek/${key}/stav`] = "❌ Žádný výherce"; 
+                    });
                     updates['prevedenyBank'] = celkovyBank;
                 }
-                db.ref('historieSazek').push({ zapas: `${data.domaci} VS ${data.hoste}`, vysledek, strelecZapasu: rs, sazky: data.seznamSazek, vyhraNaHlavu: podil });
-                db.ref('sazkyData').update(updates);
-                alert("Archivováno!");
+
+                // Uložení do historie
+                db.ref('historieSazek').push({ 
+                    zapas: `${data.domaci} VS ${data.hoste}`, 
+                    vysledek: vysledek, 
+                    strelecZapasu: rs, 
+                    sazky: data.seznamSazek, 
+                    vyhraNaHlavu: podil 
+                });
+
+                db.ref('sazkyData').update(updates).then(() => {
+                    alert("Vyhodnoceno a uloženo do historie!");
+                });
             });
         }
-        function jenSmazatSazky() { if(confirm("Smazat sázky?")) db.ref('sazkyData/seznamSazek').remove(); }
-        function vynulovatJackpot() { if(confirm("Vynulovat bank?")) db.ref('sazkyData/prevedenyBank').set(0); }
-        function smazatStatistiky() { if(confirm("Smazat historii?")) db.ref('historieSazek').remove(); }
+
+        function jenSmazatSazky() { 
+            if(confirm("Opravdu smazat všechny aktuální sázky?")) {
+                db.ref('sazkyData/seznamSazek').remove(); 
+            }
+        }
+        function vynulovatJackpot() { 
+            if(confirm("Vynulovat nahromaděný jackpot?")) {
+                db.ref('sazkyData/prevedenyBank').set(0); 
+            }
+        }
+        function smazatStatistiky() { 
+            if(confirm("Smazat celou historii sázek a statistik?")) {
+                db.ref('historieSazek').remove(); 
+            }
+        }
     </script>
 </body>
 </html>
