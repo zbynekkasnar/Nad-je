@@ -54,9 +54,12 @@
         </div>
         <button class="btn btn-red" onclick="vyhodnotit()">🏆 VYHODNOTIT & ARCHIVOVAT</button>
 
-        <h3>3. Správa historie a banku</h3>
-        <button class="btn btn-dark" onclick="smazatStatistiky()">❌ SMAZAT VŠECHNY STATISTIKY</button>
-        <button class="btn btn-grey" onclick="vynulovatJackpot()">💰 VYNULOVAT JACKPOT (BANK)</button>
+       <h3>3. Správa dat a banku</h3>
+        <button class="btn btn-blue" onclick="jenSmazatSazky()">🧹 SMAZAT JEN SEZNAM SÁZEK</button>
+        
+        <button class="btn btn-grey" onclick="vynulovatJackpot()">💰 VYNULOVAT JEN JACKPOT (BANK)</button>
+        
+        <button class="btn btn-dark" onclick="smazatStatistiky()">❌ SMAZAT CELOU HISTORII (STATISTIKY)</button>
 
         <a href="index.html" style="display:block; text-align:center; margin-top:30px; color:#7f8c8d; text-decoration:none;">⬅ Zpět na sázky</a>
     </div>
@@ -137,19 +140,31 @@
             });
         }
 
+     // FUNKCE 1: Smaže jen lidi z tabulky, bank (Jackpot) nechá být
+        function jenSmazatSazky() {
+            if(confirm("Opravdu smazat aktuální sázky? (Jackpot v banku zůstane)")) {
+                db.ref('sazkyData/seznamSazek').remove();
+                alert("Seznam sázek byl vymazán.");
+            }
+        }
+
+        // FUNKCE 2: Smaže jen peníze v banku
+        function vynulovatJackpot() {
+            if(confirm("Opravdu vynulovat bank (Jackpot) na 0 Kč?")) {
+                db.ref('sazkyData/prevedenyBank').set(0);
+                alert("Bank byl vynulován.");
+            }
+        }
+
+        // FUNKCE 3: Smaže celou historii sázek (statistiky)
         function smazatStatistiky() {
-            if(confirm("POZOR! Opravdu chceš nenávratně smazat CELOU HISTORII a všechny statistiky?")) {
+            if(confirm("POZOR! Opravdu chceš nenávratně smazat CELOU HISTORII statistik?")) {
                 db.ref('historieSazek').remove();
                 alert("Statistiky byly vymazány.");
             }
         }
 
-        function vynulovatJackpot() {
-            if(confirm("Vynulovat nahromaděný Jackpot (bank)?")) {
-                db.ref('sazkyData/prevedenyBank').set(0);
-                alert("Bank byl vynulován.");
-            }
-        }
+        
     </script>
 </body>
 </html>
