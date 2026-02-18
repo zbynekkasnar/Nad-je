@@ -81,7 +81,8 @@
 
         <h3>5. Údržba ⚙️</h3>
         <button class="btn btn-dark" onclick="vynulovatJackpot()">💰 VYNULOVAT JACKPOT (0 Kč)</button>
-        <button class="btn btn-dark" onclick="smazatSazky()">🧹 SMAZAT JEN SÁZKY</button>
+        <button class="btn btn-dark" onclick="smazatSazky()">🧹 SMAZAT JEN AKTUÁLNÍ SÁZKY</button>
+        <button class="btn btn-red" onclick="smazatHistoriiStatistik()">❌ SMAZAT HISTORII STATISTIK</button>
         <a href="index.html" style="display:block; text-align:center; margin-top:20px; color:#3498db; text-decoration:none; font-weight:bold;">ZPĚT NA WEB</a>
     </div>
 
@@ -93,7 +94,6 @@
         function checkPass() { if(document.getElementById('adminPass').value === "fotbal2024") document.getElementById('authOverlay').style.display = 'none'; }
         const normalize = (str) => str ? str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim() : "";
 
-        // Propojení našeptávače s kódy vlajek
         function syncCodes() {
             const list = document.getElementById('statyList').options;
             const dVal = document.getElementById('set_domaci').value;
@@ -104,7 +104,6 @@
             }
         }
 
-        // Načítání sázek pro správu
         db.ref('sazkyData').on('value', (snapshot) => {
             const data = snapshot.val();
             const body = document.getElementById('platbyBody'); body.innerHTML = "";
@@ -112,37 +111,25 @@
                 Object.entries(data.seznamSazek).forEach(([id, s]) => {
                     const ok = s.stav && s.stav.includes("ZAPLACENO");
                     const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td>${s.jmeno}<br><small>${s.skore}</small></td>
-                        <td>${ok ? "✅" : "❌"}</td>
-                        <td>
-                            <button class="btn-green btn-sm" onclick="potvrditPlatbu('${id}', ${ok})">${ok?'Zpět':'OK'}</button>
-                            <button class="btn-red btn-sm" onclick="smazatSazku('${id}', '${s.jmeno}')">🗑️</button>
-                        </td>
-                    `;
+                    tr.innerHTML = `<td>${s.jmeno}<br><small>${s.skore}</small></td><td>${ok ? "✅" : "❌"}</td><td><button class="btn-green btn-sm" onclick="potvrditPlatbu('${id}', ${ok})">${ok?'Zpět':'OK'}</button><button class="btn-red btn-sm" onclick="smazatSazku('${id}', '${s.jmeno}')">🗑️</button></td>`;
                     body.appendChild(tr);
                 });
             }
         });
 
         function potvrditPlatbu(id, stav) { db.ref(`sazkyData/seznamSazek/${id}/stav`).set(stav ? "⏳ Vsadil" : "💵 ZAPLACENO"); }
-        
-        function smazatSazku(id, jmeno) {
-            if(confirm(`Opravdu smazat tip od ${jmeno}?`)) db.ref(`sazkyData/seznamSazek/${id}`).remove();
-        }
+        function smazatSazku(id, jmeno) { if(confirm(`Smazat tip od ${jmeno}?`)) db.ref(`sazkyData/seznamSazek/${id}`).remove(); }
 
         function nastavitKolo() {
             const d = document.getElementById('set_domaci').value, h = document.getElementById('set_hoste').value, kd = document.getElementById('kod_domaci').value, kh = document.getElementById('kod_hoste').value, dl = document.getElementById('set_deadline').value;
             if(!d || !h || !dl) return alert("Chybí údaje!");
-            
             db.ref('sazkyData').once('value', (snapshot) => {
                 const data = snapshot.val(); let jpt = data.prevedenyBank || 0;
                 if (data.seznamSazek) {
                     const sez = Object.values(data.seznamSazek);
                     if (!sez.some(s => s.stav && s.stav.includes("VÝHRA"))) jpt += (sez.length * 20); else jpt = 0;
                 }
-                db.ref('sazkyData').update({ domaci:d, hoste:h, kodDomaci:kd, kodHoste:kh, deadline:dl, seznamSazek:null, posledniStrelec:"", prevedenyBank:jpt, zpravaDne:"" })
-                .then(() => { alert("Vypsáno!"); document.getElementById('shareSection').style.display='block'; });
+                db.ref('sazkyData').update({ domaci:d, hoste:h, kodDomaci:kd, kodHoste:kh, deadline:dl, seznamSazek:null, posledniStrelec:"", prevedenyBank:jpt, zpravaDne:"" }).then(() => { alert("Vypsáno!"); document.getElementById('shareSection').style.display='block'; });
             });
         }
 
@@ -160,14 +147,31 @@
                 const data = snapshot.val(); if(!data || !data.seznamSazek) return;
                 const sez = Object.entries(data.seznamSazek), bank = (data.prevedenyBank || 0) + (sez.length * 20), tSkore = sez.filter(i => i[1].skore === vys), tOboji = tSkore.filter(i => { const tip = normalize(i[1].strelec); return tip !== "" && sNorm.some(v => tip.includes(v) || v.includes(tip)); });
                 let vyherci = tOboji.length > 0 ? tOboji : tSkore; let updates = { posledniStrelec: sTxt };
-                if (vyherci.length > 0) { const podil = Math.floor(bank / vyherci.length); const vIds = vyherci.map(v => v[0]); sez.forEach(([key, s]) => { updates[`seznamSazek/${key}/stav`] = vIds.includes(key) ? `VÝHRA! 🎉 (+${podil} Kč)` : "❌"; }); } else { sez.forEach(([key, s]) => { updates[`seznamSazek/${key}/stav`] = "❌"; }); }
+                if (vyherci.length > 0) {
+                    const podil = Math.floor(bank / vyherci.length);
+                    const vIds = vyherci.map(v => v[0]);
+                    sez.forEach(([key, s]) => {
+                        const jeVyherce = vIds.includes(key);
+                        updates[`seznamSazek/${key}/stav`] = jeVyherce ? `VÝHRA! 🎉 (+${podil} Kč)` : "❌";
+                        // ZÁPIS DO HISTORIE PRO STATISTIKY
+                        const histRef = db.ref('historieSazek').push();
+                        histRef.set({ jmeno: s.jmeno, trefilSkore: (s.skore === vys), trefilStrelce: (jeVyherce && tOboji.length > 0), vyhra: jeVyherce ? podil : 0, datum: new Date().toISOString() });
+                    });
+                } else { sez.forEach(([key, s]) => { updates[`seznamSazek/${key}/stav`] = "❌"; }); }
                 db.ref('sazkyData').update(updates).then(() => alert("🏆 Hotovo!"));
             });
         }
 
         function ulozitZpravu() { db.ref('sazkyData/zpravaDne').set(document.getElementById('msg_text').value).then(() => alert("Zpráva uložena!")); }
         function vynulovatJackpot() { if(confirm("Vynulovat bank?")) db.ref('sazkyData/prevedenyBank').set(0); }
-        function smazatSazky() { if(confirm("Smazat všechny sázky?")) db.ref('sazkyData/seznamSazek').remove(); }
+        function smazatSazky() { if(confirm("Smazat aktuální sázky?")) db.ref('sazkyData/seznamSazek').remove(); }
+        
+        // NOVÁ FUNKCE PRO SMAZÁNÍ HISTORIE
+        function smazatHistoriiStatistik() {
+            if(confirm("⚠️ POZOR! Tímto smažeš kompletní historii všech sázek (všechny výhry v statistikách budou vynulovány). Opravdu chceš pokračovat?")) {
+                db.ref('historieSazek').remove().then(() => alert("✅ Historie statistik byla smazána."));
+            }
+        }
     </script>
 </body>
 </html>
