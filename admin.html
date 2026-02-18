@@ -12,7 +12,7 @@
         h3 { border-bottom: 2px solid #eee; padding-bottom: 10px; margin-top: 25px; color: #2c3e50; }
         label { display: block; margin-top: 15px; font-weight: bold; color: #34495e; font-size: 0.85em; }
         input { padding: 12px; border: 2px solid #ddd; border-radius: 8px; width: 100%; box-sizing: border-box; margin-top: 5px; font-size: 16px; }
-        .btn { padding: 15px; border: none; border-radius: 8px; color: white; font-weight: bold; width: 100%; cursor: pointer; margin-top: 10px; }
+        .btn { padding: 15px; border: none; border-radius: 8px; color: white; font-weight: bold; width: 100%; cursor: pointer; margin-top: 10px; font-size: 1em; }
         .btn-blue { background: #3498db; } .btn-red { background: #e74c3c; } .btn-grey { background: #95a5a6; } .btn-dark { background: #2c3e50; }
         #authOverlay { position: fixed; top:0; left:0; width:100%; height:100%; background:white; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:1000; }
     </style>
@@ -28,19 +28,20 @@
         <h1>🛠 Administrace</h1>
         
         <h3>1. Nový zápas / Další kolo</h3>
-        <p style="font-size: 0.75em; color: #e67e22;">(Kliknutím sem se potvrdí jackpot z minulého kola)</p>
+        <p style="font-size: 0.75em; color: #e67e22;">(Zde se potvrdí převod jackpotu do nového kola)</p>
         <label>Deadline:</label><input type="datetime-local" id="set_deadline">
         <label>Týmy:</label>
         <div style="display:flex; gap:10px;"><input type="text" id="set_domaci" placeholder="Domácí"><input type="text" id="set_hoste" placeholder="Hosté"></div>
         <button class="btn btn-blue" onclick="nastavitZapas()">🚀 NASTAVIT NOVÉ KOLO</button>
 
-        <h3>2. Vyhodnocení (Ruční oprava)</h3>
+        <h3>2. Vyhodnocení zápasu</h3>
         <label>Skutečné skóre:</label>
         <div style="display:flex; gap:10px; align-items:center;"><input type="number" id="real_domaci" value="0"> : <input type="number" id="real_hoste" value="0"></div>
-        <label>Střelci zápasu (čárka):</label><input type="text" id="real_strelec" placeholder="Haraslín, Kuchta">
+        <label>Střelci (oddělit čárkou):</label><input type="text" id="real_strelec" placeholder="Haraslín, Kuchta">
         <button class="btn btn-red" onclick="vyhodnotit()">🏆 VYHODNOTIT / OPRAVIT</button>
 
         <h3>3. Údržba</h3>
+        <button class="btn btn-blue" onclick="jenSmazatSazky()">🧹 JEN SMAZAT SÁZKY</button>
         <button class="btn btn-grey" onclick="vynulovatJackpot()">💰 VYNULOVAT JACKPOT</button>
         <button class="btn btn-dark" onclick="smazatStatistiky()">❌ SMAZAT HISTORII</button>
         <a href="index.html" style="display:block; text-align:center; margin-top:20px; color:#7f8c8d; text-decoration:none;">Zpět na sázky</a>
@@ -67,7 +68,6 @@
                 if (data.seznamSazek) {
                     const seznam = Object.values(data.seznamSazek);
                     const vyherceExistuje = seznam.some(s => s.stav && s.stav.includes("VÝHRA"));
-                    
                     if (!vyherceExistuje) {
                         novyJackpot += (seznam.length * 20);
                     } else {
@@ -79,7 +79,7 @@
                     domaci: d, hoste: h, deadline: dl || "",
                     seznamSazek: null, posledniStrelec: "",
                     prevedenyBank: novyJackpot
-                }).then(() => alert("Kolo uzavřeno. Jackpot pro nové kolo: " + novyJackpot + " Kč"));
+                }).then(() => alert("Nové kolo nastaveno. Jackpot: " + novyJackpot + " Kč"));
             });
         }
 
@@ -90,7 +90,7 @@
             
             db.ref('sazkyData').once('value', (snapshot) => {
                 const data = snapshot.val();
-                if(!data || !data.seznamSazek) return alert("Nejsou sázky k vyhodnocení.");
+                if(!data || !data.seznamSazek) return alert("Žádné sázky.");
                 
                 const seznam = Object.entries(data.seznamSazek);
                 const celkovyBank = (data.prevedenyBank || 0) + (seznam.length * 20);
@@ -115,9 +115,16 @@
                 }
 
                 db.ref('sazkyData').update(updates).then(() => {
-                    alert(`Vypočítaný bank pro toto kolo: ${celkovyBank} Kč.`);
+                    alert(`Vyhodnoceno. Bank: ${celkovyBank} Kč.`);
                 });
             });
+        }
+
+        function jenSmazatSazky() {
+            if(confirm("Opravdu smazat všechny aktuální sázky? (Jackpot zůstane zachován)")) {
+                db.ref('sazkyData/seznamSazek').remove();
+                db.ref('sazkyData/posledniStrelec').set("");
+            }
         }
 
         function vynulovatJackpot() { if(confirm("Vynulovat jackpot?")) db.ref('sazkyData/prevedenyBank').set(0); }
