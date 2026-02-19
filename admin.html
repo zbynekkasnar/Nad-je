@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin v3.6 - KANCELÁŘ NADĚJE</title>
+    <title>Admin v3.7 - KANCELÁŘ NADĚJE</title>
     
     <script src="stats.js"></script>
     
@@ -62,7 +62,6 @@
         .btn-red { background: var(--red); }
         .btn:hover { opacity: 0.9; transform: translateY(-2px); }
 
-        /* NOTIFIKACE */
         #statusMsg { 
             display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
             background: var(--green); color: white; padding: 15px 30px; border-radius: 50px;
@@ -89,12 +88,11 @@
             border: none; color: white; cursor: pointer; font-weight: bold; margin-left: 6px; 
         }
 
-        .check-ok { color: var(--green); font-weight: bold; margin-left: 10px; }
-        .check-fail { color: var(--red); font-weight: bold; margin-left: 10px; }
+        .check-ok { color: var(--green); font-weight: bold; margin-left: 10px; font-size: 0.8em; }
+        .check-fail { color: var(--red); font-weight: bold; margin-left: 10px; font-size: 0.8em; }
 
         .history-section { border-top: 5px solid #cbd5e0; margin-top: 60px; padding-top: 30px; }
 
-        /* MODAL */
         #evalModal { 
             position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
             width: 90%; max-width: 550px; background: white; border-radius: 25px; 
@@ -117,7 +115,7 @@
 
 <div class="container">
     <a href="index.html" class="btn-back">← ZPĚT NA WEB</a>
-    <h1 style="text-align: center;">⚙️ Administrace v3.6</h1>
+    <h1 style="text-align: center;">⚙️ Administrace v3.7</h1>
 
     <div class="card">
         <h2>💰 Bank a Statistiky</h2>
@@ -157,15 +155,11 @@
         <span style="font-size:1.8em; font-weight:bold;">:</span>
         <input type="number" id="finalH" style="width:75px; text-align:center; font-size:1.8em; border:2px solid var(--blue); border-radius:10px;">
     </div>
-    
-    <label>Střelci v základní hrací době:</label>
     <div id="finalStrelci" class="tag-container"></div>
-    
     <div style="display:flex; gap:10px; margin-bottom:20px;">
         <input type="text" id="addStrelecInput" placeholder="Přidat střelce ručně..." style="margin:0;">
         <button class="btn btn-blue" style="width:auto; margin:0; padding:0 20px;" onclick="manualAddStrelec()">+</button>
     </div>
-    
     <button class="btn btn-green" id="confirmEvalBtn">VYPLATIT VÝHRY A PŘESUNOUT</button>
     <button class="btn" style="background:gray; margin-top:10px;" onclick="closeEvalModal()">ZRUŠIT</button>
 </div>
@@ -173,7 +167,6 @@
 <datalist id="statyList"></datalist>
 
 <script>
-    // Konfigurace Firebase
     const firebaseConfig = { 
         apiKey: "AIzaSyC-NCdmsgA42FxnopKm92m1y5gUGw_z_uE", 
         authDomain: "nadeje-208bd.firebaseapp.com", 
@@ -187,12 +180,6 @@
     const db = firebase.database();
     
     let currentStrelci = [], openMatches = {};
-
-    function showStatus() {
-        const msg = document.getElementById('statusMsg');
-        msg.style.display = 'block';
-        setTimeout(() => { msg.style.display = 'none'; }, 3000);
-    }
 
     function checkAuth() {
         if (!sessionStorage.getItem('adminTime') || (Date.now() - sessionStorage.getItem('adminTime') > 300000)) {
@@ -224,34 +211,23 @@
     
     function clearStats() {
         checkAuth();
-        if(confirm("OPRAVDU chceš smazat statistiky všech hráčů?")) {
-            db.ref('sazkyData/stats').remove().then(() => alert("Statistiky byly vynulovány."));
+        if(confirm("OPRAVDU chceš smazat všechny statistiky hráčů?")) {
+            db.ref('sazkyData/stats').remove().then(() => alert("Statistiky vynulovány."));
         }
     }
 
     function addM() {
         checkAuth();
         const d = document.getElementById('d').value, h = document.getElementById('h').value, dl = document.getElementById('dl').value;
-        const btn = document.getElementById('pubBtn');
-        if(!d || !h || !dl) return alert("Vyplň všechny údaje!");
-        
-        btn.disabled = true;
-        btn.innerText = "PUBLIKUJI...";
-
+        if(!d || !h || !dl) return alert("Vyplň údaje!");
         const kd = vsechnyStaty.find(s=>s.n===d)?.c||"un", kh = vsechnyStaty.find(s=>s.n===h)?.c||"un";
-        
-        db.ref('sazkyData/zapasy').push({ 
-            domaci: d, hoste: h, kodD: kd, kodH: kh, deadline: dl, status: "aktivni" 
-        }).then(() => {
-            showStatus();
+        db.ref('sazkyData/zapasy').push({ domaci: d, hoste: h, kodD: kd, kodH: kh, deadline: dl, status: "aktivni" }).then(() => {
+            document.getElementById('statusMsg').style.display = 'block';
+            setTimeout(() => { document.getElementById('statusMsg').style.display = 'none'; }, 3000);
             document.getElementById('d').value = ""; document.getElementById('h').value = "";
-            document.getElementById('dl').value = "";
-            btn.disabled = false;
-            btn.innerText = "UVEŘEJNIT ZÁPAS NA WEBU";
         });
     }
 
-    // NAČÍTÁNÍ ZÁPASŮ A SÁZEK
     db.ref('sazkyData/zapasy').on('value', snap => {
         const aC = document.getElementById('activeMatches'), hC = document.getElementById('historyMatches');
         aC.innerHTML = ""; hC.innerHTML = "";
@@ -260,7 +236,6 @@
         Object.entries(data).forEach(([mid, m]) => {
             const div = document.createElement('div'); div.className = 'match-item';
             const isV = openMatches[mid] ? "block" : "none";
-            const btnTxt = openMatches[mid] ? "SKRÝT SÁZKY" : `SÁZKY (${m.sazky ? Object.keys(m.sazky).length : 0})`;
             
             let betsHtml = "";
             if(m.sazky) {
@@ -272,8 +247,12 @@
                     }
                     betsHtml += `
                         <div class="bet-admin-row">
-                            <span>${s.stav||"⏳"} ${s.jmeno} (<b>${s.skore}</b>) ${resIcon}</span>
-                            <div style="display:flex;gap:5px">
+                            <div style="display:flex; flex-direction:column; gap:2px;">
+                                <span>${s.stav||"⏳"} <b>${s.jmeno}</b></span>
+                                <span style="font-size:0.85em; color:#4a5568;">Tip: <b>${s.skore}</b> | Střelec: <b>${s.strelec}</b></span>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:5px">
+                                ${resIcon}
                                 <button class="small-btn btn-green" onclick="markPaid('${mid}','${sid}')">KČ</button>
                                 <button class="small-btn btn-red" onclick="deleteBet('${mid}','${sid}')">×</button>
                             </div>
@@ -286,119 +265,73 @@
                     <strong>${m.domaci} - ${m.hoste}</strong>
                     ${m.vysledek ? `<span style="background:var(--green);color:white;padding:4px 10px;border-radius:8px">${m.vysledek}</span>` : ''}
                 </div>
-                <textarea id="raw-${mid}" placeholder="Vlož text přehledu zápasu z Livesportu nebo Sport.cz..."></textarea>
+                <textarea id="raw-${mid}" placeholder="Vlož text z Livesport/Sport.cz..."></textarea>
                 <div style="display:flex;gap:10px">
-                    <button class="btn btn-blue" style="flex:2" onclick="evalM('${mid}')">${m.status==='vyhodnoceno' ? 'OPRAVIT VÝSLEDEK' : 'VYHODNOTIT'}</button>
-                    <button class="btn" style="background:gray;flex:1" id="btn-toggle-${mid}" onclick="toggleBets('${mid}')">${btnTxt}</button>
+                    <button class="btn btn-blue" style="flex:2" onclick="evalM('${mid}')">VYHODNOTIT</button>
+                    <button class="btn" style="background:gray;flex:1" onclick="toggleBets('${mid}')">SÁZKY (${m.sazky?Object.keys(m.sazky).length:0})</button>
                 </div>
                 <div id="bets-${mid}" class="bets-container" style="display:${isV}">${betsHtml || 'Žádné sázky'}</div>
-                <button class="btn btn-red" style="font-size:0.75em;margin-top:15px;padding:8px" onclick="deleteM('${mid}')">SMAZAT CELÝ ZÁPAS</button>
-            `;
+                <button class="btn btn-red" style="font-size:0.7em;margin-top:10px;padding:8px" onclick="deleteM('${mid}')">SMAZAT ZÁPAS</button>`;
             
             if(m.status === "vyhodnoceno") hC.appendChild(div); else aC.appendChild(div);
         });
     });
 
-    function toggleBets(mid) {
-        openMatches[mid] = !openMatches[mid];
-        const el = document.getElementById(`bets-${mid}`);
-        const btn = document.getElementById(`btn-toggle-${mid}`);
-        if(el) el.style.display = openMatches[mid] ? "block" : "none";
-        if(btn) btn.innerText = openMatches[mid] ? "SKRÝT SÁZKY" : btn.innerText.replace("SKRÝT", "SÁZKY");
-    }
+    function toggleBets(mid) { openMatches[mid] = !openMatches[mid]; db.ref('sazkyData/zapasy').once('value', () => {}); }
 
-    // PARSER LOGIKA
     function evalM(mid) {
-        checkAuth(); 
-        const raw = document.getElementById(`raw-${mid}`).value; 
-        if(!raw) return alert("Vlož text přehledu!");
-
-        // Základní doba čištění
+        checkAuth(); const raw = document.getElementById(`raw-${mid}`).value; if(!raw) return alert("Vlož text!");
         let clean = raw.split(/PRODLOUŽENÍ|PENALTY|NÁJEZDY|OVERTIME/i)[0];
-        
-        // Skóre
         const sc = clean.match(/(\d+)\s*[:|-]\s*(\d+)/g);
-        let d=0, h=0; 
-        if(sc){ 
-            const l=sc[sc.length-1].replace(/\s/g,'').replace('-',':').split(':'); 
-            d=l[0]; h=l[1]; 
-        }
+        let d=0, h=0; if(sc){ const l=sc[sc.length-1].replace(/\s/g,'').replace('-',':').split(':'); d=l[0]; h=l[1]; }
         
-        // Střelci
         currentStrelci = [];
-        const zakazano = ["třetina", "poločas", "konec", "přestávka", "vyloučení", "minuta", "karta", "střídání", "rozhodčí", "góly", "střely", "asistence"];
-        
+        const zak = ["třetina", "poločas", "konec", "přestávka", "vyloučení", "minuta", "karta", "střídání", "rozhodčí", "asistence"];
         clean.split('\n').forEach(line => {
             const t = line.trim();
             if (t.match(/^[\d+]+['.]/)) {
                 let n = t.replace(/^[\d+]+['.]\s*/, '').split('(')[0].split(',')[0].replace(/[0-9]/g, '').replace(/[:|-]/g, '').trim();
-                if (n.length > 3 && !zakazano.some(z => n.toLowerCase().includes(z)) && !currentStrelci.includes(n)) {
-                    currentStrelci.push(n);
-                }
+                if (n.length > 3 && !zak.some(z => n.toLowerCase().includes(z)) && !currentStrelci.includes(n)) currentStrelci.push(n);
             }
         });
-
-        document.getElementById('finalD').value = d; 
-        document.getElementById('finalH').value = h;
+        document.getElementById('finalD').value = d; document.getElementById('finalH').value = h;
         renderTags();
-        document.getElementById('modalOverlay').style.display='block'; 
-        document.getElementById('evalModal').style.display='block';
+        document.getElementById('modalOverlay').style.display='block'; document.getElementById('evalModal').style.display='block';
         document.getElementById('confirmEvalBtn').onclick = () => finishEval(mid);
     }
 
     function renderTags() {
         const c = document.getElementById('finalStrelci'); c.innerHTML = "";
-        currentStrelci.forEach((s, i) => {
-            c.innerHTML += `<div class="tag">${s} <b onclick="currentStrelci.splice(${i},1);renderTags()" style="cursor:pointer;color:red">×</b></div>`;
-        });
+        currentStrelci.forEach((s, i) => c.innerHTML += `<div class="tag">${s} <b onclick="currentStrelci.splice(${i},1);renderTags()" style="cursor:pointer;color:red">×</b></div>`);
     }
 
     function manualAddStrelec() {
         const v = document.getElementById('addStrelecInput').value;
-        if(v) { 
-            currentStrelci.push(v); 
-            renderTags(); 
-            document.getElementById('addStrelecInput').value = ""; 
-        }
+        if(v) { currentStrelci.push(v); renderTags(); document.getElementById('addStrelecInput').value = ""; }
     }
 
     function finishEval(mid) {
         const fs = `${document.getElementById('finalD').value}:${document.getElementById('finalH').value}`;
         const fst = currentStrelci.map(s => s.toLowerCase());
-        
         db.ref(`sazkyData/zapasy/${mid}`).once('value', snap => {
             const z = snap.val(), sazky = Object.entries(z.sazky || {});
-            
-            // Filtrace vítězů (původní logika tie-breakeru)
             let winS = sazky.filter(([sid, s]) => s.skore.replace(/\s/g,'') === fs);
             let winB = winS.filter(([sid, s]) => fst.some(r => r.includes(s.strelec.toLowerCase().trim()) || s.strelec.toLowerCase().trim().includes(r)));
-            
             let vyherci = winB.length > 0 ? winB : winS;
-            
             db.ref('sazkyData/prevedenyBank').once('value', bSnap => {
                 const total = (sazky.length * 20) + (bSnap.val() || 0);
-                
-                // Reset stavů
                 sazky.forEach(([sid, s]) => db.ref(`sazkyData/zapasy/${mid}/sazky/${sid}/stav`).set("❌"));
-                
                 if(vyherci.length > 0) {
                     const podil = Math.floor(total / vyherci.length);
                     vyherci.forEach(([sid, s]) => {
                         db.ref(`sazkyData/zapasy/${mid}/sazky/${sid}/stav`).set("🏆");
-                        // Statistiky
                         db.ref(`sazkyData/stats/${s.jmeno}`).transaction(c => {
-                            c = c || {vyhry:0, trefeneSkore:0, trefeniStrelci:0};
-                            c.vyhry += podil; 
-                            c.trefeneSkore += 1; 
-                            if(winB.length > 0) c.trefeniStrelci += 1; 
-                            return c;
+                            c=c||{vyhry:0,trefeneSkore:0,trefeniStrelci:0};
+                            c.vyhry+=podil; c.trefeneSkore+=1; if(winB.length>0) c.trefeniStrelci+=1; return c;
                         });
                     });
                     db.ref('sazkyData/prevedenyBank').set(0);
-                } else {
-                    db.ref('sazkyData/prevedenyBank').set(total);
-                }
-                
+                } else db.ref('sazkyData/prevedenyBank').set(total);
                 db.ref(`sazkyData/zapasy/${mid}/status`).set("vyhodnoceno");
                 db.ref(`sazkyData/zapasy/${mid}/vysledek`).set(fs);
                 closeEvalModal();
@@ -406,14 +339,10 @@
         });
     }
 
-    function closeEvalModal() { 
-        document.getElementById('modalOverlay').style.display='none'; 
-        document.getElementById('evalModal').style.display='none'; 
-    }
-    
+    function closeEvalModal() { document.getElementById('modalOverlay').style.display='none'; document.getElementById('evalModal').style.display='none'; }
     function markPaid(mid, sid) { db.ref(`sazkyData/zapasy/${mid}/sazky/${sid}/stav`).set("✅"); }
-    function deleteBet(mid, sid) { if(confirm("Smazat sázku?")) db.ref(`sazkyData/zapasy/${mid}/sazky/${sid}`).remove(); }
-    function deleteM(mid) { if(confirm("Smazat celý zápas?")) db.ref(`sazkyData/zapasy/${mid}`).remove(); }
+    function deleteBet(mid, sid) { if(confirm("Smazat?")) db.ref(`sazkyData/zapasy/${mid}/sazky/${sid}`).remove(); }
+    function deleteM(mid) { if(confirm("Smazat?")) db.ref(`sazkyData/zapasy/${mid}`).remove(); }
 </script>
 </body>
 </html>
