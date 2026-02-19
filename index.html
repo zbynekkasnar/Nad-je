@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KANCELÁŘ NADĚJE v2.7</title>
+    <title>KANCELÁŘ NADĚJE v2.8</title>
     
     <script src="stats.js"></script>
     
@@ -32,7 +32,7 @@
             overflow-x: hidden; 
         }
 
-        /* FIXNÍ ADMIN TLAČÍTKO - ABY SE NEPOSOUVALO S LOGEM */
+        /* FIXNÍ ADMIN TLAČÍTKO - STÁLE NA POZICI */
         .admin-lock {
             position: fixed; 
             top: 20px; 
@@ -72,7 +72,7 @@
             to { filter: drop-shadow(0 0 20px rgba(0, 242, 255, 0.8)); transform: scale(1.02); }
         }
 
-        /* BANK BOX */
+        /* DUÁLNÍ BANK BOX - DESIGN PRO DVA BANKY */
         .bank-box { 
             background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(0,242,255,0.1)); 
             border: 1px solid var(--neon); 
@@ -82,8 +82,33 @@
             margin-bottom: 35px; 
             box-shadow: 0 0 30px rgba(0, 242, 255, 0.15); 
         }
-        .bank-box span { font-size: 2.8em; font-weight: 900; text-shadow: 0 0 15px var(--neon); }
-        .bank-label { display: block; opacity: 0.5; font-size: 0.7em; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 5px; }
+        .bank-main-val { 
+            font-size: 2.8em; 
+            font-weight: 900; 
+            text-shadow: 0 0 15px var(--neon); 
+            line-height: 1;
+            margin-bottom: 5px;
+        }
+        .bank-label { 
+            display: block; 
+            opacity: 0.5; 
+            font-size: 0.7em; 
+            letter-spacing: 2px; 
+            text-transform: uppercase; 
+            margin-bottom: 10px; 
+        }
+        
+        .bank-total-row { 
+            margin-top: 15px; 
+            padding-top: 15px; 
+            border-top: 1px solid rgba(0,242,255,0.2); 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            gap: 10px;
+        }
+        .bank-total-label { font-size: 0.65em; opacity: 0.6; letter-spacing: 1px; text-transform: uppercase; }
+        .bank-total-val { font-weight: bold; color: var(--neon); font-size: 1.1em; }
 
         .btn-stats { 
             display: inline-block; 
@@ -99,7 +124,7 @@
         }
         .btn-stats:hover { background: var(--neon); color: black; box-shadow: 0 0 25px var(--neon); }
 
-        /* ZÁPASY - DLAŽDICE */
+        /* ZÁPASY - MATCH CARDS */
         #matchList { width: 100%; max-width: 600px; }
 
         .match-card { 
@@ -124,9 +149,9 @@
             display: flex; 
             overflow: hidden; 
         }
-        .bar-1 { height: 100%; background: #38a169; transition: 0.6s ease-out; }
-        .bar-0 { height: 100%; background: #718096; transition: 0.6s ease-out; }
-        .bar-2 { height: 100%; background: #3182ce; transition: 0.6s ease-out; }
+        .bar-1 { height: 100%; background: #38a169; transition: 0.6s ease-out; } /* Výhra domácích */
+        .bar-0 { height: 100%; background: #718096; transition: 0.6s ease-out; } /* Remíza */
+        .bar-2 { height: 100%; background: #3182ce; transition: 0.6s ease-out; } /* Výhra hostů */
         
         .barometer-labels { 
             display: flex; 
@@ -284,13 +309,18 @@
 </head>
 <body>
 
-    <a href="admin.html" class="admin-lock">⚙️</a>
+    <a href="admin.html" class="admin-lock" title="Administrace">⚙️</a>
 
     <img src="IMG_8427.jpeg" alt="KANCELÁŘ NADĚJE" class="header-logo">
 
     <div class="bank-box">
-        <span class="bank-label">Aktuální bank v hře</span>
-        <span id="mainBank">0</span> Kč
+        <span class="bank-label">Maximální výhra pro dnešek</span>
+        <div class="bank-main-val"><span id="mainBank">0</span> Kč</div>
+        
+        <div class="bank-total-row">
+            <span class="bank-total-label">Aktuální bank v celé hře:</span>
+            <span class="bank-total-val"><span id="totalBank">0</span> Kč</span>
+        </div>
     </div>
 
     <a href="statistiky.html" class="btn-stats">📊 ŽEBŘÍČKY A STATISTIKY</a>
@@ -332,23 +362,32 @@
     let kosik = {}; 
     let activeTimers = {};
 
-    // Načítání dat
+    // Hlavní vykreslovací posluchač
     db.ref('sazkyData').on('value', snap => {
         const data = snap.val() || {};
         const list = document.getElementById('matchList');
         list.innerHTML = "";
         
+        const prevBank = parseInt(data.prevedenyBank || 0);
         if (!data.zapasy) { 
-            document.getElementById('mainBank').innerText = data.prevedenyBank || 0; 
+            document.getElementById('mainBank').innerText = prevBank; 
+            document.getElementById('totalBank').innerText = prevBank;
             return; 
         }
 
         const zapasy = Object.entries(data.zapasy).map(([id, m]) => ({id, ...m})).sort((a,b) => new Date(a.deadline) - new Date(b.deadline));
         
-        // Výpočet banku pro aktuální dlaždici
+        // VÝPOČET BANKŮ - Kompletní logika pro oba banky
+        let totalAllBets = 0;
+        zapasy.forEach(m => { 
+            if(m.sazky) totalAllBets += Object.keys(m.sazky).length * 20; 
+        });
+        
         const nejblizsi = zapasy[0];
-        const vkladyMatch = nejblizsi.sazky ? Object.keys(nejblizsi.sazky).length * 20 : 0;
-        document.getElementById('mainBank').innerText = parseInt(data.prevedenyBank || 0) + vkladyMatch;
+        const vkladyDnes = nejblizsi.sazky ? Object.keys(nejblizsi.sazky).length * 20 : 0;
+        
+        document.getElementById('mainBank').innerText = prevBank + vkladyDnes;
+        document.getElementById('totalBank').innerText = prevBank + totalAllBets;
 
         zapasy.forEach(m => {
             const id = m.id;
@@ -356,7 +395,7 @@
             const isClosed = Date.now() > new Date(m.deadline).getTime();
             const isEvaluated = m.status === "vyhodnoceno";
 
-            // LOGIKA PRO BAROMETR
+            // LOGIKA PRO BAROMETR (Výpočet procent tipujících)
             let t1 = 0, t0 = 0, t2 = 0, total = 0;
             if(m.sazky) {
                 Object.values(m.sazky).forEach(s => {
@@ -394,7 +433,7 @@
                 </div>
                 <div class="barometer-labels">
                     <span>DOMÁCÍ ${Math.round(p1)}%</span>
-                    <span>REMIZA ${Math.round(p0)}%</span>
+                    <span>REMÍZA ${Math.round(p0)}%</span>
                     <span>HOSTÉ ${Math.round(p2)}%</span>
                 </div>
 
@@ -412,30 +451,30 @@
                             <span>Skrýt můj tip před ostatními</span>
                         </div>
                         <button class="btn-add" onclick="pridat('${id}')">PŘIDAT NA TIKET (20 Kč)</button>
-                    ` : `<div style="text-align:center; color:var(--neon); font-weight:bold; margin-bottom:15px;">Sázky uzavřeny</div>`}
+                    ` : `<div style="text-align:center; color:var(--neon); font-weight:bold; margin-bottom:15px;">Sázky pro tento zápas jsou uzavřeny</div>`}
                     <div id="bets-${id}" style="margin-top:20px;"></div>
                 </div>`;
             list.appendChild(card);
 
             if(m.sazky) {
-                const cSkore = {}, cFull = {};
+                const cS = {}, cF = {}; 
                 Object.values(m.sazky).forEach(s => { 
                     const f = `${s.skore}-${s.strelec.toLowerCase().trim()}`; 
-                    cSkore[s.skore] = (cSkore[s.skore]||0)+1; 
-                    cFull[f] = (cFull[f]||0)+1; 
+                    cS[s.skore] = (cS[s.skore]||0)+1; 
+                    cF[f] = (cF[f]||0)+1; 
                 });
                 
                 Object.values(m.sazky).forEach(s => {
                     const fK = `${s.skore}-${s.strelec.toLowerCase().trim()}`;
                     const showAll = isClosed || isEvaluated;
                     let bg = "rgba(255,255,255,0.03)";
-                    if(cFull[fK]>1) bg="rgba(255, 165, 0, 0.2)"; 
-                    else if(cSkore[s.skore]>1) bg="rgba(255, 255, 0, 0.1)";
-
-                    // LOGIKA PRO SKRYTÝ TIP
+                    if(cF[fK]>1) bg="rgba(255, 165, 0, 0.2)"; 
+                    else if(cS[s.skore]>1) bg="rgba(255, 255, 0, 0.1)";
+                    
+                    // LOGIKA PRO SKRYTÝ TIP (??:?? a *******)
                     const dSkore = (s.skryt && !showAll) ? '??:??' : s.skore;
                     const dStrelec = (s.skryt && !showAll) ? '*******' : (s.strelec || '---');
-
+                    
                     document.getElementById(`bets-${id}`).innerHTML += `
                         <div class="bet-row" style="background:${bg}">
                             <div class="bet-main">
@@ -455,14 +494,23 @@
     }
 
     function closeCart() { document.getElementById('cart').style.display = 'none'; }
-
+    
     function pridat(id) {
-        const jm = document.getElementById(`name-${id}`).value, sD = document.getElementById(`sD-${id}`).value, sH = document.getElementById(`sH-${id}`).value, p = document.getElementById(`p-${id}`).value, skryt = document.getElementById(`h-${id}`).checked;
-        if(!jm || sD==="" || sH==="" || !p) return alert("Vyplň vše!");
+        const jm = document.getElementById(`name-${id}`).value;
+        const sD = document.getElementById(`sD-${id}`).value;
+        const sH = document.getElementById(`sH-${id}`).value;
+        const p = document.getElementById(`p-${id}`).value;
+        const skryt = document.getElementById(`h-${id}`).checked;
+
+        if(!jm || sD==="" || sH==="" || !p) return alert("Vyplň všechna pole!");
+
         db.ref(`sazkyData/zapasy/${id}/sazky`).once('value', snap => {
-            if(Object.values(snap.val()||{}).some(s => s.skore === `${sD}:${sH}` && s.strelec.toLowerCase().trim() === p.toLowerCase().trim())) return alert("Obsazeno!");
+            const dataS = snap.val() || {};
+            if(Object.values(dataS).some(s => s.skore === `${sD}:${sH}` && s.strelec.toLowerCase().trim() === p.toLowerCase().trim())) {
+                return alert("Tato přesná kombinace skóre a střelce je již obsazena!");
+            }
             kosik[id] = { jmeno: jm, skore: `${sD}:${sH}`, strelec: p, skryt: skryt };
-            document.getElementById('cartCount').innerText = `${Object.keys(kosik).length} zápasů`;
+            document.getElementById('cartCount').innerText = `${Object.keys(kosik).length} zápasů na tiketu`;
             document.getElementById('cartTotal').innerText = `${Object.keys(kosik).length * 20} Kč`;
             document.getElementById('cart').style.display = 'block'; 
             toggle(id);
@@ -470,26 +518,37 @@
     }
 
     function odeslatTiket() {
-        let jm = ""; 
+        const btn = document.getElementById('sendBtn');
+        btn.disabled = true;
+        let jmH = ""; 
         Object.entries(kosik).forEach(([mid, d]) => { 
             db.ref(`sazkyData/zapasy/${mid}/sazky`).push({ ...d, stav: "⏳" }); 
-            jm = d.jmeno; 
+            jmH = d.jmeno; 
         });
-        const suma = Object.keys(kosik).length * 20, zp = `Sazka_${jm}`.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const suma = Object.keys(kosik).length * 20;
+        const zp = `Sazka_${jmH}`.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        
         document.getElementById('cartContent').style.display = 'none';
         document.getElementById('qrImg').src = `https://api.paylibo.com/paylibo/generator/czech/image?accountNumber=295511827&bankCode=0300&amount=${suma}&currency=CZK&message=${zp}`;
+        document.getElementById('qrDesc').innerHTML = `Částka: <b>${suma} Kč</b><br>Zpráva: <b>${zp}</b>`;
         document.getElementById('qrArea').style.display = 'block'; 
         kosik = {};
     }
 
+    // Odpočet času v reálném čase
     setInterval(() => {
+        const now = Date.now();
         Object.entries(activeTimers).forEach(([id, dl]) => {
             const el = document.getElementById(`t-${id}`); 
             if(!el) return;
-            const diff = new Date(dl).getTime() - Date.now();
-            if(diff <= 0) { el.innerText = "🔐 ZAVŘENO"; el.style.color = "#ff4444"; }
-            else { 
-                const h = Math.floor(diff/3600000), m = Math.floor((diff%3600000)/60000), s = Math.floor((diff%60000)/1000); 
+            const diff = new Date(dl).getTime() - now;
+            if(diff <= 0) { 
+                el.innerText = "🔐 ZAVŘENO"; 
+                el.style.color = "#ff4444"; 
+            } else { 
+                const h = Math.floor(diff/3600000);
+                const m = Math.floor((diff%3600000)/60000);
+                const s = Math.floor((diff%60000)/1000); 
                 el.innerText = `⏱️ ${h}h ${m}m ${s}s`; 
             }
         });
