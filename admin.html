@@ -178,8 +178,11 @@
         if(!d || !h || !dl) return alert("Vyplň údaje!");
         const kd = vsechnyStaty.find(s=>s.n===d)?.c||"un", kh = vsechnyStaty.find(s=>s.n===h)?.c||"un";
         db.ref('sazkyData/zapasy').push({ domaci: d, hoste: h, kodD: kd, kodH: kh, deadline: dl, status: "aktivni" }).then(() => {
-            document.getElementById('statusMsg').style.display = 'block';
-            setTimeout(() => { document.getElementById('statusMsg').style.display = 'none'; }, 3000);
+            const msg = document.getElementById('statusMsg');
+            msg.innerText = "ZÁPAS BYL PUBLIKOVÁN! ✅";
+            msg.style.background = "var(--green)";
+            msg.style.display = 'block';
+            setTimeout(() => { msg.style.display = 'none'; }, 3000);
             document.getElementById('d').value = ""; document.getElementById('h').value = "";
         });
     }
@@ -285,7 +288,7 @@
         const finalD = parseInt(document.getElementById('finalD').value);
         const finalH = parseInt(document.getElementById('finalH').value);
         const fs = `${finalD}:${finalH}`;
-        const rawStrelci = [...currentStrelci]; // Zachováme pro uložení do DB
+        const rawStrelci = [...currentStrelci]; 
         const fst = rawStrelci.map(s => s.toLowerCase().trim());
 
         db.ref(`sazkyData/zapasy/${mid}`).once('value', snap => {
@@ -339,11 +342,21 @@
                     db.ref('sazkyData/prevedenyBank').set(totalAmount);
                 }
                 
-                // --- KLÍČOVÁ ZMĚNA: Ukládáme střelce pro Index.html ---
                 db.ref(`sazkyData/zapasy/${mid}/status`).set("vyhodnoceno");
                 db.ref(`sazkyData/zapasy/${mid}/vysledek`).set(fs);
                 db.ref(`sazkyData/zapasy/${mid}/strelciZapasu`).set(rawStrelci); 
                 
+                // VYMAZÁNÍ TEXTOVÉHO POLE LIVESPORTU
+                const rawField = document.getElementById(`raw-${mid}`);
+                if(rawField) rawField.value = "";
+
+                // VIZUÁLNÍ POTVRZENÍ
+                const msg = document.getElementById('statusMsg');
+                msg.innerText = "ZÁPAS VYHODNOCEN A VÝHRY ROZDĚLENY! 🏆";
+                msg.style.background = "var(--blue)";
+                msg.style.display = 'block';
+                setTimeout(() => { msg.style.display = 'none'; }, 4000);
+
                 closeEvalModal();
             });
         });
