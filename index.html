@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KANCELÁŘ NADĚJE v4.0</title>
+    <title>KANCELÁŘ NADĚJE v4.3</title>
 
     <script src="stats.js"></script>
 
@@ -367,8 +367,8 @@
         }
 
         @keyframes fabBounce {
-            from { transform: scale(0) rotate(-90deg); }
-            to { transform: scale(1) rotate(0); }
+            from { transform: scale(0) rotate(-90deg); opacity: 0; }
+            to { transform: scale(1) rotate(0); opacity: 1; }
         }
 
         .fab-badge {
@@ -477,7 +477,8 @@
             opacity: 0.6;
         }
 
-        .win-glow { color: #f1c40f; text-shadow: 0 0 10px rgba(241,196,15,0.5); }
+        .win-glow { color: #f1c40f; text-shadow: 0 0 10px rgba(241,196,15,0.5); font-weight: 900; }
+        .ok-glow { color: #27ae60; font-weight: 900; }
         .loss-dim { color: #ff4444; opacity: 0.5; }
 
         /* SCROLLBAR */
@@ -578,19 +579,16 @@
 
         const prevBank = parseInt(data.prevedenyBank || 0);
         
-        // Pokud nejsou zápasy
         if (!data.zapasy) {
             document.getElementById('uiMainBank').innerText = prevBank;
             document.getElementById('uiTotalBank').innerText = prevBank;
             return;
         }
 
-        // Seřazení zápasů podle času
         const zapasy = Object.entries(data.zapasy)
             .map(([id, m]) => ({ id, ...m }))
             .sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
 
-        // Výpočet banků
         let sumActiveBets = 0;
         zapasy.forEach(z => {
             if (z.status !== "vyhodnoceno" && z.sazky) {
@@ -604,7 +602,6 @@
         document.getElementById('uiMainBank').innerText = prevBank + vkladyDnes;
         document.getElementById('uiTotalBank').innerText = prevBank + sumActiveBets;
 
-        // Vykreslení karet
         zapasy.forEach(m => {
             activeDeadlines[m.id] = m.deadline;
             const now = Date.now();
@@ -612,7 +609,6 @@
             const isClosed = now > target;
             const isEvaluated = m.status === "vyhodnoceno";
 
-            // Barometr logika
             let t1=0, t0=0, t2=0, totalCount=0;
             if(m.sazky) {
                 Object.values(m.sazky).forEach(s => {
@@ -687,14 +683,16 @@
             `;
             container.appendChild(card);
 
-            // Vykreslení historie sázek v detailu
             if (m.sazky) {
                 const bList = document.getElementById(`bets-list-${m.id}`);
                 Object.values(m.sazky).forEach(s => {
                     const reveal = isClosed || isEvaluated;
-                    let statusHtml = "⏳";
+                    let icon = "⏳";
+                    
                     if(isEvaluated) {
-                        statusHtml = s.stav === "🏆" ? `<span class="win-glow">🏆 VÝHRA</span>` : `<span class="loss-dim">❌</span>`;
+                        if(s.stav === "🏆") icon = `<span class="win-glow">🏆 VÝHRA</span>`;
+                        else if(s.stav === "✅") icon = `<span class="ok-glow">✅ trefil skóre</span>`;
+                        else icon = `<span class="loss-dim">❌</span>`;
                     }
 
                     const displaySkore = (s.skryt && !reveal) ? '??:??' : s.skore;
@@ -703,7 +701,7 @@
                     bList.innerHTML += `
                         <div class="bet-row-ui">
                             <div class="bet-header-ui">
-                                <span>${statusHtml} ${s.jmeno}</span>
+                                <span>${icon} ${s.jmeno}</span>
                                 <span style="color:var(--neon)">${displaySkore}</span>
                             </div>
                             <div class="bet-meta-ui">🎯 Střelec: ${displayStrelec}</div>
@@ -714,7 +712,6 @@
         });
     });
 
-    // --- FUNKCE ROZHRANÍ ---
     function uiToggleMatch(id) {
         const el = document.getElementById(`detail-${id}`);
         const all = document.querySelectorAll('.details');
@@ -762,7 +759,6 @@
         document.getElementById('cartModal').style.display = 'none';
     }
 
-    // --- AKCE ---
     function actionAddToTicket(id, mName) {
         const name = document.getElementById(`name-${id}`).value;
         const sD = document.getElementById(`scD-${id}`).value;
@@ -772,7 +768,6 @@
 
         if(!name || sD==="" || sH==="" || !striker) return alert("Vyplň prosím všechna pole sázky!");
 
-        // Kontrola duplicity (Skóre + Střelec)
         db.ref(`sazkyData/zapasy/${id}/sazky`).once('value', snap => {
             const data = snap.val() || {};
             const isDup = Object.values(data).some(s => 
@@ -780,7 +775,7 @@
                 s.strelec.toLowerCase().trim() === striker.toLowerCase().trim()
             );
 
-            if(isDup) return alert("Tento přesný tip (skóre i střelec) už v systému je. Zkus jiného střelce nebo výsledek!");
+            if(isDup) return alert("Tento přesný tip už v systému je!");
 
             localCart[id] = {
                 jmeno: name,
@@ -818,7 +813,6 @@
         const totalSum = Object.keys(localCart).length * 20;
         const msg = `Sazka_${lastUser}`.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
         
-        // Nastavení QR a detailů
         document.getElementById('uiQrImage').src = `https://api.paylibo.com/paylibo/generator/czech/image?accountNumber=295511827&bankCode=0300&amount=${totalSum}&currency=CZK&message=${msg}`;
         document.getElementById('uiPayAmount').innerText = `${totalSum} Kč`;
         document.getElementById('uiPayMessage').innerText = msg;
@@ -830,7 +824,6 @@
         uiUpdateFAB();
     }
 
-    // --- ČASOVAČE (SMYČKA) ---
     setInterval(() => {
         const now = Date.now();
         Object.entries(activeDeadlines).forEach(([id, dl]) => {
