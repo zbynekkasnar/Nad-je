@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin v4.8 - KANCELÁŘ NADĚJE</title>
+    <title>Admin v4.9 - KANCELÁŘ NADĚJE</title>
     
     <script src="stats.js"></script>
-    
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     
@@ -27,88 +26,35 @@
         }
 
         .container { max-width: 900px; margin: 0 auto; }
-        
-        .btn-back { 
-            display: inline-block; padding: 12px 24px; background: white; 
-            color: #4a5568; text-decoration: none; border-radius: 12px; 
-            font-weight: bold; border: 1px solid #cbd5e0; margin-bottom: 25px; 
-            transition: 0.3s;
-        }
+        .btn-back { display: inline-block; padding: 12px 24px; background: white; color: #4a5568; text-decoration: none; border-radius: 12px; font-weight: bold; border: 1px solid #cbd5e0; margin-bottom: 25px; transition: 0.3s; }
         .btn-back:hover { background: #edf2f7; transform: translateX(-3px); }
 
-        .card { 
-            background: white; padding: 30px; border-radius: 20px; 
-            margin-bottom: 30px; box-shadow: var(--card-shadow); 
-            border: 1px solid #e2e8f0; 
-        }
-
+        .card { background: white; padding: 30px; border-radius: 20px; margin-bottom: 30px; box-shadow: var(--card-shadow); border: 1px solid #e2e8f0; }
         h2 { margin: 0 0 20px 0; border-bottom: 2px solid #edf2f7; padding-bottom: 12px; font-size: 1.5em; }
-        
         label { display: block; margin-top: 15px; font-weight: bold; font-size: 0.85em; color: #718096; text-transform: uppercase; }
-        
-        input, textarea { 
-            width: 100%; padding: 14px; margin: 8px 0; 
-            border: 1px solid #cbd5e0; border-radius: 10px; 
-            box-sizing: border-box; font-size: 1em; font-family: inherit;
-        }
+        input, textarea { width: 100%; padding: 14px; margin: 8px 0; border: 1px solid #cbd5e0; border-radius: 10px; box-sizing: border-box; font-size: 1em; font-family: inherit; }
 
-        .btn { 
-            padding: 15px; border: none; border-radius: 12px; color: white; 
-            cursor: pointer; width: 100%; font-weight: bold; 
-            text-transform: uppercase; margin-top: 10px; transition: 0.3s; 
-            text-align: center;
-        }
+        .btn { padding: 15px; border: none; border-radius: 12px; color: white; cursor: pointer; width: 100%; font-weight: bold; text-transform: uppercase; margin-top: 10px; transition: 0.3s; text-align: center; }
         .btn-blue { background: var(--blue); }
         .btn-green { background: var(--green); }
         .btn-red { background: var(--red); }
         .btn:hover { opacity: 0.9; transform: translateY(-2px); }
 
-        #statusMsg { 
-            display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
-            background: var(--green); color: white; padding: 15px 30px; border-radius: 50px;
-            font-weight: bold; box-shadow: 0 10px 30px rgba(0,0,0,0.2); z-index: 9999;
-        }
-
-        .match-item { 
-            background: #f8fafc; border: 1px solid #e2e8f0; 
-            padding: 25px; border-radius: 18px; margin-top: 25px; 
-        }
+        #statusMsg { display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: var(--green); color: white; padding: 15px 30px; border-radius: 50px; font-weight: bold; box-shadow: 0 10px 30px rgba(0,0,0,0.2); z-index: 9999; }
+        .match-item { background: #f8fafc; border: 1px solid #e2e8f0; padding: 25px; border-radius: 18px; margin-top: 25px; }
+        .bets-container { margin-top: 20px; border-top: 2px dashed #edf2f7; padding-top: 15px; }
+        .bet-admin-row { background: white; padding: 12px 18px; border-radius: 12px; margin-top: 10px; border: 1px solid #edf2f7; display: flex; justify-content: space-between; align-items: center; }
         
-        .bets-container { 
-            margin-top: 20px; border-top: 2px dashed #edf2f7; padding-top: 15px; 
-        }
-        
-        .bet-admin-row { 
-            background: white; padding: 12px 18px; border-radius: 12px; 
-            margin-top: 10px; border: 1px solid #edf2f7; 
-            display: flex; justify-content: space-between; align-items: center; 
-        }
-        
-        .small-btn { 
-            padding: 8px 14px; border-radius: 8px; font-size: 0.75em; 
-            border: none; color: white; cursor: pointer; font-weight: bold; margin-left: 6px; 
-        }
-
+        .small-btn { padding: 8px 14px; border-radius: 8px; font-size: 0.75em; border: none; color: white; cursor: pointer; font-weight: bold; margin-left: 6px; }
         .check-ok { color: var(--green); font-weight: bold; margin-left: 10px; font-size: 0.8em; }
         .check-fail { color: var(--red); font-weight: bold; margin-left: 10px; font-size: 0.8em; }
         .win-amount { color: #f1c40f; background: #000; padding: 2px 8px; border-radius: 6px; font-size: 0.85em; margin-left: 10px; }
-        .tag-info { font-size: 0.7em; background: #edf2f7; padding: 2px 6px; border-radius: 4px; margin-left: 5px; color: #4a5568; }
 
-        .history-section { border-top: 5px solid #cbd5e0; margin-top: 60px; padding-top: 30px; }
-
-        #evalModal { 
-            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
-            width: 90%; max-width: 550px; background: white; border-radius: 25px; 
-            box-shadow: 0 0 80px rgba(0,0,0,0.6); display: none; z-index: 3000; padding: 35px; 
-        }
-        .modal-overlay { 
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: rgba(0,0,0,0.8); display: none; z-index: 2999; 
-        }
+        #evalModal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; max-width: 550px; background: white; border-radius: 25px; box-shadow: 0 0 80px rgba(0,0,0,0.6); display: none; z-index: 3000; padding: 35px; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: none; z-index: 2999; }
         .tag-container { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0; background: #f1f5f9; padding: 10px; border-radius: 12px; }
         .tag { background: white; padding: 6px 12px; border-radius: 15px; font-size: 0.85em; border: 1px solid #e2e8f0; display: flex; align-items: center; gap: 8px; }
         .tag b { cursor: pointer; color: var(--red); }
-
         textarea { height: 80px; resize: vertical; }
     </style>
 </head>
@@ -121,7 +67,7 @@
         <img src="IMG_8429.png" style="max-width: 200px; border-radius: 20px;">
     </div>
     <a href="index.html" class="btn-back">← ZPĚT NA WEB</a>
-    <h1 style="text-align: center;">⚙️ Administrace v4.8</h1>
+    <h1 style="text-align: center;">⚙️ Administrace v4.9</h1>
 
     <div class="card">
         <h2>💰 Správa banku</h2>
@@ -256,7 +202,6 @@
                         const resParts = m.vysledek.split(':');
                         const skOk = (parseInt(skParts[0]) === parseInt(resParts[0])) && (parseInt(skParts[1]) === parseInt(resParts[1]));
                         
-                        // Zobrazení v historii
                         if(s.stav === "🏆") {
                             resInfo = `<span class="win-amount">🏆 VYPLATIT: ${s.vyhraKc || 0} Kč</span>`;
                         } else if(skOk) {
@@ -340,36 +285,28 @@
         const finalD = parseInt(document.getElementById('finalD').value);
         const finalH = parseInt(document.getElementById('finalH').value);
         const fs = `${finalD}:${finalH}`;
-        const fst = currentStrelci.map(s => s.toLowerCase().trim());
+        const rawStrelci = [...currentStrelci]; // Zachováme pro uložení do DB
+        const fst = rawStrelci.map(s => s.toLowerCase().trim());
 
         db.ref(`sazkyData/zapasy/${mid}`).once('value', snap => {
             const z = snap.val(), sazky = Object.entries(z.sazky || {});
             
-            // 1. Kdo trefil skóre? (Pro statistiky)
             let winS = sazky.filter(([sid, s]) => {
                 const parts = s.skore.split(':');
                 return parseInt(parts[0]) === finalD && parseInt(parts[1]) === finalH;
             });
             
-            // 2. Kdo z nich trefil střelce? (Pro tie-breaker)
             let winB = winS.filter(([sid, s]) => fst.some(r => r.includes(s.strelec.toLowerCase().trim()) || s.strelec.toLowerCase().trim().includes(r)));
-            
-            // 3. Kdo trefil střelce obecně (I bez skóre - pro statistiky)
-            let generalStrikerWinners = sazky.filter(([sid, s]) => fst.some(r => r.includes(s.strelec.toLowerCase().trim()) || s.strelec.toLowerCase().trim().includes(r)));
-            
-            // Tie-breaker pro bank
             let vyherciBanku = winB.length > 0 ? winB : winS;
             
             db.ref('sazkyData/prevedenyBank').once('value', bSnap => {
                 const totalAmount = (sazky.length * 20) + (parseInt(bSnap.val()) || 0);
                 
-                // Vynulovat
                 sazky.forEach(([sid, s]) => {
                     db.ref(`sazkyData/zapasy/${mid}/sazky/${sid}/stav`).set("❌");
                     db.ref(`sazkyData/zapasy/${mid}/sazky/${sid}/vyhraKc`).set(0);
                 });
                 
-                // ZÁPIS STATISTIK (Všem co trefili, ne jen výhercům banku)
                 sazky.forEach(([sid, s]) => {
                     const sParts = s.skore.split(':');
                     const hitsScore = parseInt(sParts[0]) === finalD && parseInt(sParts[1]) === finalH;
@@ -385,7 +322,6 @@
                     }
                 });
 
-                // ROZDĚLENÍ PENĚZ (Jen tie-breaker vítězům)
                 if(vyherciBanku.length > 0) {
                     const share = Math.floor(totalAmount / vyherciBanku.length);
                     winS.forEach(([sid, s]) => db.ref(`sazkyData/zapasy/${mid}/sazky/${sid}/stav`).set("✅"));
@@ -393,8 +329,6 @@
                     vyherciBanku.forEach(([sid, s]) => {
                         db.ref(`sazkyData/zapasy/${mid}/sazky/${sid}/stav`).set("🏆");
                         db.ref(`sazkyData/zapasy/${mid}/sazky/${sid}/vyhraKc`).set(share);
-                        
-                        // Připsat výhru do statistik
                         db.ref(`sazkyData/stats/${s.jmeno}`).transaction(c => {
                             if (c) c.vyhry += share;
                             return c;
@@ -405,8 +339,11 @@
                     db.ref('sazkyData/prevedenyBank').set(totalAmount);
                 }
                 
+                // --- KLÍČOVÁ ZMĚNA: Ukládáme střelce pro Index.html ---
                 db.ref(`sazkyData/zapasy/${mid}/status`).set("vyhodnoceno");
                 db.ref(`sazkyData/zapasy/${mid}/vysledek`).set(fs);
+                db.ref(`sazkyData/zapasy/${mid}/strelciZapasu`).set(rawStrelci); 
+                
                 closeEvalModal();
             });
         });
