@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KANCELÁŘ NADĚJE v3.1</title>
+    <title>KANCELÁŘ NADĚJE v3.2</title>
     
     <script src="stats.js"></script>
     
@@ -32,7 +32,7 @@
             overflow-x: hidden; 
         }
 
-        /* FIXNÍ ADMIN TLAČÍTKO - VŽDY NAHOŘE */
+        /* FIXNÍ ADMIN TLAČÍTKO */
         .admin-lock {
             position: fixed; 
             top: 20px; 
@@ -58,7 +58,7 @@
             box-shadow: 0 0 30px var(--neon); 
         }
 
-        /* PULZUJÍCÍ LOGO */
+        /* ANIMOVANÉ LOGO */
         .header-logo { 
             max-width: 450px; 
             width: 90%; 
@@ -72,7 +72,7 @@
             to { filter: drop-shadow(0 0 20px rgba(0, 242, 255, 0.8)); transform: scale(1.02); }
         }
 
-        /* BANK BOX - DUÁLNÍ ZOBRAZENÍ */
+        /* DUÁLNÍ BANK BOX */
         .bank-box { 
             background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(0,242,255,0.1)); 
             border: 1px solid var(--neon); 
@@ -124,7 +124,7 @@
         }
         .btn-stats:hover { background: var(--neon); color: black; box-shadow: 0 0 25px var(--neon); }
 
-        /* ZÁPASY - MATCH CARDS */
+        /* MATCH LIST */
         #matchList { width: 100%; max-width: 600px; }
 
         .match-card { 
@@ -241,6 +241,7 @@
             border-radius: 15px; 
         }
 
+        /* PŘEPÍNAČ SKRYTÉHO TIPU */
         .switch-row { 
             display: flex; 
             align-items: center; 
@@ -275,7 +276,7 @@
             text-transform: uppercase; 
         }
         
-        /* SEZNAM SÁZEK - VYHODNOCENÍ */
+        /* SEZNAM SÁZEK - VIZUÁLNÍ VYHODNOCENÍ */
         .bet-row { 
             padding: 14px; 
             border-radius: 15px; 
@@ -321,7 +322,7 @@
         <div class="bank-main-val"><span id="mainBank">0</span> Kč</div>
         
         <div class="bank-total-row">
-            <span class="bank-total-label">Aktuální bank v celé hře:</span>
+            <span class="bank-total-label">Aktuální bank v hře:</span>
             <span class="bank-total-val"><span id="totalBank">0</span> Kč</span>
         </div>
     </div>
@@ -380,17 +381,17 @@
 
         const zapasy = Object.entries(data.zapasy).map(([id, m]) => ({id, ...m})).sort((a,b) => new Date(a.deadline) - new Date(b.deadline));
         
-        // VÝPOČET BANKŮ
-        let totalAllBets = 0;
+        // OPRAVA POČÍTADLA: Sčítáme pouze z aktivních zápasů
+        let totalActiveBets = 0;
         zapasy.forEach(m => { 
-            if(m.sazky) totalAllBets += Object.keys(m.sazky).length * 20; 
+            if(m.status !== "vyhodnoceno" && m.sazky) totalActiveBets += Object.keys(m.sazky).length * 20; 
         });
         
         const aktivniZ = zapasy.filter(m => m.status !== "vyhodnoceno");
         const vkladyDnes = (aktivniZ.length > 0 && aktivniZ[0].sazky) ? Object.keys(aktivniZ[0].sazky).length * 20 : 0;
         
         document.getElementById('mainBank').innerText = prevBank + vkladyDnes;
-        document.getElementById('totalBank').innerText = prevBank + totalAllBets;
+        document.getElementById('totalBank').innerText = prevBank + totalActiveBets;
 
         zapasy.forEach(m => {
             const id = m.id;
@@ -463,7 +464,7 @@
                 Object.values(m.sazky).forEach(s => {
                     const showAll = isClosed || isEvaluated;
                     
-                    // VIZUÁLNÍ VYHODNOCENÍ
+                    // VIZUÁLNÍ VYHODNOCENÍ (POHÁR NEBO KŘÍŽEK)
                     let vyhodnoceniHtml = "⏳";
                     if(isEvaluated) {
                         vyhodnoceniHtml = s.stav === "🏆" ? `<span class="win-tag">🏆 VÝHRA</span>` : `<span class="loss-tag">❌</span>`;
@@ -507,7 +508,7 @@
                 return alert("Obsazeno!");
             }
             kosik[id] = { jmeno: jm, skore: `${sD}:${sH}`, strelec: p, skryt: skryt };
-            document.getElementById('cartCount').innerText = `${Object.keys(kosik).length} zápasů`;
+            document.getElementById('cartCount').innerText = `${Object.keys(kosik).length} zápasů na tiketu`;
             document.getElementById('cartTotal').innerText = `${Object.keys(kosik).length * 20} Kč`;
             document.getElementById('cart').style.display = 'block'; 
             toggle(id);
