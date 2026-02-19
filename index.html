@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KANCELÁŘ NADĚJE v4.9</title>
+    <title>KANCELÁŘ NADĚJE v4.9.1</title>
 
     <script src="stats.js"></script>
 
@@ -531,6 +531,8 @@
             
             <img id="uiQrImage" src="" style="width:240px; background:white; padding:12px; border-radius:25px; box-shadow: 0 0 40px rgba(0,0,0,0.5);">
             
+            <div id="payBtnPlaceholder"></div>
+
             <div class="payment-details-box">
                 <div class="pay-row">
                     <span class="pay-key">Číslo účtu:</span>
@@ -601,7 +603,6 @@
             if(m.sazky) Object.values(m.sazky).forEach(s => { const parts = s.skore.split(':'); if(parseInt(parts[0]) > parseInt(parts[1])) t1++; else if(parseInt(parts[0]) === parseInt(parts[1])) t0++; else t2++; tot++; });
             const p1 = tot ? (t1/tot)*100 : 33.3, p0 = tot ? (t0/tot)*100 : 33.3, p2 = tot ? (t2/tot)*100 : 33.3;
 
-            // Zpracování střelců pro porovnání
             let matchStrelci = [];
             if(m.strelciZapasu) {
                 matchStrelci = m.strelciZapasu.map(s => s.toLowerCase().trim());
@@ -628,8 +629,6 @@
                         const sParts = s.skore.split(':');
                         const rParts = m.vysledek.split(':');
                         const hitScore = (parseInt(sParts[0]) === parseInt(rParts[0])) && (parseInt(sParts[1]) === parseInt(rParts[1]));
-                        
-                        // Detekce trefeného střelce
                         const playerStriker = s.strelec.toLowerCase().trim();
                         const hitStriker = matchStrelci.some(r => r.includes(playerStriker) || playerStriker.includes(r));
 
@@ -655,8 +654,14 @@
     function uiCloseCart() { document.getElementById('cartModal').style.display = 'none'; }
     function actionAddToTicket(id, mName) { const name = document.getElementById(`name-${id}`).value, sD = document.getElementById(`scD-${id}`).value, sH = document.getElementById(`scH-${id}`).value, striker = document.getElementById(`striker-${id}`).value, isHidden = document.getElementById(`hide-${id}`).checked; if(!name || sD==="" || sH==="" || !striker) return alert("Vyplň prosím všechna pole sázky!"); db.ref(`sazkyData/zapasy/${id}/sazky`).once('value', snap => { const data = snap.val() || {}; const isDup = Object.values(data).some(s => s.skore === `${sD}:${sH}` && s.strelec.toLowerCase().trim() === striker.toLowerCase().trim()); if(isDup) return alert("Tento přesný tip už v systému je!"); localCart[id] = { jmeno: name, skore: `${sD}:${sH}`, strelec: striker, skryt: isHidden, matchName: mName }; uiUpdateFAB(); uiToggleMatch(id); }); }
     function actionRemoveFromCart(id) { delete localCart[id]; uiUpdateFAB(); if(Object.keys(localCart).length === 0) uiCloseCart(); else uiOpenCart(); }
-    function actionSendTicket() { let lastUser = ""; Object.entries(localCart).forEach(([mid, data]) => { db.ref(`sazkyData/zapasy/${mid}/sazky`).push({ jmeno: data.jmeno, skore: data.skore, strelec: data.strelec, skryt: data.skryt, stav: "⏳" }); lastUser = data.jmeno; }); const totalSum = Object.keys(localCart).length * 20, msg = `Sazka_${lastUser}`.normalize("NFD").replace(/[\u0300-\u036f]/g, ""); document.getElementById('uiQrImage').src = `https://api.paylibo.com/paylibo/generator/czech/image?accountNumber=295511827&bankCode=0300&amount=${totalSum}&currency=CZK&message=${msg}`; document.getElementById('uiPayAmount').innerText = `${totalSum} Kč`; document.getElementById('uiPayMessage').innerText = msg; document.getElementById('cartViewPre').style.display = 'none'; document.getElementById('cartViewPost').style.display = 'block'; localCart = {}; uiUpdateFAB(); }
-    setInterval(() => { const now = Date.now(); Object.entries(activeDeadlines).forEach(([id, dl]) => { const el = document.getElementById(`timer-${id}`); if(!el) return; const target = new Date(dl).getTime(), diff = target - now; if(diff <= 0) { el.innerText = "🔐 UZAVŘENO"; el.style.color = "#ff4444"; el.style.borderColor = "#ff4444"; } else { const h = Math.floor(diff / 3600000), m = Math.floor((diff % 3600000) / 60000), s = Math.floor((diff % 60000) / 1000); el.innerText = `⏱️ ${h}h ${m}m ${s}s`; } }); }, 1000);
-</script>
-</body>
-</html>
+    
+    function actionSendTicket() { 
+        let lastUser = ""; 
+        Object.entries(localCart).forEach(([mid, data]) => { 
+            db.ref(`sazkyData/zapasy/${mid}/sazky`).push({ jmeno: data.jmeno, skore: data.skore, strelec: data.strelec, skryt: data.skryt, stav: "⏳" }); 
+            lastUser = data.jmeno; 
+        }); 
+        const totalSum = Object.keys(localCart).length * 20;
+        const msg = `Sazka_${lastUser}`.normalize("NFD").replace(/[\u0300-\u036f]/g, ""); 
+        
+        // QR k
