@@ -664,4 +664,29 @@
         const totalSum = Object.keys(localCart).length * 20;
         const msg = `Sazka_${lastUser}`.normalize("NFD").replace(/[\u0300-\u036f]/g, ""); 
         
-        // QR k
+        // QR kód
+        document.getElementById('uiQrImage').src = `https://api.paylibo.com/paylibo/generator/czech/image?accountNumber=295511827&bankCode=0300&amount=${totalSum}&currency=CZK&message=${msg}`; 
+        
+        // --- PLATEBNÍ TLAČÍTKO ---
+        const paylink = `spayid://1.1?acc=295511827*0300&am=${totalSum}&cc=CZK&msg=${msg}`;
+        const placeholder = document.getElementById('payBtnPlaceholder');
+        placeholder.innerHTML = ""; // vyčistit
+        
+        const btn = document.createElement('a');
+        btn.href = paylink;
+        btn.innerHTML = "📱 OTEVŘÍT BANKOVNÍ APLIKACI";
+        btn.style = "display:block; background:#ffffff; color:#000000; padding:18px; border-radius:20px; text-decoration:none; font-weight:900; margin:20px 0; font-size:0.9em; box-shadow: 0 0 25px rgba(255,255,255,0.3);";
+        placeholder.appendChild(btn);
+
+        document.getElementById('uiPayAmount').innerText = `${totalSum} Kč`; 
+        document.getElementById('uiPayMessage').innerText = msg; 
+        document.getElementById('cartViewPre').style.display = 'none'; 
+        document.getElementById('cartViewPost').style.display = 'block'; 
+        localCart = {}; 
+        uiUpdateFAB(); 
+    }
+    
+    setInterval(() => { const now = Date.now(); Object.entries(activeDeadlines).forEach(([id, dl]) => { const el = document.getElementById(`timer-${id}`); if(!el) return; const target = new Date(dl).getTime(), diff = target - now; if(diff <= 0) { el.innerText = "🔐 UZAVŘENO"; el.style.color = "#ff4444"; el.style.borderColor = "#ff4444"; } else { const h = Math.floor(diff / 3600000), m = Math.floor((diff % 3600000) / 60000), s = Math.floor((diff % 60000) / 1000); el.innerText = `⏱️ ${h}h ${m}m ${s}s`; } }); }, 1000);
+</script>
+</body>
+</html>
