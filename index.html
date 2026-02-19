@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KANCELÁŘ NADĚJE v4.8</title>
+    <title>KANCELÁŘ NADĚJE v4.9</title>
 
     <script src="stats.js"></script>
 
@@ -204,7 +204,7 @@
             letter-spacing: 0.5px;
         }
 
-        /* --- 3D ANIMOVANÉ VLAJKY (VĚTŠÍ A RYCHLEJŠÍ) --- */
+        /* --- 3D ANIMOVANÉ VLAJKY --- */
         .flags-wrapper {
             display: flex;
             justify-content: center;
@@ -479,7 +479,7 @@
 
         .win-glow { color: #f1c40f; text-shadow: 0 0 10px rgba(241,196,15,0.5); font-weight: 900; }
         .ok-glow { color: #27ae60; font-weight: 900; }
-        .striker-glow { color: #3182ce; font-weight: 800; }
+        .striker-hit { color: #3182ce; font-weight: 800; margin-left: 5px; }
         .loss-dim { color: #ff4444; opacity: 0.5; }
 
         /* SCROLLBAR */
@@ -601,12 +601,20 @@
             if(m.sazky) Object.values(m.sazky).forEach(s => { const parts = s.skore.split(':'); if(parseInt(parts[0]) > parseInt(parts[1])) t1++; else if(parseInt(parts[0]) === parseInt(parts[1])) t0++; else t2++; tot++; });
             const p1 = tot ? (t1/tot)*100 : 33.3, p0 = tot ? (t0/tot)*100 : 33.3, p2 = tot ? (t2/tot)*100 : 33.3;
 
+            // Zpracování střelců pro porovnání
+            let matchStrelci = [];
+            if(m.strelciZapasu) {
+                matchStrelci = m.strelciZapasu.map(s => s.toLowerCase().trim());
+            }
+
             const card = document.createElement('div'); card.className = "match-card"; card.onclick = () => uiToggleMatch(m.id);
             card.innerHTML = `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;"><div style="color:var(--neon); font-size:0.75em; font-weight:900; letter-spacing:1px;">BANK: ${tot*20} Kč</div>${isEvaluated ? `<div style="background:#27ae60; color:white; padding:6px 16px; border-radius:100px; font-weight:900; font-size:0.8em">VÝSLEDEK ${m.vysledek}</div>` : `<div id="timer-${m.id}" class="timer-box">--:--:--</div>`}</div>
                 <div class="flags-wrapper"><div class="flag-container"><img class="flag-img" src="https://flagcdn.com/w160/${m.kodD}.png"><br><small style="font-weight:800; opacity:0.8; display:block; margin-top:8px;">${m.domaci}</small></div><div class="vs-circle">VS</div><div class="flag-container"><img class="flag-img" src="https://flagcdn.com/w160/${m.kodH}.png"><br><small style="font-weight:800; opacity:0.8; display:block; margin-top:8px;">${m.hoste}</small></div></div>
                 <div class="barometer-container"><div class="bar-1" style="width:${p1}%"></div><div class="bar-0" style="width:${p0}%"></div><div class="bar-2" style="width:${p2}%"></div></div>
                 <div class="bar-labels"><span>${m.domaci.substring(0,3).toUpperCase()} ${Math.round(p1)}%</span><span>REMÍZA ${Math.round(p0)}%</span><span>${m.hoste.substring(0,3).toUpperCase()} ${Math.round(p2)}%</span></div>
-                <div id="detail-${m.id}" class="details" onclick="event.stopPropagation()">${(!isClosed && !isEvaluated) ? `<div class="input-group"><input type="text" id="name-${m.id}" class="input-field" placeholder="Zadej své jméno"></div><div class="score-row"><input type="number" id="scD-${m.id}" class="score-input" placeholder="0"><span style="font-size:2.5em; font-weight:900; color:var(--neon)">:</span><input type="number" id="scH-${m.id}" class="score-input" placeholder="0"></div><div class="input-group"><input type="text" id="striker-${m.id}" class="input-field" placeholder="Kdo dá gól? (příjmení)"></div><div class="hide-tip-row" onclick="document.getElementById('hide-${m.id}').click()"><input type="checkbox" id="hide-${m.id}" style="width:22px; height:22px; cursor:pointer;"><span style="font-size:0.95em; font-weight:600; opacity:0.9">Skrýt můj tip před ostatními</span></div><button class="btn-add-ticket" onclick="actionAddToTicket('${m.id}', '${m.domaci} vs ${m.hoste}')">PŘIDAT NA TIKET (20 Kč)</button>` : `<div style="text-align:center; color:var(--neon); font-weight:900; letter-spacing:1px; margin-bottom:20px;">SÁZKY UZAVŘENY</div>`}<div id="bets-list-${m.id}" style="margin-top:30px;"></div></div>`;
+                <div id="detail-${m.id}" class="details" onclick="event.stopPropagation()">
+                    ${isEvaluated && m.strelciZapasu ? `<div style="font-size:0.8em; opacity:0.6; margin-bottom:15px; text-align:center;">Střelci zápasu: ${m.strelciZapasu.join(', ')}</div>` : ''}
+                    ${(!isClosed && !isEvaluated) ? `<div class="input-group"><input type="text" id="name-${m.id}" class="input-field" placeholder="Zadej své jméno"></div><div class="score-row"><input type="number" id="scD-${m.id}" class="score-input" placeholder="0"><span style="font-size:2.5em; font-weight:900; color:var(--neon)">:</span><input type="number" id="scH-${m.id}" class="score-input" placeholder="0"></div><div class="input-group"><input type="text" id="striker-${m.id}" class="input-field" placeholder="Kdo dá gól? (příjmení)"></div><div class="hide-tip-row" onclick="document.getElementById('hide-${m.id}').click()"><input type="checkbox" id="hide-${m.id}" style="width:22px; height:22px; cursor:pointer;"><span style="font-size:0.95em; font-weight:600; opacity:0.9">Skrýt můj tip před ostatními</span></div><button class="btn-add-ticket" onclick="actionAddToTicket('${m.id}', '${m.domaci} vs ${m.hoste}')">PŘIDAT NA TIKET (20 Kč)</button>` : `<div style="text-align:center; color:var(--neon); font-weight:900; letter-spacing:1px; margin-bottom:20px;">SÁZKY UZAVŘENY</div>`}<div id="bets-list-${m.id}" style="margin-top:30px;"></div></div>`;
             container.appendChild(card);
 
             if (m.sazky) {
@@ -614,21 +622,28 @@
                 Object.values(m.sazky).forEach(s => {
                     const reveal = isClosed || isEvaluated;
                     let icon = "⏳";
+                    let strikerHitLabel = "";
                     
                     if(isEvaluated) {
                         const sParts = s.skore.split(':');
                         const rParts = m.vysledek.split(':');
                         const hitScore = (parseInt(sParts[0]) === parseInt(rParts[0])) && (parseInt(sParts[1]) === parseInt(rParts[1]));
+                        
+                        // Detekce trefeného střelce
+                        const playerStriker = s.strelec.toLowerCase().trim();
+                        const hitStriker = matchStrelci.some(r => r.includes(playerStriker) || playerStriker.includes(r));
 
                         if(s.stav === "🏆") icon = `<span class="win-glow">🏆 VÝHRA: ${s.vyhraKc || 0} Kč</span>`;
                         else if(s.stav === "✅" || hitScore) icon = `<span class="ok-glow">✅ trefil skóre</span>`;
                         else icon = `<span class="loss-dim">❌</span>`;
+
+                        if(hitStriker) strikerHitLabel = `<span class="striker-hit">(TREFIL!)</span>`;
                     }
 
                     const displaySkore = (s.skryt && !reveal) ? '??:??' : s.skore;
                     const displayStrelec = (s.skryt && !reveal) ? '*******' : (s.strelec || '---');
 
-                    bList.innerHTML += `<div class="bet-row-ui"><div class="bet-header-ui"><span>${icon} ${s.jmeno}</span><span style="color:var(--neon)">${displaySkore}</span></div><div class="bet-meta-ui">🎯 Střelec: ${displayStrelec}</div></div>`;
+                    bList.innerHTML += `<div class="bet-row-ui"><div class="bet-header-ui"><span>${icon} ${s.jmeno}</span><span style="color:var(--neon)">${displaySkore}</span></div><div class="bet-meta-ui">🎯 Střelec: ${displayStrelec} ${strikerHitLabel}</div></div>`;
                 });
             }
         });
