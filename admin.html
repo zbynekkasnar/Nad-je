@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin v3.3 - KANCELÁŘ NADĚJE</title>
+    <title>Admin v3.4 - KANCELÁŘ NADĚJE</title>
     
     <script src="stats.js"></script>
     
@@ -58,8 +58,14 @@
         .btn-blue { background: var(--blue); }
         .btn-green { background: var(--green); }
         .btn-red { background: var(--red); }
-        .btn-orange { background: #ed8936; }
         .btn:hover { opacity: 0.9; transform: translateY(-2px); }
+
+        /* NOTIFIKACE */
+        #statusMsg { 
+            display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+            background: var(--green); color: white; padding: 15px 30px; border-radius: 50px;
+            font-weight: bold; box-shadow: 0 10px 30px rgba(0,0,0,0.2); z-index: 9999;
+        }
 
         .match-item { 
             background: #f8fafc; border: 1px solid #e2e8f0; 
@@ -100,9 +106,11 @@
 </head>
 <body onload="initAdmin()">
 
+<div id="statusMsg">ZÁPAS BYL PUBLIKOVÁN NA WEB! ✅</div>
+
 <div class="container">
     <a href="index.html" class="btn-back">← ZPĚT NA WEB</a>
-    <h1 style="text-align: center;">⚙️ Administrace v3.3</h1>
+    <h1 style="text-align: center;">⚙️ Administrace v3.4</h1>
 
     <div class="card">
         <h2>💰 Bank a Statistiky</h2>
@@ -115,12 +123,12 @@
     <div class="card">
         <h2>🚀 Vypsat nový zápas</h2>
         <div style="display:flex; gap:15px;">
-            <div style="flex:1;"><label>Domácí:</label><input list="statyList" id="d" placeholder="Tým 1"></div>
-            <div style="flex:1;"><label>Hosté:</label><input list="statyList" id="h" placeholder="Tým 2"></div>
+            <div style="flex:1;"><label>Domácí:</label><input list="statyList" id="d" placeholder="Domácí tým"></div>
+            <div style="flex:1;"><label>Hosté:</label><input list="statyList" id="h" placeholder="Hostující tým"></div>
         </div>
         <label>Uzávěrka (Deadline):</label>
         <input type="datetime-local" id="dl">
-        <button class="btn btn-green" onclick="addM()">Uveřejnit zápas</button>
+        <button id="pubBtn" class="btn btn-green" onclick="addM()">Uveřejnit zápas na webu</button>
     </div>
 
     <div class="card">
@@ -136,19 +144,19 @@
 
 <div id="modalOverlay" class="modal-overlay"></div>
 <div id="evalModal">
-    <h3 style="text-align:center">🛠️ Vyhodnocení</h3>
-    <div style="display:flex; justify-content:center; gap:20px; margin: 25px 0;">
-        <input type="number" id="finalD" style="width:70px; text-align:center; font-size:1.8em; border-radius:10px; border:2px solid var(--blue)">
-        <span style="font-size:1.8em">:</span>
-        <input type="number" id="finalH" style="width:70px; text-align:center; font-size:1.8em; border-radius:10px; border:2px solid var(--blue)">
+    <h3 style="text-align:center">🛠️ Vyhodnocení výsledku</h3>
+    <div style="display:flex; justify-content:center; gap:15px; margin: 25px 0;">
+        <input type="number" id="finalD" style="width:70px; text-align:center; font-size:1.8em; border:2px solid var(--blue); border-radius:10px;">
+        <span style="font-size:1.8em; font-weight:bold;">:</span>
+        <input type="number" id="finalH" style="width:70px; text-align:center; font-size:1.8em; border:2px solid var(--blue); border-radius:10px;">
     </div>
     <div id="finalStrelci" class="tag-container"></div>
     <div style="display:flex; gap:10px; margin-bottom:20px;">
-        <input type="text" id="addStrelecInput" placeholder="Přidat střelce..." style="margin:0">
+        <input type="text" id="addStrelecInput" placeholder="Přidat střelce..." style="margin:0;">
         <button class="btn btn-blue" style="width:auto; margin:0; padding:0 20px;" onclick="manualAddStrelec()">+</button>
     </div>
     <button class="btn btn-green" id="confirmEvalBtn">VYPLATIT VÝHRY</button>
-    <button class="btn" style="background:gray" onclick="closeEvalModal()">ZRUŠIT</button>
+    <button class="btn" style="background:gray; margin-top:10px;" onclick="closeEvalModal()">ZRUŠIT</button>
 </div>
 
 <datalist id="statyList"></datalist>
@@ -167,6 +175,12 @@
     const db = firebase.database();
     
     let currentStrelci = [], openMatches = {};
+
+    function showStatus() {
+        const msg = document.getElementById('statusMsg');
+        msg.style.display = 'block';
+        setTimeout(() => { msg.style.display = 'none'; }, 3000);
+    }
 
     function checkAuth() {
         if (!sessionStorage.getItem('adminTime') || (Date.now() - sessionStorage.getItem('adminTime') > 300000)) {
@@ -198,17 +212,30 @@
     
     function clearStats() {
         checkAuth();
-        if(confirm("OPRAVDU chceš smazat statistiky hráčů?")) {
-            db.ref('sazkyData/stats').remove().then(() => alert("Statistiky smazány."));
+        if(confirm("OPRAVDU chceš smazat statistiky všech hráčů?")) {
+            db.ref('sazkyData/stats').remove().then(() => alert("Statistiky byly vynulovány."));
         }
     }
 
     function addM() {
         checkAuth();
         const d = document.getElementById('d').value, h = document.getElementById('h').value, dl = document.getElementById('dl').value;
-        if(!d || !h || !dl) return alert("Vyplň vše!");
+        const btn = document.getElementById('pubBtn');
+        if(!d || !h || !dl) return alert("Vyplň všechny údaje!");
+        
+        btn.disabled = true;
+        btn.innerText = "PUBLIKUJI...";
+
         const kd = vsechnyStaty.find(s=>s.n===d)?.c||"un", kh = vsechnyStaty.find(s=>s.n===h)?.c||"un";
-        db.ref('sazkyData/zapasy').push({ domaci: d, hoste: h, kodD: kd, kodH: kh, deadline: dl, status: "aktivni" });
+        
+        db.ref('sazkyData/zapasy').push({ 
+            domaci: d, hoste: h, kodD: kd, kodH: kh, deadline: dl, status: "aktivni" 
+        }).then(() => {
+            showStatus();
+            document.getElementById('d').value = ""; document.getElementById('h').value = "";
+            btn.disabled = false;
+            btn.innerText = "UVEŘEJNIT ZÁPAS NA WEBU";
+        });
     }
 
     db.ref('sazkyData/zapasy').on('value', snap => {
@@ -225,20 +252,20 @@
                     <strong>${m.domaci} - ${m.hoste}</strong>
                     ${m.vysledek ? `<span style="background:var(--green);color:white;padding:4px 10px;border-radius:8px">${m.vysledek}</span>` : ''}
                 </div>
-                <textarea id="raw-${mid}" placeholder="Vlož text přehledu..."></textarea>
+                <textarea id="raw-${mid}" placeholder="Text přehledu (Livesport / Sport.cz)..." style="height:45px;margin-top:10px"></textarea>
                 <div style="display:flex;gap:10px">
                     <button class="btn btn-blue" style="flex:2" onclick="evalM('${mid}')">VYHODNOTIT</button>
                     <button class="btn" style="background:gray;flex:1" onclick="toggleBets('${mid}')">SÁZKY</button>
                 </div>
                 <div id="bets-${mid}" class="bets-container" style="display:${isV}"></div>
-                <button class="btn btn-red" style="font-size:0.7em" onclick="deleteM('${mid}')">SMAZAT ZÁPAS</button>
+                <button class="btn btn-red" style="font-size:0.75em;margin-top:15px" onclick="deleteM('${mid}')">SMAZAT ZÁPAS</button>
             `;
             
             if(m.status === "vyhodnoceno") hC.appendChild(div); else aC.appendChild(div);
 
             if(m.sazky) Object.entries(m.sazky).forEach(([sid, s]) => {
                 let res = ""; 
-                if(m.status === "vyhodnoceno") res = s.skore.replace(/\s/g,'') === m.vysledek.replace(/\s/g,'') ? `<span class="check-ok">✅</span>` : `<span class="check-fail">❌</span>`;
+                if(m.status === "vyhodnoceno") res = s.skore.replace(/\s/g,'') === m.vysledek.replace(/\s/g,'') ? `<span class="check-ok">✅ TREFENO</span>` : `<span class="check-fail">❌</span>`;
                 document.getElementById(`bets-${mid}`).innerHTML += `
                     <div class="bet-admin-row">
                         <span>${s.stav||"⏳"} ${s.jmeno} (<b>${s.skore}</b>) ${res}</span>
