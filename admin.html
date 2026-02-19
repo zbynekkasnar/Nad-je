@@ -91,6 +91,7 @@
 
         .check-ok { color: var(--green); font-weight: bold; margin-left: 10px; font-size: 0.8em; }
         .check-fail { color: var(--red); font-weight: bold; margin-left: 10px; font-size: 0.8em; }
+        .win-amount { color: #f1c40f; background: #000; padding: 2px 8px; border-radius: 6px; font-size: 0.85em; margin-left: 10px; }
 
         .history-section { border-top: 5px solid #cbd5e0; margin-top: 60px; padding-top: 30px; }
 
@@ -119,7 +120,7 @@
         <img src="IMG_8429.png" style="max-width: 200px; border-radius: 20px;">
     </div>
     <a href="index.html" class="btn-back">← ZPĚT NA WEB</a>
-    <h1 style="text-align: center;">⚙️ Administrace v4.0</h1>
+    <h1 style="text-align: center;">⚙️ Administrace v4.7</h1>
 
     <div class="card">
         <h2>💰 Správa banku</h2>
@@ -248,12 +249,19 @@
             let betsHtml = "";
             if(m.sazky) {
                 Object.entries(m.sazky).forEach(([sid, s]) => {
-                    let resIcon = ""; 
+                    let resInfo = ""; 
                     if(m.status === "vyhodnoceno") {
                         const skParts = s.skore.split(':');
                         const resParts = m.vysledek.split(':');
                         const skOk = (parseInt(skParts[0]) === parseInt(resParts[0])) && (parseInt(skParts[1]) === parseInt(resParts[1]));
-                        resIcon = skOk ? `<span class="check-ok">✅ TREFENO</span>` : `<span class="check-fail">❌</span>`;
+                        
+                        if(s.stav === "🏆") {
+                            resInfo = `<span class="win-amount">🏆 VYPLATIT: ${s.vyhraKc || 0} Kč</span>`;
+                        } else if(skOk) {
+                            resInfo = `<span class="check-ok">✅ TREFENO</span>`;
+                        } else {
+                            resInfo = `<span class="check-fail">❌</span>`;
+                        }
                     }
                     betsHtml += `
                         <div class="bet-admin-row">
@@ -262,7 +270,7 @@
                                 <span style="font-size:0.85em; color:#4a5568;">Tip: <b>${s.skore}</b> | Střelec: <b>${s.strelec}</b></span>
                             </div>
                             <div style="display:flex; align-items:center;">
-                                ${resIcon}
+                                ${resInfo}
                                 <button class="small-btn btn-green" onclick="markPaid('${mid}','${sid}')">KČ</button>
                                 <button class="small-btn btn-red" onclick="deleteBet('${mid}','${sid}')">×</button>
                             </div>
@@ -335,7 +343,7 @@
         db.ref(`sazkyData/zapasy/${mid}`).once('value', snap => {
             const z = snap.val(), sazky = Object.entries(z.sazky || {});
             
-            // 1. Kdo trefil skóre? (Porovnáváme jako čísla)
+            // 1. Kdo trefil skóre?
             let winS = sazky.filter(([sid, s]) => {
                 const parts = s.skore.split(':');
                 return parseInt(parts[0]) === finalD && parseInt(parts[1]) === finalH;
@@ -344,23 +352,29 @@
             // 2. Kdo z nich trefil střelce?
             let winB = winS.filter(([sid, s]) => fst.some(r => r.includes(s.strelec.toLowerCase().trim()) || s.strelec.toLowerCase().trim().includes(r)));
             
-            // 3. Priorita vítězů
+            // 3. Rozhodnutí o vítězích banku (Tie-breaker logika)
             let vyherciBanku = winB.length > 0 ? winB : winS;
             
             db.ref('sazkyData/prevedenyBank').once('value', bSnap => {
                 const totalAmount = (sazky.length * 20) + (parseInt(bSnap.val()) || 0);
                 
-                sazky.forEach(([sid, s]) => db.ref(`sazkyData/zapasy/${mid}/sazky/${sid}/stav`).set("❌"));
+                // Vynulovat stavy
+                sazky.forEach(([sid, s]) => {
+                    db.ref(`sazkyData/zapasy/${mid}/sazky/${sid}/stav`).set("❌");
+                    db.ref(`sazkyData/zapasy/${mid}/sazky/${sid}/vyhraKc`).set(0);
+                });
                 
                 if(vyherciBanku.length > 0) {
                     const share = Math.floor(totalAmount / vyherciBanku.length);
                     
-                    // Všem, co trefili skóre, dáme aspoň zelenou fajfku
+                    // Označit lidi se skóre jako OK
                     winS.forEach(([sid, s]) => db.ref(`sazkyData/zapasy/${mid}/sazky/${sid}/stav`).set("✅"));
 
-                    // Vítězové banku dostanou pohár a peníze
+                    // Nastavit vítěze banku (🏆 + peníze)
                     vyherciBanku.forEach(([sid, s]) => {
                         db.ref(`sazkyData/zapasy/${mid}/sazky/${sid}/stav`).set("🏆");
+                        db.ref(`sazkyData/zapasy/${mid}/sazky/${sid}/vyhraKc`).set(share);
+                        
                         db.ref(`sazkyData/stats/${s.jmeno}`).transaction(c => {
                             c = c || {vyhry:0, trefeneSkore:0, trefeniStrelci:0};
                             c.vyhry += share; 
