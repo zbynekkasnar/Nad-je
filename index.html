@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KANCELÁŘ NADĚJE v4.3</title>
+    <title>KANCELÁŘ NADĚJE v4.8</title>
 
     <script src="stats.js"></script>
 
@@ -204,7 +204,7 @@
             letter-spacing: 0.5px;
         }
 
-        /* --- 3D ANIMOVANÉ VLAJKY (ZRYCHLENO A ZVĚTŠENO) --- */
+        /* --- 3D ANIMOVANÉ VLAJKY (VĚTŠÍ A RYCHLEJŠÍ) --- */
         .flags-wrapper {
             display: flex;
             justify-content: center;
@@ -479,6 +479,7 @@
 
         .win-glow { color: #f1c40f; text-shadow: 0 0 10px rgba(241,196,15,0.5); font-weight: 900; }
         .ok-glow { color: #27ae60; font-weight: 900; }
+        .striker-glow { color: #3182ce; font-weight: 800; }
         .loss-dim { color: #ff4444; opacity: 0.5; }
 
         /* SCROLLBAR */
@@ -554,7 +555,6 @@
     </div>
 
 <script>
-    // --- FIREBASE KONFIGURACE ---
     const firebaseConfig = { 
         apiKey: "AIzaSyC-NCdmsgA42FxnopKm92m1y5gUGw_z_uE", 
         authDomain: "nadeje-208bd.firebaseapp.com", 
@@ -567,16 +567,13 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // --- GLOBÁLNÍ PROMĚNNÉ ---
     let localCart = {};
     let activeDeadlines = {};
 
-    // --- NAČÍTÁNÍ DAT V REÁLNÉM ČASE ---
     db.ref('sazkyData').on('value', snap => {
         const data = snap.val() || {};
         const container = document.getElementById('matchList');
         container.innerHTML = "";
-
         const prevBank = parseInt(data.prevedenyBank || 0);
         
         if (!data.zapasy) {
@@ -585,22 +582,13 @@
             return;
         }
 
-        const zapasy = Object.entries(data.zapasy)
-            .map(([id, m]) => ({ id, ...m }))
-            .sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
-
-        let sumActiveBets = 0;
-        zapasy.forEach(z => {
-            if (z.status !== "vyhodnoceno" && z.sazky) {
-                sumActiveBets += Object.keys(z.sazky).length * 20;
-            }
-        });
-
+        const zapasy = Object.entries(data.zapasy).map(([id, m]) => ({ id, ...m })).sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
+        let sumActive = 0; zapasy.forEach(z => { if (z.status !== "vyhodnoceno" && z.sazky) sumActive += Object.keys(z.sazky).length * 20; });
         const aktivniZ = zapasy.filter(z => z.status !== "vyhodnoceno");
         const vkladyDnes = (aktivniZ.length > 0 && aktivniZ[0].sazky) ? Object.keys(aktivniZ[0].sazky).length * 20 : 0;
 
         document.getElementById('uiMainBank').innerText = prevBank + vkladyDnes;
-        document.getElementById('uiTotalBank').innerText = prevBank + sumActiveBets;
+        document.getElementById('uiTotalBank').innerText = prevBank + sumActive;
 
         zapasy.forEach(m => {
             activeDeadlines[m.id] = m.deadline;
@@ -609,78 +597,16 @@
             const isClosed = now > target;
             const isEvaluated = m.status === "vyhodnoceno";
 
-            let t1=0, t0=0, t2=0, totalCount=0;
-            if(m.sazky) {
-                Object.values(m.sazky).forEach(s => {
-                    const parts = s.skore.split(':');
-                    const d = parseInt(parts[0]), h = parseInt(parts[1]);
-                    if(d > h) t1++; else if(d === h) t0++; else t2++;
-                    totalCount++;
-                });
-            }
-            const p1 = totalCount ? (t1/totalCount)*100 : 33.3;
-            const p0 = totalCount ? (t0/totalCount)*100 : 33.3;
-            const p2 = totalCount ? (t2/totalCount)*100 : 33.3;
+            let t1=0, t0=0, t2=0, tot=0;
+            if(m.sazky) Object.values(m.sazky).forEach(s => { const parts = s.skore.split(':'); if(parseInt(parts[0]) > parseInt(parts[1])) t1++; else if(parseInt(parts[0]) === parseInt(parts[1])) t0++; else t2++; tot++; });
+            const p1 = tot ? (t1/tot)*100 : 33.3, p0 = tot ? (t0/tot)*100 : 33.3, p2 = tot ? (t2/tot)*100 : 33.3;
 
-            const card = document.createElement('div');
-            card.className = "match-card";
-            card.onclick = () => uiToggleMatch(m.id);
-
-            card.innerHTML = `
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
-                    <div style="color:var(--neon); font-size:0.75em; font-weight:900; letter-spacing:1px;">BANK: ${totalCount*20} Kč</div>
-                    ${isEvaluated ? 
-                        `<div style="background:#27ae60; color:white; padding:6px 16px; border-radius:100px; font-weight:900; font-size:0.8em">VÝSLEDEK ${m.vysledek}</div>` : 
-                        `<div id="timer-${m.id}" class="timer-box">--:--:--</div>`
-                    }
-                </div>
-
-                <div class="flags-wrapper">
-                    <div class="flag-container">
-                        <img class="flag-img" src="https://flagcdn.com/w160/${m.kodD}.png">
-                        <br><small style="font-weight:800; opacity:0.8; display:block; margin-top:8px;">${m.domaci}</small>
-                    </div>
-                    <div class="vs-circle">VS</div>
-                    <div class="flag-container">
-                        <img class="flag-img" src="https://flagcdn.com/w160/${m.kodH}.png">
-                        <br><small style="font-weight:800; opacity:0.8; display:block; margin-top:8px;">${m.hoste}</small>
-                    </div>
-                </div>
-
-                <div class="barometer-container">
-                    <div class="bar-1" style="width:${p1}%"></div>
-                    <div class="bar-0" style="width:${p0}%"></div>
-                    <div class="bar-2" style="width:${p2}%"></div>
-                </div>
-                <div class="bar-labels">
-                    <span>${m.domaci.substring(0,3).toUpperCase()} ${Math.round(p1)}%</span>
-                    <span>REMÍZA ${Math.round(p0)}%</span>
-                    <span>${m.hoste.substring(0,3).toUpperCase()} ${Math.round(p2)}%</span>
-                </div>
-
-                <div id="detail-${m.id}" class="details" onclick="event.stopPropagation()">
-                    ${(!isClosed && !isEvaluated) ? `
-                        <div class="input-group">
-                            <input type="text" id="name-${m.id}" class="input-field" placeholder="Zadej své jméno">
-                        </div>
-                        <div class="score-row">
-                            <input type="number" id="scD-${m.id}" class="score-input" placeholder="0">
-                            <span style="font-size:2.5em; font-weight:900; color:var(--neon)">:</span>
-                            <input type="number" id="scH-${m.id}" class="score-input" placeholder="0">
-                        </div>
-                        <div class="input-group">
-                            <input type="text" id="striker-${m.id}" class="input-field" placeholder="Kdo dá gól? (příjmení)">
-                        </div>
-                        <div class="hide-tip-row" onclick="document.getElementById('hide-${m.id}').click()">
-                            <input type="checkbox" id="hide-${m.id}" style="width:22px; height:22px; cursor:pointer;">
-                            <span style="font-size:0.95em; font-weight:600; opacity:0.9">Skrýt můj tip před ostatními</span>
-                        </div>
-                        <button class="btn-add-ticket" onclick="actionAddToTicket('${m.id}', '${m.domaci} vs ${m.hoste}')">PŘIDAT NA TIKET (20 Kč)</button>
-                    ` : `<div style="text-align:center; color:var(--neon); font-weight:900; letter-spacing:1px; margin-bottom:20px;">SÁZKY UZAVŘENY</div>`}
-                    
-                    <div id="bets-list-${m.id}" style="margin-top:30px;"></div>
-                </div>
-            `;
+            const card = document.createElement('div'); card.className = "match-card"; card.onclick = () => uiToggleMatch(m.id);
+            card.innerHTML = `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;"><div style="color:var(--neon); font-size:0.75em; font-weight:900; letter-spacing:1px;">BANK: ${tot*20} Kč</div>${isEvaluated ? `<div style="background:#27ae60; color:white; padding:6px 16px; border-radius:100px; font-weight:900; font-size:0.8em">VÝSLEDEK ${m.vysledek}</div>` : `<div id="timer-${m.id}" class="timer-box">--:--:--</div>`}</div>
+                <div class="flags-wrapper"><div class="flag-container"><img class="flag-img" src="https://flagcdn.com/w160/${m.kodD}.png"><br><small style="font-weight:800; opacity:0.8; display:block; margin-top:8px;">${m.domaci}</small></div><div class="vs-circle">VS</div><div class="flag-container"><img class="flag-img" src="https://flagcdn.com/w160/${m.kodH}.png"><br><small style="font-weight:800; opacity:0.8; display:block; margin-top:8px;">${m.hoste}</small></div></div>
+                <div class="barometer-container"><div class="bar-1" style="width:${p1}%"></div><div class="bar-0" style="width:${p0}%"></div><div class="bar-2" style="width:${p2}%"></div></div>
+                <div class="bar-labels"><span>${m.domaci.substring(0,3).toUpperCase()} ${Math.round(p1)}%</span><span>REMÍZA ${Math.round(p0)}%</span><span>${m.hoste.substring(0,3).toUpperCase()} ${Math.round(p2)}%</span></div>
+                <div id="detail-${m.id}" class="details" onclick="event.stopPropagation()">${(!isClosed && !isEvaluated) ? `<div class="input-group"><input type="text" id="name-${m.id}" class="input-field" placeholder="Zadej své jméno"></div><div class="score-row"><input type="number" id="scD-${m.id}" class="score-input" placeholder="0"><span style="font-size:2.5em; font-weight:900; color:var(--neon)">:</span><input type="number" id="scH-${m.id}" class="score-input" placeholder="0"></div><div class="input-group"><input type="text" id="striker-${m.id}" class="input-field" placeholder="Kdo dá gól? (příjmení)"></div><div class="hide-tip-row" onclick="document.getElementById('hide-${m.id}').click()"><input type="checkbox" id="hide-${m.id}" style="width:22px; height:22px; cursor:pointer;"><span style="font-size:0.95em; font-weight:600; opacity:0.9">Skrýt můj tip před ostatními</span></div><button class="btn-add-ticket" onclick="actionAddToTicket('${m.id}', '${m.domaci} vs ${m.hoste}')">PŘIDAT NA TIKET (20 Kč)</button>` : `<div style="text-align:center; color:var(--neon); font-weight:900; letter-spacing:1px; margin-bottom:20px;">SÁZKY UZAVŘENY</div>`}<div id="bets-list-${m.id}" style="margin-top:30px;"></div></div>`;
             container.appendChild(card);
 
             if (m.sazky) {
@@ -690,162 +616,32 @@
                     let icon = "⏳";
                     
                     if(isEvaluated) {
+                        const sParts = s.skore.split(':');
+                        const rParts = m.vysledek.split(':');
+                        const hitScore = (parseInt(sParts[0]) === parseInt(rParts[0])) && (parseInt(sParts[1]) === parseInt(rParts[1]));
+
                         if(s.stav === "🏆") icon = `<span class="win-glow">🏆 VÝHRA: ${s.vyhraKc || 0} Kč</span>`;
-                        else if(s.stav === "✅") icon = `<span class="ok-glow">✅ trefil skóre</span>`;
+                        else if(s.stav === "✅" || hitScore) icon = `<span class="ok-glow">✅ trefil skóre</span>`;
                         else icon = `<span class="loss-dim">❌</span>`;
                     }
 
                     const displaySkore = (s.skryt && !reveal) ? '??:??' : s.skore;
                     const displayStrelec = (s.skryt && !reveal) ? '*******' : (s.strelec || '---');
 
-                    bList.innerHTML += `
-                        <div class="bet-row-ui">
-                            <div class="bet-header-ui">
-                                <span>${icon} ${s.jmeno}</span>
-                                <span style="color:var(--neon)">${displaySkore}</span>
-                            </div>
-                            <div class="bet-meta-ui">🎯 Střelec: ${displayStrelec}</div>
-                        </div>
-                    `;
+                    bList.innerHTML += `<div class="bet-row-ui"><div class="bet-header-ui"><span>${icon} ${s.jmeno}</span><span style="color:var(--neon)">${displaySkore}</span></div><div class="bet-meta-ui">🎯 Střelec: ${displayStrelec}</div></div>`;
                 });
             }
         });
     });
 
-    function uiToggleMatch(id) {
-        const el = document.getElementById(`detail-${id}`);
-        const all = document.querySelectorAll('.details');
-        all.forEach(d => { if(d.id !== `detail-${id}`) d.style.display = 'none'; });
-        el.style.display = (el.style.display === 'block') ? 'none' : 'block';
-    }
-
-    function uiUpdateFAB() {
-        const count = Object.keys(localCart).length;
-        const fab = document.getElementById('fabCart');
-        const badge = document.getElementById('fabBadge');
-        if(count > 0) {
-            fab.style.display = 'flex';
-            badge.innerText = count;
-        } else {
-            fab.style.display = 'none';
-        }
-    }
-
-    function uiOpenCart() {
-        const list = document.getElementById('cartItemsContainer');
-        list.innerHTML = "";
-        let sum = 0;
-
-        Object.entries(localCart).forEach(([id, data]) => {
-            sum += 20;
-            list.innerHTML += `
-                <div class="cart-item">
-                    <div>
-                        <div style="font-size:0.7em; opacity:0.5; font-weight:800;">${data.matchName}</div>
-                        <div style="font-weight:900; font-size:1.1em;">${data.jmeno} | <span style="color:var(--neon)">${data.skore}</span></div>
-                    </div>
-                    <div style="color:#ff4444; font-size:1.8em; font-weight:900; cursor:pointer; padding-left:15px;" onclick="actionRemoveFromCart('${id}')">×</div>
-                </div>
-            `;
-        });
-
-        document.getElementById('uiCartTotal').innerText = `${sum} Kč`;
-        document.getElementById('cartViewPre').style.display = 'block';
-        document.getElementById('cartViewPost').style.display = 'none';
-        document.getElementById('cartModal').style.display = 'block';
-    }
-
-    function uiCloseCart() {
-        document.getElementById('cartModal').style.display = 'none';
-    }
-
-    function actionAddToTicket(id, mName) {
-        const name = document.getElementById(`name-${id}`).value;
-        const sD = document.getElementById(`scD-${id}`).value;
-        const sH = document.getElementById(`scH-${id}`).value;
-        const striker = document.getElementById(`striker-${id}`).value;
-        const isHidden = document.getElementById(`hide-${id}`).checked;
-
-        if(!name || sD==="" || sH==="" || !striker) return alert("Vyplň prosím všechna pole sázky!");
-
-        db.ref(`sazkyData/zapasy/${id}/sazky`).once('value', snap => {
-            const data = snap.val() || {};
-            const isDup = Object.values(data).some(s => 
-                s.skore === `${sD}:${sH}` && 
-                s.strelec.toLowerCase().trim() === striker.toLowerCase().trim()
-            );
-
-            if(isDup) return alert("Tento přesný tip už v systému je!");
-
-            localCart[id] = {
-                jmeno: name,
-                skore: `${sD}:${sH}`,
-                strelec: striker,
-                skryt: isHidden,
-                matchName: mName
-            };
-
-            uiUpdateFAB();
-            uiToggleMatch(id);
-        });
-    }
-
-    function actionRemoveFromCart(id) {
-        delete localCart[id];
-        uiUpdateFAB();
-        if(Object.keys(localCart).length === 0) uiCloseCart();
-        else uiOpenCart();
-    }
-
-    function actionSendTicket() {
-        let lastUser = "";
-        Object.entries(localCart).forEach(([mid, data]) => {
-            db.ref(`sazkyData/zapasy/${mid}/sazky`).push({
-                jmeno: data.jmeno,
-                skore: data.skore,
-                strelec: data.strelec,
-                skryt: data.skryt,
-                stav: "⏳"
-            });
-            lastUser = data.jmeno;
-        });
-
-        const totalSum = Object.keys(localCart).length * 20;
-        const msg = `Sazka_${lastUser}`.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-        
-        document.getElementById('uiQrImage').src = `https://api.paylibo.com/paylibo/generator/czech/image?accountNumber=295511827&bankCode=0300&amount=${totalSum}&currency=CZK&message=${msg}`;
-        document.getElementById('uiPayAmount').innerText = `${totalSum} Kč`;
-        document.getElementById('uiPayMessage').innerText = msg;
-
-        document.getElementById('cartViewPre').style.display = 'none';
-        document.getElementById('cartViewPost').style.display = 'block';
-        
-        localCart = {};
-        uiUpdateFAB();
-    }
-
-    setInterval(() => {
-        const now = Date.now();
-        Object.entries(activeDeadlines).forEach(([id, dl]) => {
-            const el = document.getElementById(`timer-${id}`);
-            if(!el) return;
-
-            const target = new Date(dl).getTime();
-            const diff = target - now;
-
-            if(diff <= 0) {
-                el.innerText = "🔐 UZAVŘENO";
-                el.style.color = "#ff4444";
-                el.style.borderColor = "#ff4444";
-            } else {
-                const h = Math.floor(diff / 3600000);
-                const m = Math.floor((diff % 3600000) / 60000);
-                const s = Math.floor((diff % 60000) / 1000);
-                el.innerText = `⏱️ ${h}h ${m}m ${s}s`;
-            }
-        });
-    }, 1000);
-
+    function uiToggleMatch(id) { const el = document.getElementById(`detail-${id}`); document.querySelectorAll('.details').forEach(d => { if(d.id !== `detail-${id}`) d.style.display = 'none'; }); el.style.display = (el.style.display === 'block') ? 'none' : 'block'; }
+    function uiUpdateFAB() { const count = Object.keys(localCart).length; const fab = document.getElementById('fabCart'); const badge = document.getElementById('fabBadge'); if(count > 0) { fab.style.display = 'flex'; badge.innerText = count; } else { fab.style.display = 'none'; } }
+    function uiOpenCart() { const list = document.getElementById('cartItemsContainer'); list.innerHTML = ""; let sum = 0; Object.entries(localCart).forEach(([id, data]) => { sum += 20; list.innerHTML += `<div class="cart-item"><div><div style="font-size:0.7em; opacity:0.5; font-weight:800;">${data.matchName}</div><div style="font-weight:900; font-size:1.1em;">${data.jmeno} | <span style="color:var(--neon)">${data.skore}</span></div></div><div style="color:#ff4444; font-size:1.8em; font-weight:900; cursor:pointer; padding-left:15px;" onclick="actionRemoveFromCart('${id}')">×</div></div>`; }); document.getElementById('uiCartTotal').innerText = `${sum} Kč`; document.getElementById('cartViewPre').style.display = 'block'; document.getElementById('cartViewPost').style.display = 'none'; document.getElementById('cartModal').style.display = 'block'; }
+    function uiCloseCart() { document.getElementById('cartModal').style.display = 'none'; }
+    function actionAddToTicket(id, mName) { const name = document.getElementById(`name-${id}`).value, sD = document.getElementById(`scD-${id}`).value, sH = document.getElementById(`scH-${id}`).value, striker = document.getElementById(`striker-${id}`).value, isHidden = document.getElementById(`hide-${id}`).checked; if(!name || sD==="" || sH==="" || !striker) return alert("Vyplň prosím všechna pole sázky!"); db.ref(`sazkyData/zapasy/${id}/sazky`).once('value', snap => { const data = snap.val() || {}; const isDup = Object.values(data).some(s => s.skore === `${sD}:${sH}` && s.strelec.toLowerCase().trim() === striker.toLowerCase().trim()); if(isDup) return alert("Tento přesný tip už v systému je!"); localCart[id] = { jmeno: name, skore: `${sD}:${sH}`, strelec: striker, skryt: isHidden, matchName: mName }; uiUpdateFAB(); uiToggleMatch(id); }); }
+    function actionRemoveFromCart(id) { delete localCart[id]; uiUpdateFAB(); if(Object.keys(localCart).length === 0) uiCloseCart(); else uiOpenCart(); }
+    function actionSendTicket() { let lastUser = ""; Object.entries(localCart).forEach(([mid, data]) => { db.ref(`sazkyData/zapasy/${mid}/sazky`).push({ jmeno: data.jmeno, skore: data.skore, strelec: data.strelec, skryt: data.skryt, stav: "⏳" }); lastUser = data.jmeno; }); const totalSum = Object.keys(localCart).length * 20, msg = `Sazka_${lastUser}`.normalize("NFD").replace(/[\u0300-\u036f]/g, ""); document.getElementById('uiQrImage').src = `https://api.paylibo.com/paylibo/generator/czech/image?accountNumber=295511827&bankCode=0300&amount=${totalSum}&currency=CZK&message=${msg}`; document.getElementById('uiPayAmount').innerText = `${totalSum} Kč`; document.getElementById('uiPayMessage').innerText = msg; document.getElementById('cartViewPre').style.display = 'none'; document.getElementById('cartViewPost').style.display = 'block'; localCart = {}; uiUpdateFAB(); }
+    setInterval(() => { const now = Date.now(); Object.entries(activeDeadlines).forEach(([id, dl]) => { const el = document.getElementById(`timer-${id}`); if(!el) return; const target = new Date(dl).getTime(), diff = target - now; if(diff <= 0) { el.innerText = "🔐 UZAVŘENO"; el.style.color = "#ff4444"; el.style.borderColor = "#ff4444"; } else { const h = Math.floor(diff / 3600000), m = Math.floor((diff % 3600000) / 60000), s = Math.floor((diff % 60000) / 1000); el.innerText = `⏱️ ${h}h ${m}m ${s}s`; } }); }, 1000);
 </script>
 </body>
 </html>
