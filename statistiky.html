@@ -7,27 +7,85 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <style>
-        :root { --neon: #00f2ff; --dark: #0f172a; --gold: #ffd700; }
-        body { background: var(--dark); color: white; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 15px; text-align: center; }
-        
-        .stats-container { max-width: 600px; margin: 0 auto; }
-        .stat-card { 
-            background: rgba(255,255,255,0.05); border-radius: 20px; border: 1px solid rgba(255,255,255,0.1);
-            margin-bottom: 25px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        :root { 
+            --neon: #00f2ff; 
+            --dark: #0f172a; 
+            --gold: #ffd700; 
+            --silver: #cbd5e0;
+            --bronze: #cd7f32;
         }
-        h2 { color: var(--neon); text-transform: uppercase; font-size: 1.2em; margin-bottom: 15px; letter-spacing: 2px; }
+        body { 
+            background: var(--dark); 
+            color: white; 
+            font-family: 'Segoe UI', Roboto, sans-serif; 
+            margin: 0; 
+            padding: 15px; 
+            text-align: center; 
+            min-height: 100vh;
+        }
+        
+        .stats-container { max-width: 600px; margin: 0 auto; padding-bottom: 40px; }
+        
+        .stat-card { 
+            background: rgba(255,255,255,0.03); 
+            border-radius: 25px; 
+            border: 1px solid rgba(0, 242, 255, 0.15);
+            margin-bottom: 30px; 
+            padding: 25px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            backdrop-filter: blur(10px);
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h2 { 
+            color: var(--neon); 
+            text-transform: uppercase; 
+            font-size: 1.1em; 
+            margin-bottom: 20px; 
+            letter-spacing: 3px; 
+            text-shadow: 0 0 10px rgba(0, 242, 255, 0.3);
+        }
         
         .stat-row { 
-            display: flex; justify-content: space-between; padding: 10px; 
-            border-bottom: 1px solid rgba(255,255,255,0.05); 
+            display: flex; 
+            justify-content: space-between; 
+            padding: 12px 15px; 
+            border-bottom: 1px solid rgba(255,255,255,0.03); 
+            align-items: center;
+            transition: 0.3s;
         }
+        .stat-row:hover { background: rgba(255,255,255,0.02); }
         .stat-row:last-child { border: none; }
-        .rank { color: var(--neon); font-weight: bold; width: 30px; }
-        .name { flex-grow: 1; text-align: left; padding-left: 10px; }
-        .value { font-weight: bold; color: var(--gold); }
 
-        .header-logo { max-width: 200px; margin-bottom: 20px; filter: drop-shadow(0 0 10px var(--neon)); opacity: 0.7; }
-        .btn-back { display: inline-block; margin-top: 20px; color: white; text-decoration: none; font-size: 0.9em; opacity: 0.5; }
+        .rank { font-weight: 900; width: 35px; font-size: 1.1em; }
+        .rank-1 { color: var(--gold); text-shadow: 0 0 10px var(--gold); }
+        .rank-2 { color: var(--silver); }
+        .rank-3 { color: var(--bronze); }
+
+        .name { flex-grow: 1; text-align: left; padding-left: 10px; font-weight: 600; letter-spacing: 0.5px; }
+        .value { font-weight: 900; color: #fff; font-family: monospace; font-size: 1.2em; }
+        
+        .header-logo { max-width: 180px; margin: 20px 0; filter: drop-shadow(0 0 10px var(--neon)); transition: 0.3s; }
+        .header-logo:hover { transform: scale(1.05); }
+        
+        .btn-back { 
+            display: inline-block; 
+            margin-top: 10px; 
+            color: var(--neon); 
+            text-decoration: none; 
+            font-size: 0.9em; 
+            font-weight: bold;
+            padding: 10px 20px;
+            border: 1px solid rgba(0, 242, 255, 0.3);
+            border-radius: 100px;
+            transition: 0.3s;
+        }
+        .btn-back:hover { background: var(--neon); color: var(--dark); box-shadow: 0 0 20px var(--neon); }
     </style>
 </head>
 <body>
@@ -61,7 +119,6 @@
         db.ref('sazkyData/stats').on('value', snap => {
             const stats = snap.val() || {};
             
-            // Převedeme objekty na pole a seřadíme
             renderTable('leaderboard-money', stats, 'vyhry', ' Kč');
             renderTable('leaderboard-score', stats, 'trefeneSkore', 'x');
             renderTable('leaderboard-players', stats, 'trefeniStrelci', 'x');
@@ -77,16 +134,22 @@
                 .sort((a, b) => b.value - a.value);
 
             if (sorted.length === 0) {
-                container.innerHTML = "<small style='opacity:0.3'>Zatím žádné záznamy</small>";
+                container.innerHTML = "<div style='opacity:0.3; padding:20px;'>Zatím žádné zářezy...</div>";
                 return;
             }
 
             sorted.forEach((item, index) => {
+                const rank = index + 1;
+                let rankClass = "";
+                if(rank === 1) rankClass = "rank-1";
+                else if(rank === 2) rankClass = "rank-2";
+                else if(rank === 3) rankClass = "rank-3";
+
                 const row = `
                     <div class="stat-row">
-                        <span class="rank">${index + 1}.</span>
+                        <span class="rank ${rankClass}">${rank}.</span>
                         <span class="name">${item.name}</span>
-                        <span class="value">${item.value}${unit}</span>
+                        <span class="value">${item.value}<span style="font-size:0.7em; margin-left:2px; opacity:0.6">${unit}</span></span>
                     </div>`;
                 container.innerHTML += row;
             });
