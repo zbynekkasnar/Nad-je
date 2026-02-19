@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin v3.9 - KANCELÁŘ NADĚJE</title>
+    <title>Admin v4.0 - KANCELÁŘ NADĚJE</title>
     
     <script src="stats.js"></script>
     
@@ -63,14 +63,12 @@
         .btn-red { background: var(--red); }
         .btn:hover { opacity: 0.9; transform: translateY(-2px); }
 
-        /* NOTIFIKACE */
         #statusMsg { 
             display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
             background: var(--green); color: white; padding: 15px 30px; border-radius: 50px;
             font-weight: bold; box-shadow: 0 10px 30px rgba(0,0,0,0.2); z-index: 9999;
         }
 
-        /* ZÁPASY */
         .match-item { 
             background: #f8fafc; border: 1px solid #e2e8f0; 
             padding: 25px; border-radius: 18px; margin-top: 25px; 
@@ -96,7 +94,6 @@
 
         .history-section { border-top: 5px solid #cbd5e0; margin-top: 60px; padding-top: 30px; }
 
-        /* MODAL VYHODNOCENÍ */
         #evalModal { 
             position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
             width: 90%; max-width: 550px; background: white; border-radius: 25px; 
@@ -119,7 +116,7 @@
 
 <div class="container">
     <a href="index.html" class="btn-back">← ZPĚT NA WEB</a>
-    <h1 style="text-align: center;">⚙️ Administrace v3.9</h1>
+    <h1 style="text-align: center;">⚙️ Administrace v4.0</h1>
 
     <div class="card">
         <h2>💰 Správa banku</h2>
@@ -175,7 +172,6 @@
 <datalist id="statyList"></datalist>
 
 <script>
-    // Firebase Konfigurace
     const firebaseConfig = { 
         apiKey: "AIzaSyC-NCdmsgA42FxnopKm92m1y5gUGw_z_uE", 
         authDomain: "nadeje-208bd.firebaseapp.com", 
@@ -237,7 +233,6 @@
         });
     }
 
-    // HLAVNÍ POSLUCHAČ PRO ZOBRAZENÍ ZÁPASŮ
     db.ref('sazkyData/zapasy').on('value', snap => {
         const aC = document.getElementById('activeMatches'), hC = document.getElementById('historyMatches');
         aC.innerHTML = ""; hC.innerHTML = "";
@@ -295,7 +290,6 @@
         if(btn) btn.innerText = openMatches[mid] ? "SKRÝT" : `SÁZKY (${btn.innerText.match(/\d+/)[0]})`;
     }
 
-    // PARSER LOGIKA PRO ŽIVÉ VÝSLEDKY
     function evalM(mid) {
         checkAuth(); const raw = document.getElementById(`raw-${mid}`).value; if(!raw) return alert("Vlož text!");
         let clean = raw.split(/PRODLOUŽENÍ|PENALTY|NÁJEZDY|OVERTIME/i)[0];
@@ -327,7 +321,6 @@
         if(v) { currentStrelci.push(v); renderTags(); document.getElementById('addStrelecInput').value = ""; }
     }
 
-    // TIE-BREAKER LOGIKA VYHODNOCENÍ
     function finishEval(mid) {
         const fs = `${document.getElementById('finalD').value}:${document.getElementById('finalH').value}`;
         const fst = currentStrelci.map(s => s.toLowerCase());
@@ -340,32 +333,40 @@
             // 2. Kdo z nich trefil střelce?
             let winB = winS.filter(([sid, s]) => fst.some(r => r.includes(s.strelec.toLowerCase().trim()) || s.strelec.toLowerCase().trim().includes(r)));
             
-            // 3. Priorita: Střelec+Skóre > Jen Skóre
-            let vyherci = winB.length > 0 ? winB : winS;
+            // 3. PRIORITA: Pokud aspoň jeden trefil skóre i střelce, bank se dělí jen mezi ně.
+            // Pokud skóre trefilo víc lidí, ale střelce NIKDO, dělí se bank mezi všechny se správným skóre.
+            let vyherciBanku = winB.length > 0 ? winB : winS;
             
             db.ref('sazkyData/prevedenyBank').once('value', bSnap => {
-                const total = (sazky.length * 20) + (bSnap.val() || 0);
+                // Celkový bank = (vklady za zápas) + (převedený bank z minula)
+                const totalAmount = (sazky.length * 20) + (parseInt(bSnap.val()) || 0);
                 
-                // Označit všechny jako prohrané (výchozí stav)
+                // Označit VŠECHNY jako prohrané (výchozí stav pro vyhodnocený zápas)
                 sazky.forEach(([sid, s]) => db.ref(`sazkyData/zapasy/${mid}/sazky/${sid}/stav`).set("❌"));
                 
-                if(vyherci.length > 0) {
-                    const podil = Math.floor(total / vyherci.length);
-                    vyherci.forEach(([sid, s]) => {
+                if(vyherciBanku.length > 0) {
+                    // Peníze se dělí rovným dílem mezi ty, co prošli filtrem vyherciBanku
+                    const share = Math.floor(totalAmount / vyherciBanku.length);
+                    
+                    vyherciBanku.forEach(([sid, s]) => {
+                        // Vítěz banku dostane pohár
                         db.ref(`sazkyData/zapasy/${mid}/sazky/${sid}/stav`).set("🏆");
-                        // Uložit do statistik
+                        
+                        // Přičíst peníze do statistik
                         db.ref(`sazkyData/stats/${s.jmeno}`).transaction(c => {
                             c = c || {vyhry:0, trefeneSkore:0, trefeniStrelci:0};
-                            c.vyhry += podil; 
+                            c.vyhry += share; 
                             c.trefeneSkore += 1; 
                             if(winB.length > 0) c.trefeniStrelci += 1; 
                             return c;
                         });
                     });
+                    
+                    // Pokud někdo vyhrál, bank byl rozdělen celý, na příště nic neukládáme
                     db.ref('sazkyData/prevedenyBank').set(0);
                 } else {
-                    // Nikdo netrefil skóre -> bank se přelévá
-                    db.ref('sazkyData/prevedenyBank').set(total);
+                    // Nikdo netrefil ani skóre -> celý dnešní vklad + minulý bank se přelévá
+                    db.ref('sazkyData/prevedenyBank').set(totalAmount);
                 }
                 
                 db.ref(`sazkyData/zapasy/${mid}/status`).set("vyhodnoceno");
