@@ -144,20 +144,25 @@
                 const total = parseInt(val.pocetTipu) || 1;
                 const partRate = (total / (globalMaxMatches || 1));
                 
-                // --- PŘEPOČET BODŮ I KVALITY ZE STEJNÝCH DAT (5-3-1) ---
+                // --- DATA Z FIREBASE ---
                 const s = parseInt(val.trefeneSkore) || 0;
                 const st = parseInt(val.trefeniStrelci) || 0;
                 const tr = parseInt(val.trefenyTrend) || 0;
                 
-                // Přepočítáme NB body přímo tady
+                // 1. CELKOVÉ BODY (NB)
                 const realNB = (s * 5) + (st * 3) + (tr * 1);
                 
-                // Výpočet vážené kvality (rozstřel) založený na přepočtených bodech
-                const vahaKvality = (realNB / total) * partRate;
+                // 2. KVALITY INDEX (Vážená úspěšnost nezávislá na celkových bodech)
+                // (Trefy / Zápasy) * Váha * 10 (pro lepší čitelnost čísla)
+                const skoreEff = (s / total) * 5;
+                const strelciEff = (st / total) * 3;
+                const trendEff = (tr / total) * 1;
+                
+                // Celková kvalita vynásobená účastí, aby se zohlednila věrnost
+                const vahaKvality = (skoreEff + strelciEff + trendEff) * 100 * partRate;
 
                 return { 
                     name, 
-                    // Pro hlavní Index zobrazíme námi přepočtené body, pro ostatní kategorii z DB
                     value: isMain ? realNB : (val[property] || 0), 
                     raw: val, 
                     kvalita: vahaKvality, 
@@ -168,12 +173,13 @@
 
             // ŘAZENÍ
             items.sort((a, b) => {
+                // 1. Primárně podle bodů (NB)
                 if (b.value !== a.value) return b.value - a.value;
                 if (isMain) {
-                    // Index: Primární rozstřel podle přepočtené kvality
+                    // 2. Sekundárně v Indexu podle naší proměnné kvalita
                     return b.kvalita - a.kvalita;
                 } else {
-                    // Kategorie: Rozstřel podle úspěšnosti
+                    // Ostatní kategorie podle úspěšnosti
                     const effA = a.value / a.total;
                     const effB = b.value / b.total;
                     if (effB !== effA) return effB - effA;
@@ -188,7 +194,7 @@
                     let isSame = false;
                     if (isMain) {
                         // Shoda ranku jen při identických bodech i identické kvalitě
-                        isSame = (item.value === prev.value && Math.abs(item.kvalita - prev.kvalita) < 0.00001);
+                        isSame = (item.value === prev.value && Math.abs(item.kvalita - prev.kvalita) < 0.01);
                     } else {
                         const effA = item.value / item.total;
                         const effB = prev.value / prev.total;
@@ -201,7 +207,7 @@
                 const glow = rank <= 3 ? `rank-glow rank-glow-${rank}` : "";
                 
                 let infoText = isMain ? 
-                    `<span class="eff-badge">Kvalita: ${Math.round(item.kvalita * 100)}</span> <span>Účast: ${item.part}%</span>` : 
+                    `<span class="eff-badge">Kvalita: ${Math.round(item.kvalita)}</span> <span>Účast: ${item.part}%</span>` : 
                     `<span>Úspěšnost: ${Math.round((item.value/item.total)*100)}%</span> <span>Zápasů: ${item.total}</span>`;
 
                 container.innerHTML += `
@@ -220,7 +226,6 @@
             const total = parseInt(data.pocetTipu) || 1;
             const part = Math.round((total / globalMaxMatches) * 100);
             
-            // Reálný přepočet pro kartu ze stejných dat
             const s = parseInt(data.trefeneSkore) || 0;
             const st = parseInt(data.trefeniStrelci) || 0;
             const tr = parseInt(data.trefenyTrend) || 0;
