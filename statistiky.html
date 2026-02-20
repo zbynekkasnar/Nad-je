@@ -13,6 +13,7 @@
             --gold: #ffd700; 
             --silver: #cbd5e0;
             --bronze: #cd7f32;
+            --expert: #a855f7; /* Fialová pro experty */
         }
         body { 
             background: var(--dark); 
@@ -86,6 +87,11 @@
             transition: 0.3s;
         }
         .btn-back:hover { background: var(--neon); color: var(--dark); box-shadow: 0 0 20px var(--neon); }
+
+        /* Styl pro experty */
+        .expert-card { border-color: var(--expert); }
+        .expert-title { color: var(--expert) !important; text-shadow: 0 0 10px rgba(168, 85, 247, 0.3) !important; }
+        .value-expert { color: var(--expert); }
     </style>
 </head>
 <body>
@@ -93,6 +99,11 @@
     <a href="index.html"><img src="IMG_8429.png" alt="Logo" class="header-logo"></a>
     
     <div class="stats-container">
+        <div class="stat-card expert-card">
+            <h2 class="expert-title">🧠 EXPERTI (TREND 1-0-2)</h2>
+            <div id="leaderboard-trend">Načítám...</div>
+        </div>
+
         <div class="stat-card">
             <h2>💰 BANKOVNÍ LUPIČI</h2>
             <div id="leaderboard-money">Načítám...</div>
@@ -119,12 +130,14 @@
         db.ref('sazkyData/stats').on('value', snap => {
             const stats = snap.val() || {};
             
+            // Renderování všech tabulek
+            renderTable('leaderboard-trend', stats, 'trefenyTrend', ' pts', 'value-expert');
             renderTable('leaderboard-money', stats, 'vyhry', ' Kč');
             renderTable('leaderboard-score', stats, 'trefeneSkore', 'x');
             renderTable('leaderboard-players', stats, 'trefeniStrelci', 'x');
         });
 
-        function renderTable(elementId, data, property, unit) {
+        function renderTable(elementId, data, property, unit, extraValueClass = "") {
             const container = document.getElementById(elementId);
             container.innerHTML = "";
             
@@ -149,7 +162,7 @@
                     <div class="stat-row">
                         <span class="rank ${rankClass}">${rank}.</span>
                         <span class="name">${item.name}</span>
-                        <span class="value">${item.value}<span style="font-size:0.7em; margin-left:2px; opacity:0.6">${unit}</span></span>
+                        <span class="value ${extraValueClass}">${item.value}<span style="font-size:0.7em; margin-left:2px; opacity:0.6">${unit}</span></span>
                     </div>`;
                 container.innerHTML += row;
             });
