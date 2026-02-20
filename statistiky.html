@@ -116,6 +116,8 @@
         </div>
     </div>
 
+    <a href="index.html" class="btn-back">← ZPĚT NA SÁZKY</a>
+
     <script>
         const firebaseConfig = { apiKey: "AIzaSyC-NCdmsgA42FxnopKm92m1y5gUGw_z_uE", authDomain: "nadeje-208bd.firebaseapp.com", databaseURL: "https://nadeje-208bd-default-rtdb.europe-west1.firebasedatabase.app", projectId: "nadeje-208bd", storageBucket: "nadeje-208bd.firebasestorage.app", messagingSenderId: "688478977789", appId: "1:688478977789:web:512d1520cf96c9e59cc894" };
         firebase.initializeApp(firebaseConfig);
@@ -139,20 +141,23 @@
             container.innerHTML = "";
             
             const items = Object.entries(data).map(([name, val]) => {
-                const total = val.pocetTipu || 1;
+                const total = parseInt(val.pocetTipu) || 1;
                 const partRate = (total / (globalMaxMatches || 1));
                 
-                // --- NOVÁ PROMĚNNÁ: KVALITA (MATICE 5-3-1) ---
-                const s = val.trefeneSkore || 0;
-                const st = val.trefeniStrelci || 0;
-                const tr = val.trefenyTrend || 0;
+                // --- PŘEPOČET KVALITY PŘÍMO Z DÍLČÍCH TREF ---
+                const s = parseInt(val.trefeneSkore) || 0;
+                const st = parseInt(val.trefeniStrelci) || 0;
+                const tr = parseInt(val.trefenyTrend) || 0;
+                
+                // Přepočítáme NB body, aby se Index řídil trefami v kartě
                 const matice = (s * 5) + (st * 3) + (tr * 1);
                 
-                // Výpočet vážené kvality pro rozstřel
+                // Výpočet vážené kvality (rozstřel)
                 const vahaKvality = (matice / total) * partRate;
 
                 return { 
                     name, 
+                    // Pro Index zobrazíme naši vypočtenou hodnotu, pro ostatní hodnotu z DB
                     value: isMain ? matice : (val[property] || 0), 
                     raw: val, 
                     kvalita: vahaKvality, 
@@ -168,7 +173,7 @@
                     // Index: Rozstřel podle nové proměnné kvalita
                     return b.kvalita - a.kvalita;
                 } else {
-                    // Kategorie: Rozstřel podle úspěšnosti v dané kategorii
+                    // Kategorie: Rozstřel podle % úspěšnosti v dané kategorii
                     const effA = a.value / a.total;
                     const effB = b.value / b.total;
                     if (effB !== effA) return effB - effA;
@@ -182,13 +187,11 @@
                     const prev = items[i-1];
                     let isSame = false;
                     if (isMain) {
-                        // Shoda v Indexu jen při identické kvalitě
                         isSame = (item.value === prev.value && Math.abs(item.kvalita - prev.kvalita) < 0.00001);
                     } else {
-                        // Shoda v kategoriích
                         const effA = item.value / item.total;
                         const effB = prev.value / prev.total;
-                        isSame = (item.value === prev.value && effA === effB && item.total === prev.total);
+                        isSame = (item.value === prev.value && Math.abs(effA - effB) < 0.00001 && item.total === prev.total);
                     }
                     if (!isSame) lastRank = i + 1;
                 }
@@ -213,11 +216,11 @@
         }
 
         function showPlayerCard(name, data) {
-            const total = data.pocetTipu || 1;
+            const total = parseInt(data.pocetTipu) || 1;
             const part = Math.round((total / globalMaxMatches) * 100);
-            const scR = Math.round((data.trefeneSkore || 0) / total * 100);
-            const plR = Math.round((data.trefeniStrelci || 0) / total * 100);
-            const trR = Math.round((data.trefenyTrend || 0) / total * 100);
+            const scR = Math.round((parseInt(data.trefeneSkore) || 0) / total * 100);
+            const plR = Math.round((parseInt(data.trefeniStrelci) || 0) / total * 100);
+            const trR = Math.round((parseInt(data.trefenyTrend) || 0) / total * 100);
 
             let t = "Hledač štěstí"; let q = "I slepé kuře občas najde zrno...";
             if (part >= 85 && trR < 45) { t = "Věrný Srdcař"; q = "Srdce bije pro kancl, i když tikety hoří."; }
@@ -243,7 +246,7 @@
                         <div class="progress-container"><div class="progress-bar" style="width:${trR}%"></div></div>
                     </div>
                 </div>
-                <div class="card-footer">${data.celkoveBody||0} NB</div>
+                <div class="card-footer">${(parseInt(data.trefeneSkore)*5 + parseInt(data.trefeniStrelci)*3 + parseInt(data.trefenyTrend)) || 0} NB</div>
                 <div class="card-quote">"${q}"</div>
             `;
             document.getElementById('playerModal').style.display = "block";
