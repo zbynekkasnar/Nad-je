@@ -150,8 +150,6 @@
                 const st = parseInt(val.trefeniStrelci) || 0;
                 const tr = parseInt(val.trefenyTrend) || 0;
                 const partRate = (total / (globalMaxMatches || 1));
-                
-                // U Indexu si body přepočítáme živě (5-3-1), u ostatních bereme hodnotu
                 const valNum = isMain ? (s * 5 + st * 3 + tr * 1) : (parseInt(val[property]) || 0);
 
                 return { 
@@ -159,29 +157,37 @@
                     value: valNum, 
                     raw: val, 
                     s, st, tr, total,
-                    part: Math.round(partRate * 100)
+                    part: Math.round(partRate * 100),
+                    successRate: valNum / total
                 };
             }).filter(i => i.value > 0);
 
-            // --- ŘAZENÍ (TIE-BREAKER MATICE) ---
+            // --- ŘAZENÍ ---
             items.sort((a, b) => {
                 if (b.value !== a.value) return b.value - a.value;
-                // Pokud je shoda v bodech:
-                if (isMain && b.part !== a.part) return b.part - a.part; // U Indexu rozhoduje účast
-                if (b.s !== a.s) return b.s - a.s; // Pak Skóre
-                if (b.st !== a.st) return b.st - a.st; // Pak Střelci
-                return b.tr - a.tr; // Nakonec Trendy
+                if (isMain) {
+                    if (b.part !== a.part) return b.part - a.part;
+                    if (b.s !== a.s) return b.s - a.s;
+                    return b.st - a.st;
+                } else if (isMoney) {
+                    return 0; // U peněz při shodě neřešíme úspěšnost
+                } else {
+                    return b.successRate - a.successRate; // U ostatních rozhoduje úspěšnost
+                }
             });
 
-            // --- VÝPOČET SDÍLENÝCH POZIC (EX AEQUO) ---
+            // --- VÝPOČET SDÍLENÝCH POZIC ---
             items.forEach((item, i) => {
-                const shared = items.filter(other => 
-                    other.value === item.value && 
-                    other.s === item.s && 
-                    other.st === item.st && 
-                    other.tr === item.tr &&
-                    (isMain ? other.part === item.part : true)
-                );
+                const shared = items.filter(other => {
+                    const sameVal = other.value === item.value;
+                    if (isMain) {
+                        return sameVal && other.part === item.part && other.s === item.s && other.st === item.st;
+                    } else if (isMoney) {
+                        return sameVal;
+                    } else {
+                        return sameVal && other.successRate === item.successRate;
+                    }
+                });
 
                 if (shared.length > 1) {
                     const firstIdx = items.indexOf(shared[0]) + 1;
@@ -207,7 +213,7 @@
                 } else if (isMoney) {
                     infoText = `<span style="opacity:0.6">Získáno z ${item.total} tipů</span>`;
                 } else {
-                    infoText = `<span>Úspěšnost: ${Math.round((item.value/item.total)*100)}%</span> <span>Účast: ${item.part}%</span>`;
+                    infoText = `<span>Úspěšnost: ${Math.round(item.successRate*100)}%</span> <span>Účast: ${item.part}%</span>`;
                 }
 
                 container.innerHTML += `
