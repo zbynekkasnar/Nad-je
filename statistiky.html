@@ -24,7 +24,6 @@
         
         .stats-container { max-width: 600px; margin: 0 auto; padding-bottom: 40px; }
         
-        /* KARTA STATISTIKY */
         .stat-card { 
             background: rgba(255,255,255,0.03); border-radius: 25px; 
             border: 1px solid rgba(0, 242, 255, 0.15);
@@ -33,7 +32,6 @@
             backdrop-filter: blur(10px); animation: fadeIn 0.8s ease-out;
         }
 
-        /* NEONOVÉ PULSY PRO TOP 3 (DYNAMICKÉ) */
         .rank-glow { position: relative; overflow: hidden; border-radius: 15px; }
         .rank-glow::after {
             content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
@@ -51,7 +49,6 @@
 
         h2 { color: var(--neon); text-transform: uppercase; font-size: 1.1em; margin-bottom: 20px; letter-spacing: 3px; text-shadow: 0 0 10px rgba(0, 242, 255, 0.3); }
         
-        /* ŘÁDEK TABULKY */
         .stat-row { 
             display: flex; justify-content: space-between; 
             padding: 12px 15px; border-bottom: 1px solid rgba(255,255,255,0.03); 
@@ -67,16 +64,14 @@
         .name-box { flex-grow: 1; text-align: left; padding-left: 10px; display: flex; flex-direction: column; cursor: pointer; }
         .name { font-weight: 600; text-decoration: underline rgba(0,242,255,0.2); }
         
-        /* BREAKDOWN POD JMÉNEM */
         .breakdown { 
             font-size: 0.72em; opacity: 0.6; display: flex; gap: 8px; 
             margin-top: 4px; font-family: monospace; color: var(--neon); 
         }
-        .eff-badge { background: rgba(0, 242, 255, 0.1); padding: 1px 4px; border-radius: 4px; }
+        .eff-badge { background: rgba(0, 242, 255, 0.15); padding: 1px 5px; border-radius: 4px; font-weight: bold; }
 
         .value { font-weight: 900; color: #fff; font-family: monospace; font-size: 1.2em; white-space: nowrap; }
 
-        /* MODAL & PROGRESS BARY */
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); }
         .player-card { 
             background: var(--dark); border: 2px solid var(--neon); 
@@ -108,7 +103,6 @@
             <h2 class="points-title">⭐ INDEX NADĚJE (CELKEM)</h2>
             <div id="leaderboard-total">Načítám...</div>
         </div>
-
         <div class="stat-card"><h2>💰 BANKOVNÍ LUPIČI</h2><div id="leaderboard-money"></div></div>
         <div class="stat-card"><h2>🧠 EXPERTI (TRENDY)</h2><div id="leaderboard-trend"></div></div>
         <div class="stat-card"><h2>🥅 MISTŘI VÝSLEDKŮ</h2><div id="leaderboard-score"></div></div>
@@ -122,116 +116,111 @@
         </div>
     </div>
 
-    <a href="index.html" class="btn-back">← ZPĚT NA SÁZKY</a>
-
     <script>
-        // Konfigurace a Inicializace
         const firebaseConfig = { apiKey: "AIzaSyC-NCdmsgA42FxnopKm92m1y5gUGw_z_uE", authDomain: "nadeje-208bd.firebaseapp.com", databaseURL: "https://nadeje-208bd-default-rtdb.europe-west1.firebasedatabase.app", projectId: "nadeje-208bd", storageBucket: "nadeje-208bd.firebasestorage.app", messagingSenderId: "688478977789", appId: "1:688478977789:web:512d1520cf96c9e59cc894" };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
         let globalMaxMatches = 0;
 
-        // Načítání dat v reálném čase
         db.ref('sazkyData/stats').on('value', snap => {
             const stats = snap.val() || {};
             globalMaxMatches = Math.max(...Object.values(stats).map(p => p.pocetTipu || 0));
 
-            // Vykreslení všech tabulek jednou funkcí
-            renderTable('leaderboard-total', stats, 'celkoveBody', ' NB', 'value-points', true);
-            renderTable('leaderboard-money', stats, 'vyhry', ' Kč');
-            renderTable('leaderboard-trend', stats, 'trefenyTrend', ' pts');
-            renderTable('leaderboard-score', stats, 'trefeneSkore', 'x');
-            renderTable('leaderboard-players', stats, 'trefeniStrelci', 'x');
+            renderTable('leaderboard-total', stats, 'celkoveBody', ' NB', true);
+            renderTable('leaderboard-money', stats, 'vyhry', ' Kč', false);
+            renderTable('leaderboard-trend', stats, 'trefenyTrend', ' pts', false);
+            renderTable('leaderboard-score', stats, 'trefeneSkore', 'x', false);
+            renderTable('leaderboard-players', stats, 'trefeniStrelci', 'x', false);
         });
 
-        // UNIVERZÁLNÍ FUNKCE PRO VYKRESLENÍ TABULKY
-        function renderTable(elementId, data, property, unit, extraValueClass = "", isMain = false) {
+        function renderTable(elementId, data, property, unit, isMain) {
             const container = document.getElementById(elementId);
             container.innerHTML = "";
             
-            // Transformace dat + výpočet tvé vážené matice
             const items = Object.entries(data).map(([name, val]) => {
                 const total = val.pocetTipu || 1;
                 const partRate = (total / (globalMaxMatches || 1));
                 
-                // VÁŽENÁ MATICE (5-3-1)
-                const weightedVal = (val.trefeneSkore * 5) + (val.trefeniStrelci * 3) + (val.trefenyTrend * 1);
+                // MATICE POUZE PRO INDEX (5-3-1)
+                const matrix = (val.trefeneSkore * 5) + (val.trefeniStrelci * 3) + (val.trefenyTrend * 1);
+                const indexEff = (matrix / total) * partRate;
                 
-                // KOEFICIENT ÚČINNOSTI (Kvalita tipů * Účast)
-                const efficiencyCoeff = Math.round((weightedVal / total) * (partRate * 100));
-                
+                // ÚSPĚŠNOST V KATEGORII (Pro ostatní tabulky)
+                const catEff = (val[property] || 0) / total;
+
                 return { 
                     name, 
                     value: val[property] || 0, 
                     raw: val, 
-                    effCoeff: efficiencyCoeff, 
-                    participation: Math.round(partRate * 100),
-                    matches: total
+                    indexEff: indexEff, 
+                    catEff: catEff,
+                    total: total,
+                    part: Math.round(partRate * 100)
                 };
-            })
-            .filter(i => i.value > 0);
+            }).filter(i => i.value > 0);
 
-            // ŘAZENÍ: 1. Hodnota (NB/Kč), 2. Koeficient účinnosti, 3. Počet zápasů
-            items.sort((a, b) => b.value - a.value || b.effCoeff - a.effCoeff || b.matches - a.matches);
+            // ŘAZENÍ
+            items.sort((a, b) => {
+                if (b.value !== a.value) return b.value - a.value;
+                if (isMain) {
+                    return b.indexEff - a.indexEff; // U Indexu rozhoduje vážená matice
+                } else {
+                    if (b.catEff !== a.catEff) return b.catEff - a.catEff; // U kategorií úspěšnost dané věci
+                    return b.total - a.total; // Nakonec celková účast
+                }
+            });
 
             let lastRank = 1;
             items.forEach((item, i) => {
-                // Logika sdíleného pořadí (1., 1., 3.)
                 if (i > 0) {
                     const prev = items[i-1];
-                    // Shoda nastává jen při identických bodech i účinnosti
-                    if (item.value !== prev.value || item.effCoeff !== prev.effCoeff) {
-                        lastRank = i + 1;
+                    let isSame = false;
+                    if (isMain) {
+                        isSame = (item.value === prev.value && Math.abs(item.indexEff - prev.indexEff) < 0.0001);
+                    } else {
+                        isSame = (item.value === prev.value && item.catEff === prev.catEff && item.total === prev.total);
                     }
+                    if (!isSame) lastRank = i + 1;
                 }
 
                 const rank = lastRank;
                 const glow = rank <= 3 ? `rank-glow rank-glow-${rank}` : "";
                 
-                // Zobrazení breakdownu (to co vidí kluci pod jménem)
-                let breakdown = isMain ? `
-                    <div class="breakdown">
-                        <span class="eff-badge">Účinnost: ${item.effCoeff}</span>
-                        <span>Účast: ${item.participation}%</span>
-                        <span>(${item.matches}z)</span>
-                    </div>` : `
-                    <div class="breakdown">Úspěšnost v kategorii: ${Math.round((item.value/item.matches)*100)}%</div>`;
+                let infoText = isMain ? 
+                    `<span class="eff-badge">Účinnost: ${Math.round(item.indexEff * 100)}</span> <span>Účast: ${item.part}%</span>` : 
+                    `<span>Úspěšnost: ${Math.round(item.catEff * 100)}%</span> <span>Zápasů: ${item.total}</span>`;
 
                 container.innerHTML += `
                     <div class="stat-row ${glow}">
                         <span class="rank rank-${rank}">${rank}.</span>
                         <div class="name-box" onclick='showPlayerCard("${item.name}", ${JSON.stringify(item.raw)})'>
                             <span class="name">${item.name} ${rank === 1 ? '👑' : ''}</span>
-                            ${breakdown}
+                            <div class="breakdown">${infoText}</div>
                         </div>
-                        <span class="value ${extraValueClass}">${item.value}<small style="font-size:0.5em; opacity:0.6; margin-left:2px">${unit}</small></span>
+                        <span class="value">${item.value}<small style="font-size:0.5em; opacity:0.6; margin-left:2px">${unit}</small></span>
                     </div>`;
             });
         }
 
-        // ZOBRAZENÍ KARTY HRÁČE
         function showPlayerCard(name, data) {
             const total = data.pocetTipu || 1;
             const part = Math.round((total / globalMaxMatches) * 100);
-            
-            // Procentuální úspěšnosti pro bary
             const scR = Math.round((data.trefeneSkore || 0) / total * 100);
             const plR = Math.round((data.trefeniStrelci || 0) / total * 100);
             const trR = Math.round((data.trefenyTrend || 0) / total * 100);
 
-            // Dynamické hlášky
+            // Vtipné tituly
             let t = "Hledač štěstí"; let q = "I slepé kuře občas najde zrno...";
             if (part >= 85 && trR < 45) { t = "Věrný Srdcař"; q = "Srdce bije pro kancl, i když tikety hoří."; }
             if (trR > 65) { t = "Ledový Analytik"; q = "Čte hru jako otevřenou knihu."; }
-            if (plR > 45) { t = "Elitní Sniper"; q = "Hráči dávají góly jen aby mu udělali radost."; }
+            if (plR > 45) { t = "Elitní Sniper"; q = "Trefí mouchu v letu, natož střelce."; }
             if (scR > 15) { t = "Hokejový Jasnovědec"; q = "Viděl ten výsledek už včera ve snu."; }
             if (data.vyhry > 400) { t = "Bankovní Lupič"; q = "Už pro něj jedou těžkooděnci."; }
 
             document.getElementById('modalContent').innerHTML = `
                 <div class="card-name">${name}</div><div class="card-title">${t}</div>
-                <div style="font-size:0.8em; opacity:0.5; margin-bottom:15px;">Zápasů: ${total} | Účast: ${part}%</div>
-                
+                <div style="font-size:0.8em; opacity:0.5; margin-bottom:15px;">Účast: ${part}% (${total}z)</div>
                 <div class="card-stats-list">
                     <div class="card-item">
                         <div class="card-item-header">🥅 Přesná skóre <span>${data.trefeneSkore||0}x</span></div>
@@ -247,7 +236,6 @@
                     </div>
                 </div>
                 <div class="card-footer">${data.celkoveBody||0} NB</div>
-                <div style="color:var(--neon); font-size:0.9em; margin-top:5px;">Celkem vybráno: ${data.vyhry||0} Kč</div>
                 <div class="card-quote">"${q}"</div>
             `;
             document.getElementById('playerModal').style.display = "block";
