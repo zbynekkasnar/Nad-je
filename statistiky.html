@@ -8,207 +8,110 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <style>
         :root { 
-            --neon: #00f2ff; 
-            --dark: #0f172a; 
-            --gold: #ffd700; 
-            --silver: #cbd5e0;
-            --bronze: #cd7f32;
-            --expert: #a855f7;
-            --points: #ff00ff;
+            --neon: #00f2ff; --dark: #0f172a; --gold: #ffd700; 
+            --silver: #cbd5e0; --bronze: #cd7f32; --expert: #a855f7; --points: #ff00ff; 
         }
         body { 
-            background: var(--dark); 
-            color: white; 
-            font-family: 'Segoe UI', Roboto, sans-serif; 
-            margin: 0; 
-            padding: 15px; 
-            text-align: center; 
-            min-height: 100vh;
+            background: var(--dark); color: white; font-family: 'Segoe UI', Roboto, sans-serif; 
+            margin: 0; padding: 15px; text-align: center; min-height: 100vh;
         }
         
-        .stats-container { max-width: 600px; margin: 0 auto; padding-bottom: 40px; }
+        .stats-container { max-width: 600px; margin: 0 auto; padding-bottom: 60px; }
         
         .stat-card { 
-            background: rgba(255,255,255,0.03); 
-            border-radius: 25px; 
-            border: 1px solid rgba(0, 242, 255, 0.15);
-            margin-bottom: 30px; 
-            padding: 25px; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            backdrop-filter: blur(10px);
-            animation: fadeIn 0.8s ease-out;
+            background: rgba(255,255,255,0.03); border-radius: 25px; border: 1px solid rgba(0, 242, 255, 0.15);
+            margin-bottom: 30px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            backdrop-filter: blur(10px); animation: fadeIn 0.8s ease-out;
         }
 
-        /* NEONOVÝ PULS PRO VŠECHNY LÍDRY */
+        /* NEONOVÝ PULS PRO LÍDRY */
         .leader-row {
             background: rgba(0, 242, 255, 0.08) !important;
-            position: relative;
-            overflow: hidden;
-            border-radius: 15px;
+            position: relative; overflow: hidden; border-radius: 15px;
         }
         .leader-row::after {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            box-shadow: inset 0 0 15px rgba(0, 242, 255, 0.3);
-            animation: pulseNeon 2s infinite ease-in-out;
-            pointer-events: none;
+            content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            box-shadow: inset 0 0 20px rgba(0, 242, 255, 0.4);
+            animation: pulseNeon 2s infinite ease-in-out; pointer-events: none;
         }
 
-        @keyframes pulseNeon {
-            0%, 100% { opacity: 0.3; }
-            50% { opacity: 0.7; }
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+        @keyframes pulseNeon { 0%, 100% { opacity: 0.3; } 50% { opacity: 0.8; } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
         h2 { 
-            color: var(--neon); 
-            text-transform: uppercase; 
-            font-size: 1.1em; 
-            margin-bottom: 20px; 
-            letter-spacing: 3px; 
-            text-shadow: 0 0 10px rgba(0, 242, 255, 0.3);
+            color: var(--neon); text-transform: uppercase; font-size: 1.1em; 
+            margin-bottom: 20px; letter-spacing: 3px; text-shadow: 0 0 10px rgba(0, 242, 255, 0.3);
         }
         
         .stat-row { 
-            display: flex; 
-            justify-content: space-between; 
-            padding: 12px 15px; 
-            border-bottom: 1px solid rgba(255,255,255,0.03); 
-            align-items: center;
-            transition: 0.3s;
+            display: flex; justify-content: space-between; padding: 12px 15px; 
+            border-bottom: 1px solid rgba(255,255,255,0.03); align-items: center;
         }
-        .stat-row:hover { background: rgba(255,255,255,0.02); }
-        .stat-row:last-child { border: none; }
 
+        .name-box { flex-grow: 1; text-align: left; padding-left: 10px; display: flex; flex-direction: column; cursor: pointer; }
+        .name { font-weight: 600; letter-spacing: 0.5px; text-decoration: underline rgba(0,242,255,0.1); }
+        .name:hover { color: var(--neon); }
+        
+        .breakdown { font-size: 0.75em; opacity: 0.6; display: flex; gap: 12px; margin-top: 2px; font-family: monospace; }
         .rank { font-weight: 900; width: 35px; font-size: 1.1em; }
         .rank-1 { color: var(--gold); text-shadow: 0 0 10px var(--gold); }
         .rank-2 { color: var(--silver); }
         .rank-3 { color: var(--bronze); }
 
-        .name-box {
-            flex-grow: 1;
-            text-align: left;
-            padding-left: 10px;
-            display: flex;
-            flex-direction: column;
-            cursor: pointer;
-        }
+        .value { font-weight: 900; color: #fff; font-family: monospace; font-size: 1.2em; }
 
-        .name { font-weight: 600; letter-spacing: 0.5px; text-decoration: underline rgba(0,242,255,0.2); }
-        
-        .breakdown {
-            font-size: 0.75em;
-            opacity: 0.6;
-            display: flex;
-            gap: 12px;
-            margin-top: 2px;
-            font-family: monospace;
-        }
+        /* SÍŇ SLÁVY SPECIÁL */
+        .fame-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid rgba(255,215,0,0.1); font-size: 0.9em; }
+        .fame-item span { color: var(--gold); font-weight: bold; }
 
-        .value { font-weight: 900; color: #fff; font-family: monospace; font-size: 1.2em; white-space: nowrap; }
-        .header-logo { max-width: 180px; margin: 20px 0; filter: drop-shadow(0 0 10px var(--neon)); transition: 0.3s; }
-        
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0; top: 0;
-            width: 100%; height: 100%;
-            background-color: rgba(0,0,0,0.85);
-            backdrop-filter: blur(8px);
-        }
-
+        /* MODAL */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); }
         .player-card {
-            background: var(--dark);
-            border: 2px solid var(--neon);
-            box-shadow: 0 0 40px rgba(0, 242, 255, 0.4);
-            width: 85%;
-            max-width: 320px;
-            margin: 18vh auto;
-            padding: 30px;
-            border-radius: 35px;
-            position: relative;
+            background: var(--dark); border: 2px solid var(--neon); width: 85%; max-width: 320px;
+            margin: 18vh auto; padding: 30px; border-radius: 35px; position: relative;
             animation: cardEntry 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-
-        @keyframes cardEntry {
-            from { transform: scale(0.7); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
-        }
-
-        .close-card { position: absolute; top: 15px; right: 20px; font-size: 28px; color: white; cursor: pointer; opacity: 0.5; }
-        .card-name { color: var(--neon); font-size: 1.8em; font-weight: 900; margin-bottom: 5px; text-transform: uppercase; }
-        .card-title { font-size: 0.85em; background: rgba(0,242,255,0.15); padding: 4px 12px; border-radius: 50px; color: var(--neon); display: inline-block; margin-bottom: 20px; }
+        @keyframes cardEntry { from { transform: scale(0.7); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .close-card { position: absolute; top: 15px; right: 20px; font-size: 28px; cursor: pointer; opacity: 0.5; }
+        .card-name { color: var(--neon); font-size: 1.8em; font-weight: 900; text-transform: uppercase; }
+        .card-title { font-size: 0.85em; background: rgba(0,242,255,0.1); padding: 4px 12px; border-radius: 50px; color: var(--neon); margin-bottom: 15px; display: inline-block; }
         .card-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .card-item span { color: var(--neon); font-weight: bold; font-family: monospace; }
-        .card-footer { margin-top: 15px; color: var(--points); font-weight: 900; font-size: 1.2em; }
-        .card-efficiency { font-size: 0.75em; opacity: 0.5; margin-bottom: 10px; text-align: left; }
-        .card-quote { font-style: italic; font-size: 0.8em; opacity: 0.5; margin-top: 15px; line-height: 1.4; }
+        .card-item span { color: var(--neon); font-weight: bold; }
+        .card-quote { font-style: italic; font-size: 0.8em; opacity: 0.4; margin-top: 15px; }
 
-        .btn-back { 
-            display: inline-block; margin-top: 10px; color: var(--neon); text-decoration: none; 
-            font-size: 0.9em; font-weight: bold; padding: 10px 20px; border: 1px solid rgba(0, 242, 255, 0.3);
-            border-radius: 100px; transition: 0.3s;
-        }
+        .btn-back { display: inline-block; margin-top: 20px; color: var(--neon); text-decoration: none; font-weight: bold; padding: 12px 30px; border: 1px solid var(--neon); border-radius: 100px; transition: 0.3s; }
+        .btn-back:hover { background: var(--neon); color: var(--dark); box-shadow: 0 0 20px var(--neon); }
+        .points-card { border: 2px solid var(--points); }
     </style>
 </head>
 <body>
 
-    <a href="index.html"><img src="IMG_8429.png" alt="Logo" class="header-logo"></a>
+    <a href="index.html"><img src="IMG_8429.png" alt="Logo" style="max-width:180px; margin:20px 0;"></a>
     
     <div class="stats-container">
-        <div class="stat-card" style="border-color: rgba(255,255,255,0.1);">
-            <h2>📖 PRAVIDLA INDEXU</h2>
-            <table class="legend-table">
-                <tr>
-                    <td><span class="legend-badge badge-score">+5 NB</span></td>
-                    <td style="text-align: left;">🥅 Přesný výsledek (po 60 min)</td>
-                </tr>
-                <tr>
-                    <td><span class="legend-badge badge-player">+3 NB</span></td>
-                    <td style="text-align: left;">🎯 Trefený střelec zápasu</td>
-                </tr>
-                <tr>
-                    <td><span class="legend-badge badge-trend">+1 NB</span></td>
-                    <td style="text-align: left;">📈 Trend (výhra/prohra/remíza)</td>
-                </tr>
-            </table>
+        <div class="stat-card" style="border-color: var(--gold);">
+            <h2 style="color: var(--gold);">🏆 SÍŇ SLÁVY (REKORDY)</h2>
+            <div id="hall-of-fame">
+                <div class="fame-item">Největší lup (Kč): <span id="rec-money">--</span></div>
+                <div class="fame-item">Sniper turnaje: <span id="rec-sniper">--</span></div>
+                <div class="fame-item">Jasnovědec (Skóre): <span id="rec-scores">--</span></div>
+            </div>
         </div>
 
         <div class="stat-card points-card">
-            <h2 class="points-title">⭐ INDEX NADĚJE (CELKEM)</h2>
+            <h2 style="color:var(--points)">⭐ INDEX NADĚJE (CELKEM)</h2>
             <div id="leaderboard-total">Načítám...</div>
         </div>
 
-        <div class="stat-card">
-            <h2>💰 BANKOVNÍ LUPIČI</h2>
-            <div id="leaderboard-money">Načítám...</div>
-        </div>
-
-        <div class="stat-card expert-card">
-            <h2 class="expert-title">🧠 EXPERTI (TRENDY)</h2>
-            <div id="leaderboard-trend">Načítám...</div>
-        </div>
-
-        <div class="stat-card">
-            <h2>🥅 MISTŘI VÝSLEDKŮ</h2>
-            <div id="leaderboard-score">Načítám...</div>
-        </div>
-
-        <div class="stat-card">
-            <h2>🎯 KRÁLOVÉ STŘELCŮ</h2>
-            <div id="leaderboard-players">Načítám...</div>
-        </div>
+        <div class="stat-card"><h2>💰 BANKOVNÍ LUPIČI</h2><div id="leaderboard-money"></div></div>
+        <div class="stat-card"><h2>🧠 EXPERTI (TRENDY)</h2><div id="leaderboard-trend"></div></div>
+        <div class="stat-card"><h2>🥅 MISTŘI VÝSLEDKŮ</h2><div id="leaderboard-score"></div></div>
+        <div class="stat-card"><h2>🎯 KRÁLOVÉ STŘELCŮ</h2><div id="leaderboard-players"></div></div>
     </div>
 
-    <div id="playerModal" class="modal" onclick="closeModal(event)">
+    <div id="playerModal" class="modal" onclick="closeModal()">
         <div class="player-card" onclick="event.stopPropagation()">
-            <span class="close-card" onclick="closeModal(event)">&times;</span>
+            <span class="close-card" onclick="closeModal()">&times;</span>
             <div id="modalContent"></div>
         </div>
     </div>
@@ -226,92 +129,70 @@
             const stats = snap.val() || {};
             globalMaxMatches = Math.max(...Object.values(stats).map(p => p.pocetTipu || 0));
 
-            renderTable('leaderboard-total', stats, 'celkoveBody', ' NB', 'value-points', true);
+            // Aktualizace rekordů
+            const findMax = (prop) => Object.entries(stats).reduce((a, b) => b[1][prop] > a[1] ? [b[0], b[1][prop]] : a, ["--", 0]);
+            const m = findMax('vyhry'); const s = findMax('trefeniStrelci'); const sc = findMax('trefeneSkore');
+            document.getElementById('rec-money').innerText = `${m[1]} Kč (${m[0]})`;
+            document.getElementById('rec-sniper').innerText = `${s[1]}x (${s[0]})`;
+            document.getElementById('rec-scores').innerText = `${sc[1]}x (${sc[0]})`;
+
+            renderTable('leaderboard-total', stats, 'celkoveBody', ' NB', true);
             renderTable('leaderboard-money', stats, 'vyhry', ' Kč');
-            renderTable('leaderboard-trend', stats, 'trefenyTrend', ' pts', 'value-expert');
+            renderTable('leaderboard-trend', stats, 'trefenyTrend', ' pts');
             renderTable('leaderboard-score', stats, 'trefeneSkore', 'x');
             renderTable('leaderboard-players', stats, 'trefeniStrelci', 'x');
         });
 
-        function renderTable(elementId, data, property, unit, extraValueClass = "", isMain = false) {
+        function renderTable(elementId, data, property, unit, isMain = false) {
             const container = document.getElementById(elementId);
             container.innerHTML = "";
-            
-            const sorted = Object.entries(data)
-                .map(([name, val]) => {
-                    const totalTips = val.pocetTipu || 1;
-                    const totalHits = (val.trefeneSkore || 0) + (val.trefeniStrelci || 0) + (val.trefenyTrend || 0);
-                    const efficiency = Math.round((totalHits / (totalTips * 3)) * 100);
-                    return { name, value: val[property] || 0, rawData: val, efficiency: efficiency };
-                })
-                .filter(item => item.value > 0)
-                .sort((a, b) => b.value - a.value || b.efficiency - a.efficiency || b.rawData.trefeneSkore - a.rawData.trefeneSkore);
+            const sorted = Object.entries(data).map(([name, val]) => {
+                const total = val.pocetTipu || 1;
+                const eff = Math.round(((val.trefeneSkore||0)+(val.trefeniStrelci||0)+(val.trefenyTrend||0))/(total*3)*100);
+                return { name, value: val[property]||0, raw: val, eff };
+            }).filter(i => i.value > 0).sort((a,b) => b.value - a.value || b.eff - a.eff || b.raw.trefeneSkore - a.raw.trefeneSkore);
 
-            let currentRank = 1;
-            sorted.forEach((item, index) => {
-                // SPORTOVNÍ FORMÁT ŘAZENÍ (1, 1, 3...)
-                if (index > 0) {
-                    const prev = sorted[index - 1];
-                    // Pokud se liší v kterémkoliv parametru (včetně tie-breakerů), rank skočí na pozici indexu + 1
-                    if (item.value !== prev.value || item.efficiency !== prev.efficiency || item.rawData.trefeneSkore !== prev.rawData.trefeneSkore) {
-                        currentRank = index + 1;
-                    }
+            let rank = 1;
+            sorted.forEach((item, i) => {
+                if (i > 0) {
+                    const p = sorted[i-1];
+                    if (item.value !== p.value || item.eff !== p.eff || item.raw.trefeneSkore !== p.raw.trefeneSkore) rank = i + 1;
                 }
-
-                const rank = currentRank;
-                const isLeader = isMain && rank === 1;
-                let rankClass = (rank === 1) ? "rank-1" : (rank === 2) ? "rank-2" : (rank === 3) ? "rank-3" : "";
-
-                let breakdownHtml = "";
-                if (isMain) {
-                    const s = item.rawData.trefeneSkore || 0;
-                    const p = item.rawData.trefeniStrelci || 0;
-                    const t = item.rawData.trefenyTrend || 0;
-                    breakdownHtml = `<div class="breakdown">
-                        <span>🥅 ${s}x</span><span>🎯 ${p}x</span><span>📈 ${t}x</span>
-                        <span style="opacity:0.4; margin-left:5px;">(${item.efficiency}%)</span>
-                    </div>`;
-                }
-
-                container.innerHTML += `<div class="stat-row ${isLeader ? 'leader-row' : ''}">
-                    <span class="rank ${rankClass}">${rank}.</span>
-                    <div class="name-box" onclick='showPlayerCard("${item.name}", ${JSON.stringify(item.rawData)})'>
-                        <span class="name">${item.name} ${isLeader ? '👑' : ''}</span>
-                        ${breakdownHtml}
+                const isL = isMain && rank === 1;
+                const rCl = rank===1?"rank-1":rank===2?"rank-2":rank===3?"rank-3":"";
+                
+                container.innerHTML += `<div class="stat-row ${isL?'leader-row':''}">
+                    <span class="rank ${rCl}">${rank}.</span>
+                    <div class="name-box" onclick='showCard("${item.name}", ${JSON.stringify(item.raw)})'>
+                        <span class="name">${item.name} ${isL?'👑':''}</span>
+                        ${isMain ? `<div class="breakdown">🥅 ${item.raw.trefeneSkore} 🎯 ${item.raw.trefeniStrelci} 📈 ${item.raw.trefenyTrend} (${item.eff}%)</div>` : ''}
                     </div>
-                    <span class="value ${extraValueClass}">${item.value}<span style="font-size:0.7em; margin-left:2px; opacity:0.6">${unit}</span></span>
+                    <span class="value">${item.value}<span style="font-size:0.6em;opacity:0.5">${unit}</span></span>
                 </div>`;
             });
         }
 
-        function showPlayerCard(name, data) {
-            const modal = document.getElementById('playerModal');
-            const content = document.getElementById('modalContent');
-            const total = data.pocetTipu || 0;
-            const participation = globalMaxMatches > 0 ? Math.round((total / globalMaxMatches) * 100) : 0;
-            const scoreRate = total > 0 ? Math.round((data.trefeneSkore || 0) / total * 100) : 0;
-            const playerRate = total > 0 ? Math.round((data.trefeniStrelci || 0) / total * 100) : 0;
-            const trendRate = total > 0 ? Math.round((data.trefenyTrend || 0) / total * 100) : 0;
+        function showCard(name, data) {
+            const total = data.pocetTipu || 1;
+            const part = Math.round((total / globalMaxMatches) * 100);
+            const tr = Math.round((data.trefenyTrend || 0) / total * 100);
+            const sn = Math.round((data.trefeniStrelci || 0) / total * 100);
 
-            let title = "Věrný Srdcař"; let quote = "Srdce bije pro kancl, i když tikety hoří.";
-            if (participation < 40) { title = "Sváteční sázkař"; quote = "Ukáže se jen když se hraje o velký bank."; }
-            else if (trendRate > 65) { title = "Ledový Analytik"; quote = "Čte hru jako otevřenou knihu."; }
-            else if (playerRate > 45) { title = "Elitní Sniper"; quote = "Trefí mouchu v letu, natož střelce."; }
-            else if (scoreRate > 15) { title = "Hokejový Jasnovědec"; quote = "Viděl ten výsledek už včera ve snu."; }
-            if (total <= 2) { title = "Nová Naděje"; quote = "Teprve si zavazuje brusle v šatně."; }
+            let t = "Věrný Srdcař"; let q = "Srdce bije pro kancl, i když tikety hoří.";
+            if (part < 40) { t = "Sváteční sázkař"; q = "Ukáže se jen na ty největší šlágry."; }
+            else if (tr > 65) { t = "Ledový Analytik"; q = "Čte hru jako otevřenou knihu."; }
+            else if (sn > 45) { t = "Elitní Sniper"; q = "Hráči dávají góly jen aby mu udělali radost."; }
 
-            content.innerHTML = `<div class="card-name">${name}</div><div class="card-title">${title}</div>
-                <div class="card-efficiency">Účast: ${participation}% (${total}z)</div>
-                <div class="card-stats-list">
-                    <div class="card-item">🥅 Přesná skóre: <span>${data.trefeneSkore || 0}x (${scoreRate}%)</span></div>
-                    <div class="card-item">🎯 Trefení střelci: <span>${data.trefeniStrelci || 0}x (${playerRate}%)</span></div>
-                    <div class="card-item">📈 Správné trendy: <span>${data.trefenyTrend || 0}x (${trendRate}%)</span></div>
-                    <div class="card-item" style="border-top: 1px solid rgba(255,255,255,0.1); margin-top:5px; padding-top:10px;">💰 Celková výhra: <span>${data.vyhry || 0} Kč</span></div>
-                </div>
-                <div class="card-footer">${data.celkoveBody || 0} NB</div><div class="card-quote">"${quote}"</div>`;
-            modal.style.display = "block";
+            document.getElementById('modalContent').innerHTML = `
+                <div class="card-name">${name}</div><div class="card-title">${t}</div>
+                <div class="card-item">Účast: <span>${part}%</span></div>
+                <div class="card-item">🥅 Skóre: <span>${data.trefeneSkore||0}x</span></div>
+                <div class="card-item">🎯 Střelci: <span>${data.trefeniStrelci||0}x</span></div>
+                <div class="card-item">📈 Trendy: <span>${tr}%</span></div>
+                <div style="margin-top:20px; font-weight:900; color:var(--points); font-size:1.4em;">${data.celkoveBody||0} NB</div>
+                <div class="card-quote">"${q}"</div>`;
+            document.getElementById('playerModal').style.display = "block";
         }
-
         function closeModal() { document.getElementById('playerModal').style.display = "none"; }
     </script>
 </body>
