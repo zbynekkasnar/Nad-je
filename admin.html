@@ -50,7 +50,7 @@
         .check-fail { color: var(--red); font-weight: bold; margin-left: 10px; font-size: 0.8em; }
         .win-amount { color: #f1c40f; background: #000; padding: 2px 8px; border-radius: 6px; font-size: 0.85em; margin-left: 10px; }
 
-        #evalModal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; max-width: 550px; background: white; border-radius: 25px; box-shadow: 0 0 80px rgba(0,0,0,0.6); display: none; z-index: 3000; padding: 35px; }
+        .modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; max-width: 550px; background: white; border-radius: 25px; box-shadow: 0 0 80px rgba(0,0,0,0.6); display: none; z-index: 3000; padding: 35px; }
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: none; z-index: 2999; }
         .tag-container { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0; background: #f1f5f9; padding: 10px; border-radius: 12px; }
         .tag { background: white; padding: 6px 12px; border-radius: 15px; font-size: 0.85em; border: 1px solid #e2e8f0; display: flex; align-items: center; gap: 8px; }
@@ -99,25 +99,35 @@
     </div>
 </div>
 
-<div id="modalOverlay" class="modal-overlay"></div>
-<div id="evalModal">
+<div id="modalOverlay" class="modal-overlay" onclick="closeAllModals()"></div>
+
+<div id="evalModal" class="modal">
     <h3 style="text-align:center">🛠️ Vyhodnocení zápasu</h3>
     <div style="display:flex; justify-content:center; gap:15px; margin: 25px 0;">
         <input type="number" id="finalD" style="width:75px; text-align:center; font-size:1.8em; border:2px solid var(--blue); border-radius:10px;">
         <span style="font-size:1.8em; font-weight:bold;">:</span>
         <input type="number" id="finalH" style="width:75px; text-align:center; font-size:1.8em; border:2px solid var(--blue); border-radius:10px;">
     </div>
-    
     <label>Střelci v základní hrací době:</label>
     <div id="finalStrelci" class="tag-container"></div>
-    
     <div style="display:flex; gap:10px; margin-bottom:20px;">
         <input type="text" id="addStrelecInput" placeholder="Jméno střelce..." style="margin:0;">
         <button class="btn btn-blue" style="width:auto; margin:0; padding:0 20px;" onclick="manualAddStrelec()">+</button>
     </div>
-    
     <button class="btn btn-green" id="confirmEvalBtn">VYPLATIT A PŘESUNOUT</button>
-    <button class="btn" style="background:gray; margin-top:10px;" onclick="closeEvalModal()">ZRUŠIT</button>
+    <button class="btn" style="background:gray; margin-top:10px;" onclick="closeAllModals()">ZRUŠIT</button>
+</div>
+
+<div id="editBetModal" class="modal">
+    <h3 style="text-align:center">✏️ Upravit sázku</h3>
+    <label>Jméno sázkaře:</label>
+    <input type="text" id="editName">
+    <label>Tip (Skóre):</label>
+    <input type="text" id="editScore" placeholder="např. 2:1">
+    <label>Střelec:</label>
+    <input type="text" id="editStriker">
+    <button class="btn btn-blue" id="confirmEditBtn">ULOŽIT ZMĚNY</button>
+    <button class="btn" style="background:gray; margin-top:10px;" onclick="closeAllModals()">ZRUŠIT</button>
 </div>
 
 <datalist id="statyList"></datalist>
@@ -205,13 +215,9 @@
                         const resParts = m.vysledek.split(':');
                         const skOk = (parseInt(skParts[0]) === parseInt(resParts[0])) && (parseInt(skParts[1]) === parseInt(resParts[1]));
                         
-                        if(s.stav === "🏆") {
-                            resInfo = `<span class="win-amount">🏆 VYPLATIT: ${s.vyhraKc || 0} Kč</span>`;
-                        } else if(skOk) {
-                            resInfo = `<span class="check-ok">✅ TREFENO</span>`;
-                        } else {
-                            resInfo = `<span class="check-fail">❌</span>`;
-                        }
+                        if(s.stav === "🏆") resInfo = `<span class="win-amount">🏆 VYPLATIT: ${s.vyhraKc || 0} Kč</span>`;
+                        else if(skOk) resInfo = `<span class="check-ok">✅ TREFENO</span>`;
+                        else resInfo = `<span class="check-fail">❌</span>`;
                     }
                     betsHtml += `
                         <div class="bet-admin-row">
@@ -221,6 +227,7 @@
                             </div>
                             <div style="display:flex; align-items:center;">
                                 ${resInfo}
+                                <button class="small-btn btn-blue" onclick="openEditBetModal('${mid}','${sid}',${JSON.stringify(s).replace(/"/g, '&quot;')})">✏️</button>
                                 <button class="small-btn btn-green" onclick="markPaid('${mid}','${sid}')">KČ</button>
                                 <button class="small-btn btn-red" onclick="deleteBet('${mid}','${sid}')">×</button>
                             </div>
@@ -253,25 +260,55 @@
         if(btn) btn.innerText = openMatches[mid] ? "SKRÝT" : `SÁZKY (${btn.innerText.match(/\d+/)[0]})`;
     }
 
+    function openEditBetModal(mid, sid, s) {
+        checkAuth();
+        document.getElementById('editName').value = s.jmeno;
+        document.getElementById('editScore').value = s.skore;
+        document.getElementById('editStriker').value = s.strelec;
+        document.getElementById('modalOverlay').style.display = 'block';
+        document.getElementById('editBetModal').style.display = 'block';
+        document.getElementById('confirmEditBtn').onclick = () => {
+            const upName = document.getElementById('editName').value;
+            const upScore = document.getElementById('editScore').value;
+            const upStriker = document.getElementById('editStriker').value;
+            db.ref(`sazkyData/zapasy/${mid}/sazky/${sid}`).update({
+                jmeno: upName,
+                skore: upScore,
+                strelec: upStriker
+            }).then(() => {
+                closeAllModals();
+                alert("Sázka upravena!");
+            });
+        };
+    }
+
     function evalM(mid) {
-        checkAuth(); const raw = document.getElementById(`raw-${mid}`).value; if(!raw) return alert("Vlož text!");
-        let clean = raw.split(/PRODLOUŽENÍ|PENALTY|NÁJEZDY|OVERTIME/i)[0];
-        const sc = clean.match(/(\d+)\s*[:|-]\s*(\d+)/g);
-        let d=0, h=0; if(sc){ const l=sc[sc.length-1].replace(/\s/g,'').replace('-',':').split(':'); d=parseInt(l[0]); h=parseInt(l[1]); }
+        checkAuth();
+        const raw = document.getElementById(`raw-${mid}`).value; if(!raw) return alert("Vlož text!");
         
-        currentStrelci = [];
-        const zak = ["třetina", "poločas", "konec", "přestávka", "vyloučení", "minuta", "karta", "střídání", "rozhodčí", "asistence"];
-        clean.split('\n').forEach(line => {
-            const t = line.trim();
-            if (t.match(/^[\d+]+['.]/)) {
-                let n = t.replace(/^[\d+]+['.]\s*/, '').split('(')[0].split(',')[0].replace(/[0-9]/g, '').replace(/[:|-]/g, '').trim();
-                if (n.length > 3 && !zak.some(z => n.toLowerCase().includes(z)) && !currentStrelci.includes(n)) currentStrelci.push(n);
-            }
+        // Načtení stávajících střelců, pokud u zápasu jsou (OPRAVA POZTRÁCENÝCH STŘELCŮ)
+        db.ref(`sazkyData/zapasy/${mid}`).once('value', snap => {
+            const m = snap.val();
+            currentStrelci = m.strelciZapasu ? [...m.strelciZapasu] : [];
+
+            let clean = raw.split(/PRODLOUŽENÍ|PENALTY|NÁJEZDY|OVERTIME/i)[0];
+            const sc = clean.match(/(\d+)\s*[:|-]\s*(\d+)/g);
+            let d=0, h=0; if(sc){ const l=sc[sc.length-1].replace(/\s/g,'').replace('-',':').split(':'); d=parseInt(l[0]); h=parseInt(l[1]); }
+            
+            const zak = ["třetina", "poločas", "konec", "přestávka", "vyloučení", "minuta", "karta", "střídání", "rozhodčí", "asistence", "vlastní", "penalta"];
+            clean.split('\n').forEach(line => {
+                const t = line.trim();
+                if (t.match(/^[\d+]+['.]/)) {
+                    let n = t.replace(/^[\d+]+['.]\s*/, '').split('(')[0].split(',')[0].replace(/[0-9]/g, '').replace(/[:|-]/g, '').trim();
+                    if (n.length > 3 && !zak.some(z => n.toLowerCase().includes(z)) && !currentStrelci.includes(n)) currentStrelci.push(n);
+                }
+            });
+
+            document.getElementById('finalD').value = d; document.getElementById('finalH').value = h;
+            renderTags();
+            document.getElementById('modalOverlay').style.display='block'; document.getElementById('evalModal').style.display='block';
+            document.getElementById('confirmEvalBtn').onclick = () => finishEval(mid);
         });
-        document.getElementById('finalD').value = d; document.getElementById('finalH').value = h;
-        renderTags();
-        document.getElementById('modalOverlay').style.display='block'; document.getElementById('evalModal').style.display='block';
-        document.getElementById('confirmEvalBtn').onclick = () => finishEval(mid);
     }
 
     function renderTags() {
@@ -292,79 +329,84 @@
         const fst = rawStrelci.map(s => s.toLowerCase().trim());
 
         db.ref(`sazkyData/zapasy/${mid}`).once('value', snap => {
-            const z = snap.val(), sazky = Object.entries(z.sazky || {});
+            const z = snap.val(), sazkyEntries = Object.entries(z.sazky || {});
             
-            let winS = sazky.filter(([sid, s]) => {
+            // 1. Najdeme ty, co trefili PŘESNÉ SKÓRE
+            let winS = sazkyEntries.filter(([sid, s]) => {
                 const parts = s.skore.split(':');
                 return parseInt(parts[0]) === finalD && parseInt(parts[1]) === finalH;
             });
             
-            let winB = winS.filter(([sid, s]) => fst.some(r => r.includes(s.strelec.toLowerCase().trim()) || s.strelec.toLowerCase().trim().includes(r)));
+            // 2. Najdeme ty, co k tomu trefili i STŘELCE
+            let winB = winS.filter(([sid, s]) => {
+                const pStr = s.strelec.toLowerCase().trim();
+                return fst.some(r => r.includes(pStr) || pStr.includes(r));
+            });
+
+            // 3. Určíme skutečné vítěze banku (Tie-breaker střelec)
             let vyherciBanku = winB.length > 0 ? winB : winS;
-            
+            const idVyhercuBanku = vyherciBanku.map(item => item[0]);
+
             db.ref('sazkyData/prevedenyBank').once('value', bSnap => {
-                const totalAmount = (sazky.length * 20) + (parseInt(bSnap.val()) || 0);
+                const totalAmount = (sazkyEntries.length * 20) + (parseInt(bSnap.val()) || 0);
                 
-                sazky.forEach(([sid, s]) => {
+                // Reset stavů
+                sazkyEntries.forEach(([sid, s]) => {
                     db.ref(`sazkyData/zapasy/${mid}/sazky/${sid}/stav`).set("❌");
                     db.ref(`sazkyData/zapasy/${mid}/sazky/${sid}/vyhraKc`).set(0);
-                });
-                
-                sazky.forEach(([sid, s]) => {
-                    const sParts = s.skore.split(':');
-                    const hitsScore = parseInt(sParts[0]) === finalD && parseInt(sParts[1]) === finalH;
-                    const hitsStriker = fst.some(r => r.includes(s.strelec.toLowerCase().trim()) || s.strelec.toLowerCase().trim().includes(r));
-                    
-                    if (hitsScore || hitsStriker) {
-                        db.ref(`sazkyData/stats/${s.jmeno}`).transaction(c => {
-                            c = c || {vyhry:0, trefeneSkore:0, trefeniStrelci:0};
-                            if (hitsScore) c.trefeneSkore += 1;
-                            if (hitsStriker) c.trefeniStrelci += 1;
-                            return c;
-                        });
-                    }
                 });
 
                 if(vyherciBanku.length > 0) {
                     const share = Math.floor(totalAmount / vyherciBanku.length);
-                    winS.forEach(([sid, s]) => db.ref(`sazkyData/zapasy/${mid}/sazky/${sid}/stav`).set("✅"));
-
+                    
+                    // Výherci s bankem (🏆)
                     vyherciBanku.forEach(([sid, s]) => {
                         db.ref(`sazkyData/zapasy/${mid}/sazky/${sid}/stav`).set("🏆");
                         db.ref(`sazkyData/zapasy/${mid}/sazky/${sid}/vyhraKc`).set(share);
-                        db.ref(`sazkyData/stats/${s.jmeno}`).transaction(c => {
-                            if (c) c.vyhry += share;
-                            return c;
-                        });
+                        db.ref(`sazkyData/stats/${s.jmeno}/vyhry`).transaction(curr => (curr || 0) + share);
                     });
+
+                    // Ostatní, co trefili jen skóre (✅)
+                    winS.forEach(([sid, s]) => {
+                        if(!idVyhercuBanku.includes(sid)) db.ref(`sazkyData/zapasy/${mid}/sazky/${sid}/stav`).set("✅");
+                    });
+
                     db.ref('sazkyData/prevedenyBank').set(0);
                 } else {
                     db.ref('sazkyData/prevedenyBank').set(totalAmount);
                 }
                 
+                // Přičtení bodů do statistik pro všechny
+                sazkyEntries.forEach(([sid, s]) => {
+                    const parts = s.skore.split(':');
+                    const hitsScore = parseInt(parts[0]) === finalD && parseInt(parts[1]) === finalH;
+                    const pStr = s.strelec.toLowerCase().trim();
+                    const hitsStriker = fst.some(r => r.includes(pStr) || pStr.includes(r));
+
+                    if(hitsScore) db.ref(`sazkyData/stats/${s.jmeno}/trefeneSkore`).transaction(c => (c || 0) + 1);
+                    if(hitsStriker) db.ref(`sazkyData/stats/${s.jmeno}/trefeniStrelci`).transaction(c => (c || 0) + 1);
+                });
+
                 db.ref(`sazkyData/zapasy/${mid}/status`).set("vyhodnoceno");
                 db.ref(`sazkyData/zapasy/${mid}/vysledek`).set(fs);
                 db.ref(`sazkyData/zapasy/${mid}/strelciZapasu`).set(rawStrelci); 
                 
-                // VYMAZÁNÍ TEXTOVÉHO POLE LIVESPORTU
-                const rawField = document.getElementById(`raw-${mid}`);
-                if(rawField) rawField.value = "";
-
-                // VIZUÁLNÍ POTVRZENÍ
+                document.getElementById(`raw-${mid}`).value = "";
                 const msg = document.getElementById('statusMsg');
                 msg.innerText = "ZÁPAS VYHODNOCEN A VÝHRY ROZDĚLENY! 🏆";
                 msg.style.background = "var(--blue)";
                 msg.style.display = 'block';
                 setTimeout(() => { msg.style.display = 'none'; }, 4000);
 
-                closeEvalModal();
+                closeAllModals();
             });
         });
     }
 
-    function closeEvalModal() { 
+    function closeAllModals() { 
         document.getElementById('modalOverlay').style.display='none'; 
         document.getElementById('evalModal').style.display='none'; 
+        document.getElementById('editBetModal').style.display='none'; 
     }
     
     function markPaid(mid, sid) { db.ref(`sazkyData/zapasy/${mid}/sazky/${sid}/stav`).set("✅"); }
