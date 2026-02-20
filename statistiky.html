@@ -13,7 +13,8 @@
             --gold: #ffd700; 
             --silver: #cbd5e0;
             --bronze: #cd7f32;
-            --expert: #a855f7; /* Fialová pro experty */
+            --expert: #a855f7;
+            --points: #ff00ff; /* Barva pro Nadějné body */
         }
         body { 
             background: var(--dark); 
@@ -88,6 +89,11 @@
         }
         .btn-back:hover { background: var(--neon); color: var(--dark); box-shadow: 0 0 20px var(--neon); }
 
+        /* Styl pro NB */
+        .points-card { border: 2px solid var(--points); box-shadow: 0 0 25px rgba(255, 0, 255, 0.2); }
+        .points-title { color: var(--points) !important; text-shadow: 0 0 15px rgba(255, 0, 255, 0.4) !important; }
+        .value-points { color: var(--points); font-size: 1.4em !important; }
+
         /* Styl pro experty */
         .expert-card { border-color: var(--expert); }
         .expert-title { color: var(--expert) !important; text-shadow: 0 0 10px rgba(168, 85, 247, 0.3) !important; }
@@ -99,14 +105,19 @@
     <a href="index.html"><img src="IMG_8429.png" alt="Logo" class="header-logo"></a>
     
     <div class="stats-container">
-        <div class="stat-card expert-card">
-            <h2 class="expert-title">🧠 EXPERTI (TREND 1-0-2)</h2>
-            <div id="leaderboard-trend">Načítám...</div>
+        <div class="stat-card points-card">
+            <h2 class="points-title">⭐ CELKOVÉ NADĚJNÉ BODY (NB)</h2>
+            <div id="leaderboard-total">Načítám...</div>
         </div>
 
         <div class="stat-card">
             <h2>💰 BANKOVNÍ LUPIČI</h2>
             <div id="leaderboard-money">Načítám...</div>
+        </div>
+
+        <div class="stat-card expert-card">
+            <h2 class="expert-title">🧠 EXPERTI (TREND 1-0-2)</h2>
+            <div id="leaderboard-trend">Načítám...</div>
         </div>
 
         <div class="stat-card">
@@ -130,9 +141,10 @@
         db.ref('sazkyData/stats').on('value', snap => {
             const stats = snap.val() || {};
             
-            // Renderování všech tabulek
-            renderTable('leaderboard-trend', stats, 'trefenyTrend', ' pts', 'value-expert');
+            // Renderování tabulek
+            renderTable('leaderboard-total', stats, 'celkoveBody', ' NB', 'value-points');
             renderTable('leaderboard-money', stats, 'vyhry', ' Kč');
+            renderTable('leaderboard-trend', stats, 'trefenyTrend', ' pts', 'value-expert');
             renderTable('leaderboard-score', stats, 'trefeneSkore', 'x');
             renderTable('leaderboard-players', stats, 'trefeniStrelci', 'x');
         });
