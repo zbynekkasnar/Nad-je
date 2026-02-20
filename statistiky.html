@@ -56,8 +56,7 @@
         }
         .stat-row:hover { background: rgba(255,255,255,0.02); }
 
-        /* Upravená šířka pro rank kvůli formátu 1.-2. */
-        .rank { font-weight: 900; min-width: 50px; text-align: left; font-size: 1em; }
+        .rank { font-weight: 900; min-width: 55px; text-align: left; font-size: 1em; }
         .rank-1 { color: var(--gold); }
         .rank-2 { color: var(--silver); }
         .rank-3 { color: var(--bronze); }
@@ -143,6 +142,7 @@
         function renderTable(elementId, data, property, unit, isMain) {
             const container = document.getElementById(elementId);
             container.innerHTML = "";
+            const isMoney = elementId === 'leaderboard-money';
             
             const items = Object.entries(data).map(([name, val]) => {
                 const total = parseInt(val.pocetTipu) || 1;
@@ -150,43 +150,49 @@
                 const st = parseInt(val.trefeniStrelci) || 0;
                 const tr = parseInt(val.trefenyTrend) || 0;
                 const partRate = (total / (globalMaxMatches || 1));
+                
+                // U Indexu si body přepočítáme živě (5-3-1), u ostatních bereme hodnotu
+                const valNum = isMain ? (s * 5 + st * 3 + tr * 1) : (parseInt(val[property]) || 0);
 
                 return { 
                     name, 
-                    value: parseInt(val[property]) || 0, 
+                    value: valNum, 
                     raw: val, 
                     s, st, tr, total,
                     part: Math.round(partRate * 100)
                 };
             }).filter(i => i.value > 0);
 
-            // --- PŘÍSNÉ ŘAZENÍ (Tie-breaker matice) ---
+            // --- ŘAZENÍ (TIE-BREAKER MATICE) ---
             items.sort((a, b) => {
                 if (b.value !== a.value) return b.value - a.value;
-                if (b.s !== a.s) return b.s - a.s;
-                if (b.st !== a.st) return b.st - a.st;
-                return b.tr - a.tr;
+                // Pokud je shoda v bodech:
+                if (isMain && b.part !== a.part) return b.part - a.part; // U Indexu rozhoduje účast
+                if (b.s !== a.s) return b.s - a.s; // Pak Skóre
+                if (b.st !== a.st) return b.st - a.st; // Pak Střelci
+                return b.tr - a.tr; // Nakonec Trendy
             });
 
-            // --- VÝPOČET SDÍLENÝCH POZIC ---
+            // --- VÝPOČET SDÍLENÝCH POZIC (EX AEQUO) ---
             items.forEach((item, i) => {
                 const shared = items.filter(other => 
                     other.value === item.value && 
                     other.s === item.s && 
                     other.st === item.st && 
-                    other.tr === item.tr
+                    other.tr === item.tr &&
+                    (isMain ? other.part === item.part : true)
                 );
 
                 if (shared.length > 1) {
                     const firstIdx = items.indexOf(shared[0]) + 1;
                     const lastIdx = firstIdx + shared.length - 1;
                     item.displayRank = `${firstIdx}.-${lastIdx}.`;
-                    item.isShared = true;
                     item.baseRank = firstIdx;
+                    item.isShared = true;
                 } else {
                     item.displayRank = `${i + 1}.`;
-                    item.isShared = false;
                     item.baseRank = i + 1;
+                    item.isShared = false;
                 }
             });
 
@@ -195,10 +201,14 @@
                 const glow = rankNum <= 3 ? `rank-glow rank-glow-${rankNum}` : "";
                 const rankClass = rankNum <= 3 ? `rank-${rankNum}` : "";
                 
-                // Vizuální ospravedlnění pod jménem (Matice tref)
-                let infoText = isMain ? 
-                    `<span>🥅 <b class="badge-s">${item.s}</b></span> <span>🎯 <b class="badge-s">${item.st}</b></span> <span style="opacity:0.4">(${item.total}z)</span>` : 
-                    `<span>Úspěšnost: ${Math.round((item.value/item.total)*100)}%</span> <span>Účast: ${item.part}%</span>`;
+                let infoText = "";
+                if (isMain) {
+                    infoText = `<span>🥅 <b class="badge-s">${item.s}</b></span> <span>🎯 <b class="badge-s">${item.st}</b></span> <span style="opacity:0.4">Účast: ${item.part}%</span>`;
+                } else if (isMoney) {
+                    infoText = `<span style="opacity:0.6">Získáno z ${item.total} tipů</span>`;
+                } else {
+                    infoText = `<span>Úspěšnost: ${Math.round((item.value/item.total)*100)}%</span> <span>Účast: ${item.part}%</span>`;
+                }
 
                 container.innerHTML += `
                     <div class="stat-row ${glow}">
@@ -221,6 +231,7 @@
             const scR = Math.round(s / total * 100);
             const plR = Math.round(st / total * 100);
             const trR = Math.round(tr / total * 100);
+            const nb = (s * 5 + st * 3 + tr * 1);
 
             let t = "Hledač štěstí"; let q = "I slepé kuře občas najde zrno...";
             if (part >= 85 && trR < 45) { t = "Věrný Srdcař"; q = "Srdce bije pro kancl, i když tikety hoří."; }
@@ -246,7 +257,7 @@
                         <div class="progress-container"><div class="progress-bar" style="width:${trR}%"></div></div>
                     </div>
                 </div>
-                <div class="card-footer">${data.celkoveBody||0} NB</div>
+                <div class="card-footer">${nb} NB</div>
                 <div class="card-quote">"${q}"</div>
             `;
             document.getElementById('playerModal').style.display = "block";
