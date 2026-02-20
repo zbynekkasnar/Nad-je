@@ -98,9 +98,10 @@
             padding-left: 10px;
             display: flex;
             flex-direction: column;
+            cursor: pointer; /* Naznačení klikatelnosti */
         }
 
-        .name { font-weight: 600; letter-spacing: 0.5px; }
+        .name { font-weight: 600; letter-spacing: 0.5px; text-decoration: underline rgba(0,242,255,0.2); }
         
         .breakdown {
             font-size: 0.75em;
@@ -137,6 +138,54 @@
         .expert-card { border-color: var(--expert); }
         .expert-title { color: var(--expert) !important; text-shadow: 0 0 10px rgba(168, 85, 247, 0.3) !important; }
         .value-expert { color: var(--expert); }
+
+        /* MODAL STYLY PRO OSOBNÍ KARTU */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0; top: 0;
+            width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.85);
+            backdrop-filter: blur(8px);
+        }
+
+        .player-card {
+            background: var(--dark);
+            border: 2px solid var(--neon);
+            box-shadow: 0 0 40px rgba(0, 242, 255, 0.4);
+            width: 85%;
+            max-width: 320px;
+            margin: 20vh auto;
+            padding: 30px;
+            border-radius: 35px;
+            position: relative;
+            animation: cardEntry 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes cardEntry {
+            from { transform: scale(0.7); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .close-card {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 28px;
+            color: white;
+            cursor: pointer;
+            opacity: 0.5;
+        }
+
+        .card-name { color: var(--neon); font-size: 1.8em; font-weight: 900; margin-bottom: 5px; text-transform: uppercase; }
+        .card-title { font-size: 0.85em; background: rgba(0,242,255,0.15); padding: 4px 12px; border-radius: 50px; color: var(--neon); display: inline-block; margin-bottom: 20px; }
+        .card-stats-list { text-align: left; }
+        .card-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .card-item:last-child { border: none; }
+        .card-item span { color: var(--neon); font-weight: bold; font-family: monospace; }
+        .card-footer { margin-top: 15px; color: var(--points); font-weight: 900; font-size: 1.2em; }
+
     </style>
 </head>
 <body>
@@ -185,6 +234,13 @@
         <div class="stat-card">
             <h2>🏒 KRÁLOVÉ STŘELCŮ</h2>
             <div id="leaderboard-players">Načítám...</div>
+        </div>
+    </div>
+
+    <div id="playerModal" class="modal" onclick="closeModal(event)">
+        <div class="player-card" onclick="event.stopPropagation()">
+            <span class="close-card" onclick="closeModal(event)">&times;</span>
+            <div id="modalContent"></div>
         </div>
     </div>
 
@@ -241,7 +297,7 @@
                 const row = `
                     <div class="stat-row">
                         <span class="rank ${rankClass}">${rank}.</span>
-                        <div class="name-box">
+                        <div class="name-box" onclick='showPlayerCard("${item.name}", ${JSON.stringify(item.rawData)})'>
                             <span class="name">${item.name}</span>
                             ${breakdownHtml}
                         </div>
@@ -249,6 +305,35 @@
                     </div>`;
                 container.innerHTML += row;
             });
+        }
+
+        function showPlayerCard(name, data) {
+            const modal = document.getElementById('playerModal');
+            const content = document.getElementById('modalContent');
+            
+            // Logika pro titul
+            let title = "Nová naděje";
+            if (data.celkoveBody > 15) title = "Hokejový Guru";
+            if (data.vyhry > 400) title = "Bankovní Lupič";
+            if (data.trefeniStrelci > 3) title = "Elitní Sniper";
+            if (data.trefeneSkore > 0) title = "Mistr Výsledků";
+
+            content.innerHTML = `
+                <div class="card-name">${name}</div>
+                <div class="card-title">${title}</div>
+                <div class="card-stats-list">
+                    <div class="card-item">🥅 Přesná skóre: <span>${data.trefeneSkore || 0}x</span></div>
+                    <div class="card-item">🎯 Trefení střelci: <span>${data.trefeniStrelci || 0}x</span></div>
+                    <div class="card-item">📈 Správné trendy: <span>${data.trefenyTrend || 0}x</span></div>
+                    <div class="card-item">💰 Celková výhra: <span>${data.vyhry || 0} Kč</span></div>
+                </div>
+                <div class="card-footer">${data.celkoveBody || 0} NB</div>
+            `;
+            modal.style.display = "block";
+        }
+
+        function closeModal(event) {
+            document.getElementById('playerModal').style.display = "none";
         }
     </script>
 </body>
