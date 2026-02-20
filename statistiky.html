@@ -142,33 +142,36 @@
                 const total = val.pocetTipu || 1;
                 const partRate = (total / (globalMaxMatches || 1));
                 
-                // --- PRECIZNÍ MATICE PRO INDEX (5-3-1) ---
-                const matrixScore = (val.trefeneSkore * 5) + (val.trefeniStrelci * 3) + (val.trefenyTrend * 1);
-                const indexEff = (matrixScore / total) * partRate;
+                // --- NOVÁ PROMĚNNÁ: KVALITA (MATICE 5-3-1) ---
+                const s = val.trefeneSkore || 0;
+                const st = val.trefeniStrelci || 0;
+                const tr = val.trefenyTrend || 0;
+                const matice = (s * 5) + (st * 3) + (tr * 1);
                 
-                // ÚSPĚŠNOST V KATEGORII
-                const catEff = (val[property] || 0) / total;
+                // Výpočet vážené kvality pro rozstřel
+                const vahaKvality = (matice / total) * partRate;
 
                 return { 
                     name, 
-                    value: val[property] || 0, 
+                    value: isMain ? matice : (val[property] || 0), 
                     raw: val, 
-                    indexEff: indexEff, 
-                    catEff: catEff,
+                    kvalita: vahaKvality, 
                     total: total,
                     part: Math.round(partRate * 100)
                 };
             }).filter(i => i.value > 0);
 
+            // ŘAZENÍ
             items.sort((a, b) => {
                 if (b.value !== a.value) return b.value - a.value;
                 if (isMain) {
-                    // Index rozstřel: Kvalita tref -> Účast
-                    if (b.indexEff !== a.indexEff) return b.indexEff - a.indexEff;
-                    return b.total - a.total;
+                    // Index: Rozstřel podle nové proměnné kvalita
+                    return b.kvalita - a.kvalita;
                 } else {
-                    // Kategorie rozstřel: % v dané věci -> Účast
-                    if (b.catEff !== a.catEff) return b.catEff - a.catEff;
+                    // Kategorie: Rozstřel podle úspěšnosti v dané kategorii
+                    const effA = a.value / a.total;
+                    const effB = b.value / b.total;
+                    if (effB !== effA) return effB - effA;
                     return b.total - a.total;
                 }
             });
@@ -179,9 +182,13 @@
                     const prev = items[i-1];
                     let isSame = false;
                     if (isMain) {
-                        isSame = (item.value === prev.value && Math.abs(item.indexEff - prev.indexEff) < 0.00001);
+                        // Shoda v Indexu jen při identické kvalitě
+                        isSame = (item.value === prev.value && Math.abs(item.kvalita - prev.kvalita) < 0.00001);
                     } else {
-                        isSame = (item.value === prev.value && item.catEff === prev.catEff && item.total === prev.total);
+                        // Shoda v kategoriích
+                        const effA = item.value / item.total;
+                        const effB = prev.value / prev.total;
+                        isSame = (item.value === prev.value && effA === effB && item.total === prev.total);
                     }
                     if (!isSame) lastRank = i + 1;
                 }
@@ -190,8 +197,8 @@
                 const glow = rank <= 3 ? `rank-glow rank-glow-${rank}` : "";
                 
                 let infoText = isMain ? 
-                    `<span class="eff-badge">Kvalita: ${Math.round(item.indexEff * 100)}</span> <span>Účast: ${item.part}%</span>` : 
-                    `<span>Úspěšnost: ${Math.round(item.catEff * 100)}%</span> <span>Zápasů: ${item.total}</span>`;
+                    `<span class="eff-badge">Kvalita: ${Math.round(item.kvalita * 100)}</span> <span>Účast: ${item.part}%</span>` : 
+                    `<span>Úspěšnost: ${Math.round((item.value/item.total)*100)}%</span> <span>Zápasů: ${item.total}</span>`;
 
                 container.innerHTML += `
                     <div class="stat-row ${glow}">
