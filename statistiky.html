@@ -39,6 +39,28 @@
             animation: fadeIn 0.8s ease-out;
         }
 
+        /* Styl pro legendu */
+        .legend-table {
+            width: 100%;
+            border-spacing: 0;
+            margin-top: 10px;
+            font-size: 0.9em;
+        }
+        .legend-table td {
+            padding: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .legend-table tr:last-child td { border: none; }
+        .legend-badge {
+            font-weight: 900;
+            padding: 4px 8px;
+            border-radius: 8px;
+            white-space: nowrap;
+        }
+        .badge-score { background: rgba(0, 242, 255, 0.2); color: var(--neon); }
+        .badge-player { background: rgba(168, 85, 247, 0.2); color: var(--expert); }
+        .badge-trend { background: rgba(255, 0, 255, 0.2); color: var(--points); }
+
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
@@ -89,12 +111,10 @@
         }
         .btn-back:hover { background: var(--neon); color: var(--dark); box-shadow: 0 0 20px var(--neon); }
 
-        /* Styl pro NB */
         .points-card { border: 2px solid var(--points); box-shadow: 0 0 25px rgba(255, 0, 255, 0.2); }
         .points-title { color: var(--points) !important; text-shadow: 0 0 15px rgba(255, 0, 255, 0.4) !important; }
         .value-points { color: var(--points); font-size: 1.4em !important; }
 
-        /* Styl pro experty */
         .expert-card { border-color: var(--expert); }
         .expert-title { color: var(--expert) !important; text-shadow: 0 0 10px rgba(168, 85, 247, 0.3) !important; }
         .value-expert { color: var(--expert); }
@@ -105,6 +125,24 @@
     <a href="index.html"><img src="IMG_8429.png" alt="Logo" class="header-logo"></a>
     
     <div class="stats-container">
+        <div class="stat-card" style="border-color: rgba(255,255,255,0.1);">
+            <h2>📖 PRAVIDLA INDEXU</h2>
+            <table class="legend-table">
+                <tr>
+                    <td><span class="legend-badge badge-score">+5 NB</span></td>
+                    <td style="text-align: left;">Přesný výsledek (po 60 min)</td>
+                </tr>
+                <tr>
+                    <td><span class="legend-badge badge-player">+3 NB</span></td>
+                    <td style="text-align: left;">Trefený střelec zápasu</td>
+                </tr>
+                <tr>
+                    <td><span class="legend-badge badge-trend">+1 NB</span></td>
+                    <td style="text-align: left;">Trend (výhra/prohra/remíza)</td>
+                </tr>
+            </table>
+        </div>
+
         <div class="stat-card points-card">
             <h2 class="points-title">⭐ INDEX NADĚJE</h2>
             <div id="leaderboard-total">Načítám...</div>
