@@ -50,37 +50,31 @@
 
         .name-box { flex-grow: 1; text-align: left; padding-left: 10px; display: flex; flex-direction: column; cursor: pointer; }
         .name { font-weight: 600; letter-spacing: 0.5px; text-decoration: underline rgba(0,242,255,0.1); }
-        .name:hover { color: var(--neon); }
         
         .breakdown { font-size: 0.75em; opacity: 0.6; display: flex; gap: 12px; margin-top: 2px; font-family: monospace; }
         .rank { font-weight: 900; width: 35px; font-size: 1.1em; }
-        .rank-1 { color: var(--gold); text-shadow: 0 0 10px var(--gold); }
+        .rank-1 { color: var(--gold); }
         .rank-2 { color: var(--silver); }
         .rank-3 { color: var(--bronze); }
 
         .value { font-weight: 900; color: #fff; font-family: monospace; font-size: 1.2em; }
 
-        /* SÍŇ SLÁVY SPECIÁL */
-        .fame-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid rgba(255,215,0,0.1); font-size: 0.9em; }
-        .fame-item span { color: var(--gold); font-weight: bold; }
+        .fame-item { padding: 10px 0; border-bottom: 1px solid rgba(255,215,0,0.1); font-size: 0.9em; text-align: left; }
+        .fame-label { opacity: 0.6; display: block; font-size: 0.8em; text-transform: uppercase; }
+        .fame-winners { color: var(--gold); font-weight: bold; font-size: 1.1em; }
 
-        /* MODAL */
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); }
         .player-card {
             background: var(--dark); border: 2px solid var(--neon); width: 85%; max-width: 320px;
             margin: 18vh auto; padding: 30px; border-radius: 35px; position: relative;
-            animation: cardEntry 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        @keyframes cardEntry { from { transform: scale(0.7); opacity: 0; } to { transform: scale(1); opacity: 1; } }
         .close-card { position: absolute; top: 15px; right: 20px; font-size: 28px; cursor: pointer; opacity: 0.5; }
         .card-name { color: var(--neon); font-size: 1.8em; font-weight: 900; text-transform: uppercase; }
         .card-title { font-size: 0.85em; background: rgba(0,242,255,0.1); padding: 4px 12px; border-radius: 50px; color: var(--neon); margin-bottom: 15px; display: inline-block; }
         .card-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
         .card-item span { color: var(--neon); font-weight: bold; }
-        .card-quote { font-style: italic; font-size: 0.8em; opacity: 0.4; margin-top: 15px; }
 
-        .btn-back { display: inline-block; margin-top: 20px; color: var(--neon); text-decoration: none; font-weight: bold; padding: 12px 30px; border: 1px solid var(--neon); border-radius: 100px; transition: 0.3s; }
-        .btn-back:hover { background: var(--neon); color: var(--dark); box-shadow: 0 0 20px var(--neon); }
+        .btn-back { display: inline-block; margin: 20px 0; color: var(--neon); text-decoration: none; font-weight: bold; padding: 12px 30px; border: 1px solid var(--neon); border-radius: 100px; }
         .points-card { border: 2px solid var(--points); }
     </style>
 </head>
@@ -92,9 +86,14 @@
         <div class="stat-card" style="border-color: var(--gold);">
             <h2 style="color: var(--gold);">🏆 SÍŇ SLÁVY (REKORDY)</h2>
             <div id="hall-of-fame">
-                <div class="fame-item">Největší lup (Kč): <span id="rec-money">--</span></div>
-                <div class="fame-item">Sniper turnaje: <span id="rec-sniper">--</span></div>
-                <div class="fame-item">Jasnovědec (Skóre): <span id="rec-scores">--</span></div>
+                <div class="fame-item">
+                    <span class="fame-label">Největší vybraný bank:</span>
+                    <span id="fame-money" class="fame-winners">Načítám...</span>
+                </div>
+                <div class="fame-item">
+                    <span class="fame-label">Největší počet trefených střelců:</span>
+                    <span id="fame-sniper" class="fame-winners">Načítám...</span>
+                </div>
             </div>
         </div>
 
@@ -129,12 +128,8 @@
             const stats = snap.val() || {};
             globalMaxMatches = Math.max(...Object.values(stats).map(p => p.pocetTipu || 0));
 
-            // Aktualizace rekordů
-            const findMax = (prop) => Object.entries(stats).reduce((a, b) => b[1][prop] > a[1] ? [b[0], b[1][prop]] : a, ["--", 0]);
-            const m = findMax('vyhry'); const s = findMax('trefeniStrelci'); const sc = findMax('trefeneSkore');
-            document.getElementById('rec-money').innerText = `${m[1]} Kč (${m[0]})`;
-            document.getElementById('rec-sniper').innerText = `${s[1]}x (${s[0]})`;
-            document.getElementById('rec-scores').innerText = `${sc[1]}x (${sc[0]})`;
+            // Logika Síně slávy pro VŠECHNY vítěze rekordů
+            updateHallOfFame(stats);
 
             renderTable('leaderboard-total', stats, 'celkoveBody', ' NB', true);
             renderTable('leaderboard-money', stats, 'vyhry', ' Kč');
@@ -143,54 +138,74 @@
             renderTable('leaderboard-players', stats, 'trefeniStrelci', 'x');
         });
 
+        function updateHallOfFame(stats) {
+            let maxM = 0; let winnersM = [];
+            let maxS = 0; let winnersS = [];
+
+            Object.entries(stats).forEach(([name, data]) => {
+                // Peníze
+                if (data.vyhry > maxM) { maxM = data.vyhry; winnersM = [name]; }
+                else if (data.vyhry === maxM && maxM > 0) { winnersM.push(name); }
+                // Střelci
+                if (data.trefeniStrelci > maxS) { maxS = data.trefeniStrelci; winnersS = [name]; }
+                else if (data.trefeniStrelci === maxS && maxS > 0) { winnersS.push(name); }
+            });
+
+            document.getElementById('fame-money').innerHTML = `${maxM} Kč <small>(${winnersM.join(', ')})</small>`;
+            document.getElementById('fame-sniper').innerHTML = `${maxS}x <small>(${winnersS.join(', ')})</small>`;
+        }
+
         function renderTable(elementId, data, property, unit, isMain = false) {
             const container = document.getElementById(elementId);
             container.innerHTML = "";
-            const sorted = Object.entries(data).map(([name, val]) => {
+            
+            // 1. Příprava a seřazení dat
+            const items = Object.entries(data).map(([name, val]) => {
                 const total = val.pocetTipu || 1;
                 const eff = Math.round(((val.trefeneSkore||0)+(val.trefeniStrelci||0)+(val.trefenyTrend||0))/(total*3)*100);
-                return { name, value: val[property]||0, raw: val, eff };
-            }).filter(i => i.value > 0).sort((a,b) => b.value - a.value || b.eff - a.eff || b.raw.trefeneSkore - a.raw.trefeneSkore);
+                return { name, val: val[property]||0, raw: val, eff };
+            })
+            .filter(i => i.val > 0)
+            .sort((a, b) => b.val - a.val || b.eff - a.eff || b.raw.trefeneSkore - a.raw.trefeneSkore);
 
-            let rank = 1;
-            sorted.forEach((item, i) => {
+            // 2. Vykreslení s logikou sdíleného pořadí
+            let lastRank = 1;
+            items.forEach((item, i) => {
                 if (i > 0) {
-                    const p = sorted[i-1];
-                    if (item.value !== p.value || item.eff !== p.eff || item.raw.trefeneSkore !== p.raw.trefeneSkore) rank = i + 1;
+                    const prev = items[i-1];
+                    // Změna ranku jen když se liší hodnoty
+                    if (item.val !== prev.val || item.eff !== prev.eff || item.raw.trefeneSkore !== prev.raw.trefeneSkore) {
+                        lastRank = i + 1;
+                    }
                 }
-                const isL = isMain && rank === 1;
-                const rCl = rank===1?"rank-1":rank===2?"rank-2":rank===3?"rank-3":"";
                 
-                container.innerHTML += `<div class="stat-row ${isL?'leader-row':''}">
-                    <span class="rank ${rCl}">${rank}.</span>
-                    <div class="name-box" onclick='showCard("${item.name}", ${JSON.stringify(item.raw)})'>
-                        <span class="name">${item.name} ${isL?'👑':''}</span>
-                        ${isMain ? `<div class="breakdown">🥅 ${item.raw.trefeneSkore} 🎯 ${item.raw.trefeniStrelci} 📈 ${item.raw.trefenyTrend} (${item.eff}%)</div>` : ''}
-                    </div>
-                    <span class="value">${item.value}<span style="font-size:0.6em;opacity:0.5">${unit}</span></span>
-                </div>`;
+                const isLeader = isMain && lastRank === 1;
+                const rCl = lastRank===1?"rank-1":lastRank===2?"rank-2":lastRank===3?"rank-3":"";
+
+                container.innerHTML += `
+                    <div class="stat-row ${isLeader ? 'leader-row' : ''}">
+                        <span class="rank ${rCl}">${lastRank}.</span>
+                        <div class="name-box" onclick='showCard("${item.name}", ${JSON.stringify(item.raw)})'>
+                            <span class="name">${item.name} ${isLeader ? '👑' : ''}</span>
+                            ${isMain ? `<div class="breakdown">🥅 ${item.raw.trefeneSkore} 🎯 ${item.raw.trefeniStrelci} 📈 ${item.raw.trefenyTrend} (${item.eff}%)</div>` : ''}
+                        </div>
+                        <span class="value">${item.val}<small style="opacity:0.5">${unit}</small></span>
+                    </div>`;
             });
         }
 
         function showCard(name, data) {
             const total = data.pocetTipu || 1;
             const part = Math.round((total / globalMaxMatches) * 100);
-            const tr = Math.round((data.trefenyTrend || 0) / total * 100);
-            const sn = Math.round((data.trefeniStrelci || 0) / total * 100);
-
-            let t = "Věrný Srdcař"; let q = "Srdce bije pro kancl, i když tikety hoří.";
-            if (part < 40) { t = "Sváteční sázkař"; q = "Ukáže se jen na ty největší šlágry."; }
-            else if (tr > 65) { t = "Ledový Analytik"; q = "Čte hru jako otevřenou knihu."; }
-            else if (sn > 45) { t = "Elitní Sniper"; q = "Hráči dávají góly jen aby mu udělali radost."; }
-
             document.getElementById('modalContent').innerHTML = `
-                <div class="card-name">${name}</div><div class="card-title">${t}</div>
+                <div class="card-name">${name}</div>
+                <div class="card-title">Profil hráče</div>
                 <div class="card-item">Účast: <span>${part}%</span></div>
                 <div class="card-item">🥅 Skóre: <span>${data.trefeneSkore||0}x</span></div>
                 <div class="card-item">🎯 Střelci: <span>${data.trefeniStrelci||0}x</span></div>
-                <div class="card-item">📈 Trendy: <span>${tr}%</span></div>
-                <div style="margin-top:20px; font-weight:900; color:var(--points); font-size:1.4em;">${data.celkoveBody||0} NB</div>
-                <div class="card-quote">"${q}"</div>`;
+                <div class="card-item">📈 Trendy: <span>${data.trefenyTrend||0}x</span></div>
+                <div style="margin-top:20px; font-weight:900; color:var(--points); font-size:1.6em;">${data.celkoveBody||0} NB</div>
+            `;
             document.getElementById('playerModal').style.display = "block";
         }
         function closeModal() { document.getElementById('playerModal').style.display = "none"; }
