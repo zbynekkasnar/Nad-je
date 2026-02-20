@@ -53,7 +53,6 @@
             animation: pulseNeon 2s infinite ease-in-out;
         }
 
-        /* Barvy pulsů */
         .rank-glow-1 { background: rgba(255, 215, 0, 0.08) !important; }
         .rank-glow-1::after { box-shadow: inset 0 0 15px rgba(255, 215, 0, 0.4); }
         
@@ -144,13 +143,19 @@
             animation: cardEntry 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
+        @keyframes cardEntry {
+            from { transform: scale(0.7); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
         .close-card { position: absolute; top: 15px; right: 20px; font-size: 28px; color: white; cursor: pointer; opacity: 0.5; }
         .card-name { color: var(--neon); font-size: 1.8em; font-weight: 900; margin-bottom: 5px; text-transform: uppercase; }
-        .card-title { font-size: 0.85em; background: rgba(0,242,255,0.15); padding: 4px 12px; border-radius: 50px; color: var(--neon); display: inline-block; margin-bottom: 20px; }
+        .card-title { font-size: 0.85em; background: rgba(0,242,255,0.15); padding: 4px 12px; border-radius: 50px; color: var(--neon); display: inline-block; margin-bottom: 15px; }
         .card-stats-list { text-align: left; }
         .card-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
         .card-item span { color: var(--neon); font-weight: bold; font-family: monospace; }
         .card-footer { margin-top: 15px; color: var(--points); font-weight: 900; font-size: 1.2em; }
+        .card-quote { font-style: italic; font-size: 0.8em; opacity: 0.5; margin-top: 15px; line-height: 1.4; }
 
         .btn-back { 
             display: inline-block; 
@@ -241,7 +246,6 @@
 
             let currentRank = 1;
             sorted.forEach((item, index) => {
-                // Logika sdíleného pořadí (Tie-breaker)
                 if (index > 0) {
                     const prev = sorted[index - 1];
                     if (item.value !== prev.value || item.efficiency !== prev.efficiency || item.rawData.trefeneSkore !== prev.rawData.trefeneSkore) {
@@ -252,7 +256,6 @@
                 const rank = currentRank;
                 let rankClass = (rank === 1) ? "rank-1" : (rank === 2) ? "rank-2" : (rank === 3) ? "rank-3" : "";
                 
-                // Přidání třídy pro puls podle místa
                 let glowClass = "";
                 if (rank === 1) glowClass = "rank-glow rank-glow-1";
                 else if (rank === 2) glowClass = "rank-glow rank-glow-2";
@@ -289,22 +292,60 @@
             const modal = document.getElementById('playerModal');
             const content = document.getElementById('modalContent');
             const total = data.pocetTipu || 0;
-            const participation = globalMaxMatches > 0 ? Math.round((total / globalMaxMatches) * 100) : 0;
+            const part = globalMaxMatches > 0 ? Math.round((total / globalMaxMatches) * 100) : 0;
             const scoreRate = total > 0 ? Math.round((data.trefeneSkore || 0) / total * 100) : 0;
             const playerRate = total > 0 ? Math.round((data.trefeniStrelci || 0) / total * 100) : 0;
             const trendRate = total > 0 ? Math.round((data.trefenyTrend || 0) / total * 100) : 0;
 
+            // --- LOGIKA TITULŮ A HLÁŠEK ---
+            let title = "Hledač štěstí"; 
+            let quote = "I slepé kuře občas najde zrno...";
+
+            if (part >= 85 && trendRate < 40) {
+                title = "Věrný Srdcař";
+                quote = "Srdce bije pro kancl, i když tikety hoří jedna radost.";
+            } else if (part < 40) {
+                title = "Sváteční sázkař";
+                quote = "Ukáže se jen když se hraje o velký bank nebo je v lednici pivo.";
+            } else if (part > 90 && trendRate < 50) {
+                title = "Držák kabiny";
+                quote = "Nevynechá zápas, i když mu to tam zrovna nepadá. Respekt!";
+            }
+
+            // Elitní tituly (přepisují základní)
+            if (trendRate > 65) { 
+                title = "Ledový Analytik"; 
+                quote = "Čte hru jako otevřenou knihu. Strach s ním sázet!"; 
+            }
+            if (playerRate > 45) { 
+                title = "Elitní Sniper"; 
+                quote = "Hráči dávají góly jen proto, aby mu udělali radost."; 
+            }
+            if (scoreRate > 15) { 
+                title = "Hokejový Jasnovědec"; 
+                quote = "Viděl ten výsledek už včera ve snu. Děsivé."; 
+            }
+            if (data.vyhry > 400) { 
+                title = "Bankovní Lupič"; 
+                quote = "Už pro něj jedou těžkooděnci z finančního úřadu."; 
+            }
+            if (total <= 2) {
+                title = "Nová Naděje";
+                quote = "Teprve si zavazuje brusle v šatně, ale už o něm vědí.";
+            }
+
             content.innerHTML = `
                 <div class="card-name">${name}</div>
-                <div class="card-title">Profil hráče</div>
-                <div class="card-efficiency">Účast: ${participation}% (${total}z)</div>
+                <div class="card-title">${title}</div>
+                <div style="font-size:0.8em; opacity:0.5; margin-bottom:10px;">Účast: ${part}% (${total}z)</div>
                 <div class="card-stats-list">
-                    <div class="card-item">🥅 Přesná skóre: <span>${data.trefeneSkore || 0}x (${scoreRate}%)</span></div>
-                    <div class="card-item">🎯 Trefení střelci: <span>${data.trefeniStrelci || 0}x (${playerRate}%)</span></div>
-                    <div class="card-item">📈 Správné trendy: <span>${data.trefenyTrend || 0}x (${trendRate}%)</span></div>
-                    <div class="card-item" style="border-top: 1px solid rgba(255,255,255,0.1); margin-top:5px; padding-top:10px;">💰 Celková výhra: <span>${data.vyhry || 0} Kč</span></div>
+                    <div class="card-item">🥅 Skóre: <span>${data.trefeneSkore || 0}x (${scoreRate}%)</span></div>
+                    <div class="card-item">🎯 Střelci: <span>${data.trefeniStrelci || 0}x (${playerRate}%)</span></div>
+                    <div class="card-item">📈 Trendy: <span>${trendRate}%</span></div>
+                    <div class="card-item" style="border-top: 1px solid rgba(255,255,255,0.1); margin-top:5px; padding-top:10px;">💰 Výhry: <span>${data.vyhry || 0} Kč</span></div>
                 </div>
                 <div class="card-footer">${data.celkoveBody || 0} NB</div>
+                <div class="card-quote">"${quote}"</div>
             `;
             modal.style.display = "block";
         }
