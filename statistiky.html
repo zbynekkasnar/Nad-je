@@ -91,8 +91,27 @@
         .rank-2 { color: var(--silver); }
         .rank-3 { color: var(--bronze); }
 
-        .name { flex-grow: 1; text-align: left; padding-left: 10px; font-weight: 600; letter-spacing: 0.5px; }
-        .value { font-weight: 900; color: #fff; font-family: monospace; font-size: 1.2em; }
+        /* Kontejner pro jméno a breakdown */
+        .name-box {
+            flex-grow: 1;
+            text-align: left;
+            padding-left: 10px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .name { font-weight: 600; letter-spacing: 0.5px; }
+        
+        .breakdown {
+            font-size: 0.75em;
+            opacity: 0.6;
+            display: flex;
+            gap: 12px;
+            margin-top: 2px;
+            font-family: monospace;
+        }
+
+        .value { font-weight: 900; color: #fff; font-family: monospace; font-size: 1.2em; white-space: nowrap; }
         
         .header-logo { max-width: 180px; margin: 20px 0; filter: drop-shadow(0 0 10px var(--neon)); transition: 0.3s; }
         .header-logo:hover { transform: scale(1.05); }
@@ -130,21 +149,21 @@
             <table class="legend-table">
                 <tr>
                     <td><span class="legend-badge badge-score">+5 NB</span></td>
-                    <td style="text-align: left;">Přesný výsledek (po 60 min)</td>
+                    <td style="text-align: left;">🥅 Přesný výsledek (po 60 min)</td>
                 </tr>
                 <tr>
                     <td><span class="legend-badge badge-player">+3 NB</span></td>
-                    <td style="text-align: left;">Trefený střelec zápasu</td>
+                    <td style="text-align: left;">🎯 Trefený střelec zápasu</td>
                 </tr>
                 <tr>
                     <td><span class="legend-badge badge-trend">+1 NB</span></td>
-                    <td style="text-align: left;">Trend (výhra/prohra/remíza)</td>
+                    <td style="text-align: left;">📈 Trend (výhra/prohra/remíza)</td>
                 </tr>
             </table>
         </div>
 
         <div class="stat-card points-card">
-            <h2 class="points-title">⭐ INDEX NADĚJE</h2>
+            <h2 class="points-title">⭐ INDEX NADĚJE (CELKEM)</h2>
             <div id="leaderboard-total">Načítám...</div>
         </div>
 
@@ -154,7 +173,7 @@
         </div>
 
         <div class="stat-card expert-card">
-            <h2 class="expert-title">🧠 EXPERTI (TREND 1-0-2)</h2>
+            <h2 class="expert-title">🧠 EXPERTI (TRENDY)</h2>
             <div id="leaderboard-trend">Načítám...</div>
         </div>
 
@@ -178,21 +197,19 @@
 
         db.ref('sazkyData/stats').on('value', snap => {
             const stats = snap.val() || {};
-            
-            // Renderování tabulek
-            renderTable('leaderboard-total', stats, 'celkoveBody', ' NB', 'value-points');
+            renderTable('leaderboard-total', stats, 'celkoveBody', ' NB', 'value-points', true);
             renderTable('leaderboard-money', stats, 'vyhry', ' Kč');
             renderTable('leaderboard-trend', stats, 'trefenyTrend', ' pts', 'value-expert');
             renderTable('leaderboard-score', stats, 'trefeneSkore', 'x');
             renderTable('leaderboard-players', stats, 'trefeniStrelci', 'x');
         });
 
-        function renderTable(elementId, data, property, unit, extraValueClass = "") {
+        function renderTable(elementId, data, property, unit, extraValueClass = "", showBreakdown = false) {
             const container = document.getElementById(elementId);
             container.innerHTML = "";
             
             const sorted = Object.entries(data)
-                .map(([name, val]) => ({ name, value: val[property] || 0 }))
+                .map(([name, val]) => ({ name, value: val[property] || 0, rawData: val }))
                 .filter(item => item.value > 0)
                 .sort((a, b) => b.value - a.value);
 
@@ -208,10 +225,26 @@
                 else if(rank === 2) rankClass = "rank-2";
                 else if(rank === 3) rankClass = "rank-3";
 
+                let breakdownHtml = "";
+                if (showBreakdown) {
+                    const s = item.rawData.trefeneSkore || 0;
+                    const p = item.rawData.trefeniStrelci || 0;
+                    const t = item.rawData.trefenyTrend || 0;
+                    breakdownHtml = `
+                        <div class="breakdown">
+                            <span>🥅 ${s}x</span>
+                            <span>🎯 ${p}x</span>
+                            <span>📈 ${t}x</span>
+                        </div>`;
+                }
+
                 const row = `
                     <div class="stat-row">
                         <span class="rank ${rankClass}">${rank}.</span>
-                        <span class="name">${item.name}</span>
+                        <div class="name-box">
+                            <span class="name">${item.name}</span>
+                            ${breakdownHtml}
+                        </div>
                         <span class="value ${extraValueClass}">${item.value}<span style="font-size:0.7em; margin-left:2px; opacity:0.6">${unit}</span></span>
                     </div>`;
                 container.innerHTML += row;
