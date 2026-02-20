@@ -142,11 +142,11 @@
                 const total = val.pocetTipu || 1;
                 const partRate = (total / (globalMaxMatches || 1));
                 
-                // MATICE POUZE PRO INDEX (5-3-1)
-                const matrix = (val.trefeneSkore * 5) + (val.trefeniStrelci * 3) + (val.trefenyTrend * 1);
-                const indexEff = (matrix / total) * partRate;
+                // --- PRECIZNÍ MATICE PRO INDEX (5-3-1) ---
+                const matrixScore = (val.trefeneSkore * 5) + (val.trefeniStrelci * 3) + (val.trefenyTrend * 1);
+                const indexEff = (matrixScore / total) * partRate;
                 
-                // ÚSPĚŠNOST V KATEGORII (Pro ostatní tabulky)
+                // ÚSPĚŠNOST V KATEGORII
                 const catEff = (val[property] || 0) / total;
 
                 return { 
@@ -160,14 +160,16 @@
                 };
             }).filter(i => i.value > 0);
 
-            // ŘAZENÍ
             items.sort((a, b) => {
                 if (b.value !== a.value) return b.value - a.value;
                 if (isMain) {
-                    return b.indexEff - a.indexEff; // U Indexu rozhoduje vážená matice
+                    // Index rozstřel: Kvalita tref -> Účast
+                    if (b.indexEff !== a.indexEff) return b.indexEff - a.indexEff;
+                    return b.total - a.total;
                 } else {
-                    if (b.catEff !== a.catEff) return b.catEff - a.catEff; // U kategorií úspěšnost dané věci
-                    return b.total - a.total; // Nakonec celková účast
+                    // Kategorie rozstřel: % v dané věci -> Účast
+                    if (b.catEff !== a.catEff) return b.catEff - a.catEff;
+                    return b.total - a.total;
                 }
             });
 
@@ -177,7 +179,7 @@
                     const prev = items[i-1];
                     let isSame = false;
                     if (isMain) {
-                        isSame = (item.value === prev.value && Math.abs(item.indexEff - prev.indexEff) < 0.0001);
+                        isSame = (item.value === prev.value && Math.abs(item.indexEff - prev.indexEff) < 0.00001);
                     } else {
                         isSame = (item.value === prev.value && item.catEff === prev.catEff && item.total === prev.total);
                     }
@@ -188,7 +190,7 @@
                 const glow = rank <= 3 ? `rank-glow rank-glow-${rank}` : "";
                 
                 let infoText = isMain ? 
-                    `<span class="eff-badge">Účinnost: ${Math.round(item.indexEff * 100)}</span> <span>Účast: ${item.part}%</span>` : 
+                    `<span class="eff-badge">Kvalita: ${Math.round(item.indexEff * 100)}</span> <span>Účast: ${item.part}%</span>` : 
                     `<span>Úspěšnost: ${Math.round(item.catEff * 100)}%</span> <span>Zápasů: ${item.total}</span>`;
 
                 container.innerHTML += `
@@ -210,7 +212,6 @@
             const plR = Math.round((data.trefeniStrelci || 0) / total * 100);
             const trR = Math.round((data.trefenyTrend || 0) / total * 100);
 
-            // Vtipné tituly
             let t = "Hledač štěstí"; let q = "I slepé kuře občas najde zrno...";
             if (part >= 85 && trR < 45) { t = "Věrný Srdcař"; q = "Srdce bije pro kancl, i když tikety hoří."; }
             if (trR > 65) { t = "Ledový Analytik"; q = "Čte hru jako otevřenou knihu."; }
