@@ -144,21 +144,21 @@
                 const total = parseInt(val.pocetTipu) || 1;
                 const partRate = (total / (globalMaxMatches || 1));
                 
-                // --- PŘEPOČET KVALITY PŘÍMO Z DÍLČÍCH TREF ---
+                // --- PŘEPOČET BODŮ I KVALITY ZE STEJNÝCH DAT (5-3-1) ---
                 const s = parseInt(val.trefeneSkore) || 0;
                 const st = parseInt(val.trefeniStrelci) || 0;
                 const tr = parseInt(val.trefenyTrend) || 0;
                 
-                // Přepočítáme NB body, aby se Index řídil trefami v kartě
-                const matice = (s * 5) + (st * 3) + (tr * 1);
+                // Přepočítáme NB body přímo tady
+                const realNB = (s * 5) + (st * 3) + (tr * 1);
                 
-                // Výpočet vážené kvality (rozstřel)
-                const vahaKvality = (matice / total) * partRate;
+                // Výpočet vážené kvality (rozstřel) založený na přepočtených bodech
+                const vahaKvality = (realNB / total) * partRate;
 
                 return { 
                     name, 
-                    // Pro Index zobrazíme naši vypočtenou hodnotu, pro ostatní hodnotu z DB
-                    value: isMain ? matice : (val[property] || 0), 
+                    // Pro hlavní Index zobrazíme námi přepočtené body, pro ostatní kategorii z DB
+                    value: isMain ? realNB : (val[property] || 0), 
                     raw: val, 
                     kvalita: vahaKvality, 
                     total: total,
@@ -170,10 +170,10 @@
             items.sort((a, b) => {
                 if (b.value !== a.value) return b.value - a.value;
                 if (isMain) {
-                    // Index: Rozstřel podle nové proměnné kvalita
+                    // Index: Primární rozstřel podle přepočtené kvality
                     return b.kvalita - a.kvalita;
                 } else {
-                    // Kategorie: Rozstřel podle % úspěšnosti v dané kategorii
+                    // Kategorie: Rozstřel podle úspěšnosti
                     const effA = a.value / a.total;
                     const effB = b.value / b.total;
                     if (effB !== effA) return effB - effA;
@@ -187,6 +187,7 @@
                     const prev = items[i-1];
                     let isSame = false;
                     if (isMain) {
+                        // Shoda ranku jen při identických bodech i identické kvalitě
                         isSame = (item.value === prev.value && Math.abs(item.kvalita - prev.kvalita) < 0.00001);
                     } else {
                         const effA = item.value / item.total;
@@ -218,9 +219,16 @@
         function showPlayerCard(name, data) {
             const total = parseInt(data.pocetTipu) || 1;
             const part = Math.round((total / globalMaxMatches) * 100);
-            const scR = Math.round((parseInt(data.trefeneSkore) || 0) / total * 100);
-            const plR = Math.round((parseInt(data.trefeniStrelci) || 0) / total * 100);
-            const trR = Math.round((parseInt(data.trefenyTrend) || 0) / total * 100);
+            
+            // Reálný přepočet pro kartu ze stejných dat
+            const s = parseInt(data.trefeneSkore) || 0;
+            const st = parseInt(data.trefeniStrelci) || 0;
+            const tr = parseInt(data.trefenyTrend) || 0;
+            const realNB = (s * 5) + (st * 3) + (tr * 1);
+
+            const scR = Math.round(s / total * 100);
+            const plR = Math.round(st / total * 100);
+            const trR = Math.round(tr / total * 100);
 
             let t = "Hledač štěstí"; let q = "I slepé kuře občas najde zrno...";
             if (part >= 85 && trR < 45) { t = "Věrný Srdcař"; q = "Srdce bije pro kancl, i když tikety hoří."; }
@@ -234,11 +242,11 @@
                 <div style="font-size:0.8em; opacity:0.5; margin-bottom:15px;">Účast: ${part}% (${total}z)</div>
                 <div class="card-stats-list">
                     <div class="card-item">
-                        <div class="card-item-header">🥅 Přesná skóre <span>${data.trefeneSkore||0}x</span></div>
+                        <div class="card-item-header">🥅 Přesná skóre <span>${s}x</span></div>
                         <div class="progress-container"><div class="progress-bar" style="width:${scR}%"></div></div>
                     </div>
                     <div class="card-item">
-                        <div class="card-item-header">🎯 Trefení střelci <span>${data.trefeniStrelci||0}x</span></div>
+                        <div class="card-item-header">🎯 Trefení střelci <span>${st}x</span></div>
                         <div class="progress-container"><div class="progress-bar" style="width:${plR}%"></div></div>
                     </div>
                     <div class="card-item">
@@ -246,7 +254,7 @@
                         <div class="progress-container"><div class="progress-bar" style="width:${trR}%"></div></div>
                     </div>
                 </div>
-                <div class="card-footer">${(parseInt(data.trefeneSkore)*5 + parseInt(data.trefeniStrelci)*3 + parseInt(data.trefenyTrend)) || 0} NB</div>
+                <div class="card-footer">${realNB} NB</div>
                 <div class="card-quote">"${q}"</div>
             `;
             document.getElementById('playerModal').style.display = "block";
