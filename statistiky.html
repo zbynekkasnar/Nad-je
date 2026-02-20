@@ -39,21 +39,29 @@
             animation: fadeIn 0.8s ease-out;
         }
 
-        /* NEONOVÝ PULS PRO LÍDRA */
-        .leader-row {
-            background: rgba(0, 242, 255, 0.08) !important;
+        /* NEONOVÉ PULSOVÁNÍ PRO TOP 3 */
+        .rank-glow {
             position: relative;
             overflow: hidden;
             border-radius: 15px;
         }
-        .leader-row::after {
+        .rank-glow::after {
             content: '';
             position: absolute;
             top: 0; left: 0; right: 0; bottom: 0;
-            box-shadow: inset 0 0 15px rgba(0, 242, 255, 0.3);
-            animation: pulseNeon 2s infinite ease-in-out;
             pointer-events: none;
+            animation: pulseNeon 2s infinite ease-in-out;
         }
+
+        /* Barvy pulsů */
+        .rank-glow-1 { background: rgba(255, 215, 0, 0.08) !important; }
+        .rank-glow-1::after { box-shadow: inset 0 0 15px rgba(255, 215, 0, 0.4); }
+        
+        .rank-glow-2 { background: rgba(203, 213, 224, 0.08) !important; }
+        .rank-glow-2::after { box-shadow: inset 0 0 15px rgba(203, 213, 224, 0.3); }
+
+        .rank-glow-3 { background: rgba(205, 127, 50, 0.08) !important; }
+        .rank-glow-3::after { box-shadow: inset 0 0 15px rgba(205, 127, 50, 0.3); }
 
         @keyframes pulseNeon {
             0%, 100% { opacity: 0.3; }
@@ -87,8 +95,8 @@
 
         .rank { font-weight: 900; width: 35px; font-size: 1.1em; }
         .rank-1 { color: var(--gold); text-shadow: 0 0 10px var(--gold); }
-        .rank-2 { color: var(--silver); }
-        .rank-3 { color: var(--bronze); }
+        .rank-2 { color: var(--silver); text-shadow: 0 0 10px var(--silver); }
+        .rank-3 { color: var(--bronze); text-shadow: 0 0 10px var(--bronze); }
 
         .name-box {
             flex-grow: 1;
@@ -111,33 +119,8 @@
         }
 
         .value { font-weight: 900; color: #fff; font-family: monospace; font-size: 1.2em; white-space: nowrap; }
-        
         .header-logo { max-width: 180px; margin: 20px 0; filter: drop-shadow(0 0 10px var(--neon)); transition: 0.3s; }
-        .header-logo:hover { transform: scale(1.05); }
         
-        .btn-back { 
-            display: inline-block; 
-            margin-top: 10px; 
-            color: var(--neon); 
-            text-decoration: none; 
-            font-size: 0.9em; 
-            font-weight: bold;
-            padding: 10px 20px;
-            border: 1px solid rgba(0, 242, 255, 0.3);
-            border-radius: 100px;
-            transition: 0.3s;
-        }
-        .btn-back:hover { background: var(--neon); color: var(--dark); box-shadow: 0 0 20px var(--neon); }
-
-        .points-card { border: 2px solid var(--points); box-shadow: 0 0 25px rgba(255, 0, 255, 0.2); }
-        .points-title { color: var(--points) !important; text-shadow: 0 0 15px rgba(255, 0, 255, 0.4) !important; }
-        .value-points { color: var(--points); font-size: 1.4em !important; }
-
-        .expert-card { border-color: var(--expert); }
-        .expert-title { color: var(--expert) !important; text-shadow: 0 0 10px rgba(168, 85, 247, 0.3) !important; }
-        .value-expert { color: var(--expert); }
-
-        /* OSOBNÍ KARTA (MODAL) */
         .modal {
             display: none;
             position: fixed;
@@ -161,31 +144,27 @@
             animation: cardEntry 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
-        @keyframes cardEntry {
-            from { transform: scale(0.7); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
-        }
-
-        .close-card {
-            position: absolute;
-            top: 15px;
-            right: 20px;
-            font-size: 28px;
-            color: white;
-            cursor: pointer;
-            opacity: 0.5;
-        }
-
+        .close-card { position: absolute; top: 15px; right: 20px; font-size: 28px; color: white; cursor: pointer; opacity: 0.5; }
         .card-name { color: var(--neon); font-size: 1.8em; font-weight: 900; margin-bottom: 5px; text-transform: uppercase; }
         .card-title { font-size: 0.85em; background: rgba(0,242,255,0.15); padding: 4px 12px; border-radius: 50px; color: var(--neon); display: inline-block; margin-bottom: 20px; }
         .card-stats-list { text-align: left; }
         .card-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .card-item:last-child { border: none; }
         .card-item span { color: var(--neon); font-weight: bold; font-family: monospace; }
         .card-footer { margin-top: 15px; color: var(--points); font-weight: 900; font-size: 1.2em; }
-        .card-efficiency { font-size: 0.75em; opacity: 0.5; margin-bottom: 10px; text-align: left; }
-        .card-quote { font-style: italic; font-size: 0.8em; opacity: 0.5; margin-top: 15px; line-height: 1.4; }
 
+        .btn-back { 
+            display: inline-block; 
+            margin-top: 10px; 
+            color: var(--neon); 
+            text-decoration: none; 
+            font-size: 0.9em; 
+            font-weight: bold;
+            padding: 10px 20px;
+            border: 1px solid rgba(0, 242, 255, 0.3);
+            border-radius: 100px;
+            transition: 0.3s;
+        }
+        .points-card { border: 2px solid var(--points); box-shadow: 0 0 25px rgba(255, 0, 255, 0.2); }
     </style>
 </head>
 <body>
@@ -193,24 +172,6 @@
     <a href="index.html"><img src="IMG_8429.png" alt="Logo" class="header-logo"></a>
     
     <div class="stats-container">
-        <div class="stat-card" style="border-color: rgba(255,255,255,0.1);">
-            <h2>📖 PRAVIDLA INDEXU</h2>
-            <table class="legend-table">
-                <tr>
-                    <td><span class="legend-badge badge-score">+5 NB</span></td>
-                    <td style="text-align: left;">🥅 Přesný výsledek (po 60 min)</td>
-                </tr>
-                <tr>
-                    <td><span class="legend-badge badge-player">+3 NB</span></td>
-                    <td style="text-align: left;">🎯 Trefený střelec zápasu</td>
-                </tr>
-                <tr>
-                    <td><span class="legend-badge badge-trend">+1 NB</span></td>
-                    <td style="text-align: left;">📈 Trend (výhra/prohra/remíza)</td>
-                </tr>
-            </table>
-        </div>
-
         <div class="stat-card points-card">
             <h2 class="points-title">⭐ INDEX NADĚJE (CELKEM)</h2>
             <div id="leaderboard-total">Načítám...</div>
@@ -255,8 +216,6 @@
 
         db.ref('sazkyData/stats').on('value', snap => {
             const stats = snap.val() || {};
-            
-            // Dynamické zjištění maximálního počtu tipů v lize pro výpočet účasti
             globalMaxMatches = Math.max(...Object.values(stats).map(p => p.pocetTipu || 0));
 
             renderTable('leaderboard-total', stats, 'celkoveBody', ' NB', 'value-points', true);
@@ -273,22 +232,31 @@
             const sorted = Object.entries(data)
                 .map(([name, val]) => {
                     const totalTips = val.pocetTipu || 1;
-                    const efficiency = Math.round(((val.trefeneSkore || 0) + (val.trefeniStrelci || 0) + (val.trefenyTrend || 0)) / (totalTips * 3) * 100);
+                    const totalHits = (val.trefeneSkore || 0) + (val.trefeniStrelci || 0) + (val.trefenyTrend || 0);
+                    const efficiency = Math.round((totalHits / (totalTips * 3)) * 100);
                     return { name, value: val[property] || 0, rawData: val, efficiency: efficiency };
                 })
                 .filter(item => item.value > 0)
-                // ŘAZENÍ: 1. Body, 2. Efektivita (procento), 3. Počet přesných skóre
                 .sort((a, b) => b.value - a.value || b.efficiency - a.efficiency || b.rawData.trefeneSkore - a.rawData.trefeneSkore);
 
-            if (sorted.length === 0) {
-                container.innerHTML = "<div style='opacity:0.3; padding:20px;'>Zatím žádné zářezy...</div>";
-                return;
-            }
-
+            let currentRank = 1;
             sorted.forEach((item, index) => {
-                const rank = index + 1;
-                const isLeader = isMain && rank === 1;
+                // Logika sdíleného pořadí (Tie-breaker)
+                if (index > 0) {
+                    const prev = sorted[index - 1];
+                    if (item.value !== prev.value || item.efficiency !== prev.efficiency || item.rawData.trefeneSkore !== prev.rawData.trefeneSkore) {
+                        currentRank = index + 1;
+                    }
+                }
+
+                const rank = currentRank;
                 let rankClass = (rank === 1) ? "rank-1" : (rank === 2) ? "rank-2" : (rank === 3) ? "rank-3" : "";
+                
+                // Přidání třídy pro puls podle místa
+                let glowClass = "";
+                if (rank === 1) glowClass = "rank-glow rank-glow-1";
+                else if (rank === 2) glowClass = "rank-glow rank-glow-2";
+                else if (rank === 3) glowClass = "rank-glow rank-glow-3";
 
                 let breakdownHtml = "";
                 if (isMain) {
@@ -305,10 +273,10 @@
                 }
 
                 const row = `
-                    <div class="stat-row ${isLeader ? 'leader-row' : ''}">
+                    <div class="stat-row ${glowClass}">
                         <span class="rank ${rankClass}">${rank}.</span>
                         <div class="name-box" onclick='showPlayerCard("${item.name}", ${JSON.stringify(item.rawData)})'>
-                            <span class="name">${item.name} ${isLeader ? '👑' : ''}</span>
+                            <span class="name">${item.name} ${rank === 1 ? '👑' : ''}</span>
                             ${breakdownHtml}
                         </div>
                         <span class="value ${extraValueClass}">${item.value}<span style="font-size:0.7em; margin-left:2px; opacity:0.6">${unit}</span></span>
@@ -320,53 +288,15 @@
         function showPlayerCard(name, data) {
             const modal = document.getElementById('playerModal');
             const content = document.getElementById('modalContent');
-            
             const total = data.pocetTipu || 0;
             const participation = globalMaxMatches > 0 ? Math.round((total / globalMaxMatches) * 100) : 0;
             const scoreRate = total > 0 ? Math.round((data.trefeneSkore || 0) / total * 100) : 0;
             const playerRate = total > 0 ? Math.round((data.trefeniStrelci || 0) / total * 100) : 0;
             const trendRate = total > 0 ? Math.round((data.trefenyTrend || 0) / total * 100) : 0;
 
-            // --- DYNAMICKÁ LOGIKA TITULŮ ---
-            let title = "Hledač štěstí"; 
-            let quote = "I slepé kuře občas najde zrno...";
-
-            if (participation >= 85 && trendRate < 40) {
-                title = "Věrný Srdcař";
-                quote = "Srdce bije pro kancl, i když tikety hoří.";
-            } else if (participation < 40) {
-                title = "Sváteční sázkař";
-                quote = "Ukáže se jen když se hraje o velký bank.";
-            } else if (participation > 90 && trendRate < 50) {
-                title = "Držák kabiny";
-                quote = "Nevynechá zápas, i když mu to tam zrovna nepadá.";
-            }
-
-            // Elitní tituly (přepisují základní)
-            if (trendRate > 65) { 
-                title = "Ledový Analytik"; 
-                quote = "Čte hru jako otevřenou knihu. Strach s ním sázet."; 
-            }
-            if (playerRate > 45) { 
-                title = "Elitní Sniper"; 
-                quote = "Hráči dávají góly jen proto, aby mu udělali radost."; 
-            }
-            if (scoreRate > 15) { 
-                title = "Hokejový Jasnovědec"; 
-                quote = "Viděl ten výsledek už včera ve snu."; 
-            }
-            if (data.vyhry > 400) { 
-                title = "Bankovní Lupič"; 
-                quote = "Už pro něj jedou těžkooděnci z finančáku."; 
-            }
-            if (total <= 2) {
-                title = "Nová Naděje";
-                quote = "Teprve si zavazuje brusle v šatně.";
-            }
-
             content.innerHTML = `
                 <div class="card-name">${name}</div>
-                <div class="card-title">${title}</div>
+                <div class="card-title">Profil hráče</div>
                 <div class="card-efficiency">Účast: ${participation}% (${total}z)</div>
                 <div class="card-stats-list">
                     <div class="card-item">🥅 Přesná skóre: <span>${data.trefeneSkore || 0}x (${scoreRate}%)</span></div>
@@ -375,14 +305,11 @@
                     <div class="card-item" style="border-top: 1px solid rgba(255,255,255,0.1); margin-top:5px; padding-top:10px;">💰 Celková výhra: <span>${data.vyhry || 0} Kč</span></div>
                 </div>
                 <div class="card-footer">${data.celkoveBody || 0} NB</div>
-                <div class="card-quote">"${quote}"</div>
             `;
             modal.style.display = "block";
         }
 
-        function closeModal(event) {
-            document.getElementById('playerModal').style.display = "none";
-        }
+        function closeModal() { document.getElementById('playerModal').style.display = "none"; }
     </script>
 </body>
 </html>
