@@ -65,10 +65,10 @@
         .name { font-weight: 600; text-decoration: underline rgba(0,242,255,0.2); }
         
         .breakdown { 
-            font-size: 0.75em; opacity: 0.8; display: flex; gap: 12px; 
+            font-size: 0.72em; opacity: 0.6; display: flex; gap: 8px; 
             margin-top: 4px; font-family: monospace; color: var(--neon); 
         }
-        .badge-s { color: #fff; background: rgba(255,255,255,0.1); padding: 1px 4px; border-radius: 4px; }
+        .eff-badge { background: rgba(0, 242, 255, 0.15); padding: 1px 5px; border-radius: 4px; font-weight: bold; }
 
         .value { font-weight: 900; color: #fff; font-family: monospace; font-size: 1.2em; white-space: nowrap; }
 
@@ -81,7 +81,14 @@
             animation: cardEntry 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
         }
         .close-card { position: absolute; top: 15px; right: 20px; font-size: 28px; color: white; cursor: pointer; opacity: 0.5; }
-        
+        .progress-container { width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 10px; margin-top: 4px; overflow: hidden; }
+        .progress-bar { height: 100%; background: var(--neon); box-shadow: 0 0 10px var(--neon); transition: 0.8s ease-out; }
+
+        .card-stats-list { text-align: left; }
+        .card-item { padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .card-item-header { display: flex; justify-content: space-between; font-size: 0.85em; margin-bottom: 4px; }
+        .card-footer { margin-top: 15px; color: var(--points); font-weight: 900; font-size: 1.5em; }
+
         .header-logo { max-width: 180px; margin: 20px 0; filter: drop-shadow(0 0 10px var(--neon)); transition: 0.3s; }
         .btn-back { display: inline-block; margin-top: 10px; color: var(--neon); text-decoration: none; font-weight: bold; padding: 10px 20px; border: 1px solid rgba(0, 242, 255, 0.3); border-radius: 100px; }
         .points-card { border: 2px solid var(--points); }
@@ -93,7 +100,7 @@
     
     <div class="stats-container">
         <div class="stat-card points-card">
-            <h2 class="points-title" style="color:var(--points)">⭐ INDEX NADĚJE (CELKEM)</h2>
+            <h2 class="points-title">⭐ INDEX NADĚJE (CELKEM)</h2>
             <div id="leaderboard-total">Načítám...</div>
         </div>
         <div class="stat-card"><h2>💰 BANKOVNÍ LUPIČI</h2><div id="leaderboard-money"></div></div>
@@ -108,8 +115,6 @@
             <div id="modalContent"></div>
         </div>
     </div>
-
-    <a href="index.html" class="btn-back">← ZPĚT NA SÁZKY</a>
 
     <script>
         const firebaseConfig = { apiKey: "AIzaSyC-NCdmsgA42FxnopKm92m1y5gUGw_z_uE", authDomain: "nadeje-208bd.firebaseapp.com", databaseURL: "https://nadeje-208bd-default-rtdb.europe-west1.firebasedatabase.app", projectId: "nadeje-208bd", storageBucket: "nadeje-208bd.firebasestorage.app", messagingSenderId: "688478977789", appId: "1:688478977789:web:512d1520cf96c9e59cc894" };
@@ -134,50 +139,57 @@
             container.innerHTML = "";
             
             const items = Object.entries(data).map(([name, val]) => {
-                const total = parseInt(val.pocetTipu) || 1;
+                const total = val.pocetTipu || 1;
+                const partRate = (total / (globalMaxMatches || 1));
                 
-                const s = parseInt(val.trefeneSkore) || 0;
-                const st = parseInt(val.trefeniStrelci) || 0;
-                const tr = parseInt(val.trefenyTrend) || 0;
+                // MATICE POUZE PRO INDEX (5-3-1)
+                const matrix = (val.trefeneSkore * 5) + (val.trefeniStrelci * 3) + (val.trefenyTrend * 1);
+                const indexEff = (matrix / total) * partRate;
                 
-                const realNB = (s * 5) + (st * 3) + (tr * 1);
+                // ÚSPĚŠNOST V KATEGORII (Pro ostatní tabulky)
+                const catEff = (val[property] || 0) / total;
 
                 return { 
                     name, 
-                    value: isMain ? realNB : (val[property] || 0), 
+                    value: val[property] || 0, 
                     raw: val, 
-                    s: s, 
-                    st: st,
-                    tr: tr,
-                    total: total
+                    indexEff: indexEff, 
+                    catEff: catEff,
+                    total: total,
+                    part: Math.round(partRate * 100)
                 };
             }).filter(i => i.value > 0);
 
-            // --- PRAVIDLA ŘAZENÍ (TIE-BREAKER) ---
+            // ŘAZENÍ
             items.sort((a, b) => {
-                if (b.value !== a.value) return b.value - a.value; // 1. Body
+                if (b.value !== a.value) return b.value - a.value;
                 if (isMain) {
-                    if (b.s !== a.s) return b.s - a.s; // 2. Přesná skóre
-                    if (b.st !== a.st) return b.st - a.st; // 3. Střelci
+                    return b.indexEff - a.indexEff; // U Indexu rozhoduje vážená matice
+                } else {
+                    if (b.catEff !== a.catEff) return b.catEff - a.catEff; // U kategorií úspěšnost dané věci
+                    return b.total - a.total; // Nakonec celková účast
                 }
-                return b.total - a.total;
             });
 
             let lastRank = 1;
             items.forEach((item, i) => {
                 if (i > 0) {
                     const prev = items[i-1];
-                    let isSame = (item.value === prev.value && item.s === prev.s && item.st === prev.st);
+                    let isSame = false;
+                    if (isMain) {
+                        isSame = (item.value === prev.value && Math.abs(item.indexEff - prev.indexEff) < 0.0001);
+                    } else {
+                        isSame = (item.value === prev.value && item.catEff === prev.catEff && item.total === prev.total);
+                    }
                     if (!isSame) lastRank = i + 1;
                 }
 
                 const rank = lastRank;
                 const glow = rank <= 3 ? `rank-glow rank-glow-${rank}` : "";
                 
-                // Vizuální ospravedlnění pod jménem
                 let infoText = isMain ? 
-                    `<span>🥅 <b class="badge-s">${item.s}</b></span> <span>🎯 <b class="badge-s">${item.st}</b></span> <span style="opacity:0.4">(${item.total}z)</span>` : 
-                    `<span>Úspěšnost: ${Math.round((item.value/item.total)*100)}%</span>`;
+                    `<span class="eff-badge">Účinnost: ${Math.round(item.indexEff * 100)}</span> <span>Účast: ${item.part}%</span>` : 
+                    `<span>Úspěšnost: ${Math.round(item.catEff * 100)}%</span> <span>Zápasů: ${item.total}</span>`;
 
                 container.innerHTML += `
                     <div class="stat-row ${glow}">
@@ -192,21 +204,39 @@
         }
 
         function showPlayerCard(name, data) {
-            const total = parseInt(data.pocetTipu) || 1;
-            const s = parseInt(data.trefeneSkore) || 0;
-            const st = parseInt(data.trefeniStrelci) || 0;
-            const tr = parseInt(data.trefenyTrend) || 0;
-            const realNB = (s * 5) + (st * 3) + (tr * 1);
+            const total = data.pocetTipu || 1;
+            const part = Math.round((total / globalMaxMatches) * 100);
+            const scR = Math.round((data.trefeneSkore || 0) / total * 100);
+            const plR = Math.round((data.trefeniStrelci || 0) / total * 100);
+            const trR = Math.round((data.trefenyTrend || 0) / total * 100);
+
+            // Vtipné tituly
+            let t = "Hledač štěstí"; let q = "I slepé kuře občas najde zrno...";
+            if (part >= 85 && trR < 45) { t = "Věrný Srdcař"; q = "Srdce bije pro kancl, i když tikety hoří."; }
+            if (trR > 65) { t = "Ledový Analytik"; q = "Čte hru jako otevřenou knihu."; }
+            if (plR > 45) { t = "Elitní Sniper"; q = "Trefí mouchu v letu, natož střelce."; }
+            if (scR > 15) { t = "Hokejový Jasnovědec"; q = "Viděl ten výsledek už včera ve snu."; }
+            if (data.vyhry > 400) { t = "Bankovní Lupič"; q = "Už pro něj jedou těžkooděnci."; }
 
             document.getElementById('modalContent').innerHTML = `
-                <div style="font-size:1.8em; font-weight:bold; color:var(--neon); margin-bottom:10px;">${name}</div>
-                <div style="font-size:0.85em; opacity:0.5; margin-bottom:20px;">Statistiky účastníka</div>
-                <div style="text-align:left; background:rgba(255,255,255,0.05); padding:15px; border-radius:15px;">
-                    <div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span>🥅 Přesná skóre:</span><b>${s}x</b></div>
-                    <div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span>🎯 Trefení střelci:</span><b>${st}x</b></div>
-                    <div style="display:flex; justify-content:space-between;"><span>📈 Body trendů:</span><b>${tr} pts</b></div>
+                <div class="card-name">${name}</div><div class="card-title">${t}</div>
+                <div style="font-size:0.8em; opacity:0.5; margin-bottom:15px;">Účast: ${part}% (${total}z)</div>
+                <div class="card-stats-list">
+                    <div class="card-item">
+                        <div class="card-item-header">🥅 Přesná skóre <span>${data.trefeneSkore||0}x</span></div>
+                        <div class="progress-container"><div class="progress-bar" style="width:${scR}%"></div></div>
+                    </div>
+                    <div class="card-item">
+                        <div class="card-item-header">🎯 Trefení střelci <span>${data.trefeniStrelci||0}x</span></div>
+                        <div class="progress-container"><div class="progress-bar" style="width:${plR}%"></div></div>
+                    </div>
+                    <div class="card-item">
+                        <div class="card-item-header">📈 Úspěšnost trendů <span>${trR}%</span></div>
+                        <div class="progress-container"><div class="progress-bar" style="width:${trR}%"></div></div>
+                    </div>
                 </div>
-                <div style="margin-top:20px; font-size:2em; font-weight:900; color:var(--points);">${realNB} NB</div>
+                <div class="card-footer">${data.celkoveBody||0} NB</div>
+                <div class="card-quote">"${q}"</div>
             `;
             document.getElementById('playerModal').style.display = "block";
         }
