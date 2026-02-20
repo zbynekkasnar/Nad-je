@@ -65,10 +65,10 @@
         .name { font-weight: 600; text-decoration: underline rgba(0,242,255,0.2); }
         
         .breakdown { 
-            font-size: 0.72em; opacity: 0.6; display: flex; gap: 8px; 
+            font-size: 0.75em; opacity: 0.8; display: flex; gap: 12px; 
             margin-top: 4px; font-family: monospace; color: var(--neon); 
         }
-        .eff-badge { background: rgba(0, 242, 255, 0.15); padding: 1px 5px; border-radius: 4px; font-weight: bold; }
+        .badge-s { color: #fff; background: rgba(255,255,255,0.1); padding: 1px 4px; border-radius: 4px; }
 
         .value { font-weight: 900; color: #fff; font-family: monospace; font-size: 1.2em; white-space: nowrap; }
 
@@ -81,14 +81,7 @@
             animation: cardEntry 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
         }
         .close-card { position: absolute; top: 15px; right: 20px; font-size: 28px; color: white; cursor: pointer; opacity: 0.5; }
-        .progress-container { width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 10px; margin-top: 4px; overflow: hidden; }
-        .progress-bar { height: 100%; background: var(--neon); box-shadow: 0 0 10px var(--neon); transition: 0.8s ease-out; }
-
-        .card-stats-list { text-align: left; }
-        .card-item { padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .card-item-header { display: flex; justify-content: space-between; font-size: 0.85em; margin-bottom: 4px; }
-        .card-footer { margin-top: 15px; color: var(--points); font-weight: 900; font-size: 1.5em; }
-
+        
         .header-logo { max-width: 180px; margin: 20px 0; filter: drop-shadow(0 0 10px var(--neon)); transition: 0.3s; }
         .btn-back { display: inline-block; margin-top: 10px; color: var(--neon); text-decoration: none; font-weight: bold; padding: 10px 20px; border: 1px solid rgba(0, 242, 255, 0.3); border-radius: 100px; }
         .points-card { border: 2px solid var(--points); }
@@ -142,72 +135,49 @@
             
             const items = Object.entries(data).map(([name, val]) => {
                 const total = parseInt(val.pocetTipu) || 1;
-                const partRate = (total / (globalMaxMatches || 1));
                 
-                // --- ŽIVÝ VÝPOČET Z DÍLČÍCH TREF ---
                 const s = parseInt(val.trefeneSkore) || 0;
                 const st = parseInt(val.trefeniStrelci) || 0;
                 const tr = parseInt(val.trefenyTrend) || 0;
                 
-                // Přepočítáme body (5-3-1) přímo tady
                 const realNB = (s * 5) + (st * 3) + (tr * 1);
-                
-                // EXPERTNÍ VÁŽENÁ KVALITA (0.5 / 0.35 / 0.15)
-                const indexSkore = (s / total) * 55.5;
-                const indexStrelci = (st / total) * 33.3;
-                const indexTrend = (tr / total) * 11.1;
-                
-                // Výsledný index kvality
-                const vypoctenaKvalita = (indexSkore + indexStrelci + indexTrend) * 10 * partRate;
 
                 return { 
                     name, 
-                    // Pro Index Naděje použijeme náš živý výpočet NB, pro ostatní hodnotu z DB
                     value: isMain ? realNB : (val[property] || 0), 
                     raw: val, 
-                    kvalita: vypoctenaKvalita, 
-                    total: total,
-                    part: Math.round(partRate * 100)
+                    s: s, 
+                    st: st,
+                    tr: tr,
+                    total: total
                 };
             }).filter(i => i.value > 0);
 
-            // ŘAZENÍ
+            // --- PRAVIDLA ŘAZENÍ (TIE-BREAKER) ---
             items.sort((a, b) => {
-                // 1. Primárně podle bodů
-                if (b.value !== a.value) return b.value - a.value;
+                if (b.value !== a.value) return b.value - a.value; // 1. Body
                 if (isMain) {
-                    // 2. Sekundárně v Indexu podle vážené kvality
-                    return b.kvalita - a.kvalita;
-                } else {
-                    // Ostatní kategorie podle úspěšnosti
-                    const effA = a.value / a.total;
-                    const effB = b.value / b.total;
-                    if (effB !== effA) return effB - effA;
-                    return b.total - a.total;
+                    if (b.s !== a.s) return b.s - a.s; // 2. Přesná skóre
+                    if (b.st !== a.st) return b.st - a.st; // 3. Střelci
                 }
+                return b.total - a.total;
             });
 
             let lastRank = 1;
             items.forEach((item, i) => {
                 if (i > 0) {
                     const prev = items[i-1];
-                    let isSame = false;
-                    if (isMain) {
-                        isSame = (item.value === prev.value && Math.abs(item.kvalita - prev.kvalita) < 0.01);
-                    } else {
-                        const effA = item.value / item.total;
-                        const effB = prev.value / prev.total;
-                        isSame = (item.value === prev.value && Math.abs(effA - effB) < 0.00001 && item.total === prev.total);
-                    }
+                    let isSame = (item.value === prev.value && item.s === prev.s && item.st === prev.st);
                     if (!isSame) lastRank = i + 1;
                 }
 
                 const rank = lastRank;
                 const glow = rank <= 3 ? `rank-glow rank-glow-${rank}` : "";
                 
+                // Vizuální ospravedlnění pod jménem
                 let infoText = isMain ? 
-                    `<span class="eff-badge">Kvalita: ${Math.round(item.kvalita)}</span> <span>Účast: ${item.part}%</span>` : 
-                    `<span>Úspěšnost: ${Math.round((item.value/item.total)*100)}%</span> <span>Zápasů: ${item.total}</span>`;
+                    `<span>🥅 <b class="badge-s">${item.s}</b></span> <span>🎯 <b class="badge-s">${item.st}</b></span> <span style="opacity:0.4">(${item.total}z)</span>` : 
+                    `<span>Úspěšnost: ${Math.round((item.value/item.total)*100)}%</span>`;
 
                 container.innerHTML += `
                     <div class="stat-row ${glow}">
@@ -223,43 +193,20 @@
 
         function showPlayerCard(name, data) {
             const total = parseInt(data.pocetTipu) || 1;
-            const part = Math.round((total / globalMaxMatches) * 100);
-            
             const s = parseInt(data.trefeneSkore) || 0;
             const st = parseInt(data.trefeniStrelci) || 0;
             const tr = parseInt(data.trefenyTrend) || 0;
             const realNB = (s * 5) + (st * 3) + (tr * 1);
 
-            const scR = Math.round(s / total * 100);
-            const plR = Math.round(st / total * 100);
-            const trR = Math.round(tr / total * 100);
-
-            let t = "Hledač štěstí"; let q = "I slepé kuře občas najde zrno...";
-            if (part >= 85 && trR < 45) { t = "Věrný Srdcař"; q = "Srdce bije pro kancl, i když tikety hoří."; }
-            if (trR > 65) { t = "Ledový Analytik"; q = "Čte hru jako otevřenou knihu."; }
-            if (plR > 45) { t = "Elitní Sniper"; q = "Trefí mouchu v letu, natož střelce."; }
-            if (scR > 15) { t = "Hokejový Jasnovědec"; q = "Viděl ten výsledek už včera ve snu."; }
-            if (data.vyhry > 400) { t = "Bankovní Lupič"; q = "Už pro něj jedou těžkooděnci."; }
-
             document.getElementById('modalContent').innerHTML = `
-                <div class="card-name">${name}</div><div class="card-title">${t}</div>
-                <div style="font-size:0.8em; opacity:0.5; margin-bottom:15px;">Účast: ${part}% (${total}z)</div>
-                <div class="card-stats-list">
-                    <div class="card-item">
-                        <div class="card-item-header">🥅 Přesná skóre <span>${s}x</span></div>
-                        <div class="progress-container"><div class="progress-bar" style="width:${scR}%"></div></div>
-                    </div>
-                    <div class="card-item">
-                        <div class="card-item-header">🎯 Trefení střelci <span>${st}x</span></div>
-                        <div class="progress-container"><div class="progress-bar" style="width:${plR}%"></div></div>
-                    </div>
-                    <div class="card-item">
-                        <div class="card-item-header">📈 Úspěšnost trendů <span>${trR}%</span></div>
-                        <div class="progress-container"><div class="progress-bar" style="width:${trR}%"></div></div>
-                    </div>
+                <div style="font-size:1.8em; font-weight:bold; color:var(--neon); margin-bottom:10px;">${name}</div>
+                <div style="font-size:0.85em; opacity:0.5; margin-bottom:20px;">Statistiky účastníka</div>
+                <div style="text-align:left; background:rgba(255,255,255,0.05); padding:15px; border-radius:15px;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span>🥅 Přesná skóre:</span><b>${s}x</b></div>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span>🎯 Trefení střelci:</span><b>${st}x</b></div>
+                    <div style="display:flex; justify-content:space-between;"><span>📈 Body trendů:</span><b>${tr} pts</b></div>
                 </div>
-                <div class="card-footer">${realNB} NB</div>
-                <div class="card-quote">"${q}"</div>
+                <div style="margin-top:20px; font-size:2em; font-weight:900; color:var(--points);">${realNB} NB</div>
             `;
             document.getElementById('playerModal').style.display = "block";
         }
