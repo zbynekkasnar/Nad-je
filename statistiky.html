@@ -56,19 +56,20 @@
         }
         .stat-row:hover { background: rgba(255,255,255,0.02); }
 
-        .rank { font-weight: 900; width: 35px; font-size: 1.1em; }
+        /* Upravená šířka pro rank kvůli formátu 1.-2. */
+        .rank { font-weight: 900; min-width: 50px; text-align: left; font-size: 1em; }
         .rank-1 { color: var(--gold); }
         .rank-2 { color: var(--silver); }
         .rank-3 { color: var(--bronze); }
 
-        .name-box { flex-grow: 1; text-align: left; padding-left: 10px; display: flex; flex-direction: column; cursor: pointer; }
+        .name-box { flex-grow: 1; text-align: left; padding-left: 5px; display: flex; flex-direction: column; cursor: pointer; }
         .name { font-weight: 600; text-decoration: underline rgba(0,242,255,0.2); }
         
         .breakdown { 
-            font-size: 0.72em; opacity: 0.6; display: flex; gap: 8px; 
+            font-size: 0.75em; opacity: 0.7; display: flex; gap: 10px; 
             margin-top: 4px; font-family: monospace; color: var(--neon); 
         }
-        .eff-badge { background: rgba(0, 242, 255, 0.15); padding: 1px 5px; border-radius: 4px; font-weight: bold; }
+        .badge-s { color: #fff; background: rgba(255,255,255,0.1); padding: 1px 4px; border-radius: 4px; font-weight: bold; }
 
         .value { font-weight: 900; color: #fff; font-family: monospace; font-size: 1.2em; white-space: nowrap; }
 
@@ -88,6 +89,9 @@
         .card-item { padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
         .card-item-header { display: flex; justify-content: space-between; font-size: 0.85em; margin-bottom: 4px; }
         .card-footer { margin-top: 15px; color: var(--points); font-weight: 900; font-size: 1.5em; }
+        .card-name { font-size: 1.8em; font-weight: bold; color: var(--neon); margin-bottom: 5px; }
+        .card-title { color: var(--gold); font-weight: bold; font-size: 0.9em; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px; }
+        .card-quote { font-style: italic; opacity: 0.6; font-size: 0.8em; margin-top: 10px; }
 
         .header-logo { max-width: 180px; margin: 20px 0; filter: drop-shadow(0 0 10px var(--neon)); transition: 0.3s; }
         .btn-back { display: inline-block; margin-top: 10px; color: var(--neon); text-decoration: none; font-weight: bold; padding: 10px 20px; border: 1px solid rgba(0, 242, 255, 0.3); border-radius: 100px; }
@@ -100,7 +104,7 @@
     
     <div class="stats-container">
         <div class="stat-card points-card">
-            <h2 class="points-title">⭐ INDEX NADĚJE (CELKEM)</h2>
+            <h2 class="points-title" style="color:var(--points)">⭐ INDEX NADĚJE (CELKEM)</h2>
             <div id="leaderboard-total">Načítám...</div>
         </div>
         <div class="stat-card"><h2>💰 BANKOVNÍ LUPIČI</h2><div id="leaderboard-money"></div></div>
@@ -115,6 +119,8 @@
             <div id="modalContent"></div>
         </div>
     </div>
+
+    <a href="index.html" class="btn-back">← ZPĚT NA SÁZKY</a>
 
     <script>
         const firebaseConfig = { apiKey: "AIzaSyC-NCdmsgA42FxnopKm92m1y5gUGw_z_uE", authDomain: "nadeje-208bd.firebaseapp.com", databaseURL: "https://nadeje-208bd-default-rtdb.europe-west1.firebasedatabase.app", projectId: "nadeje-208bd", storageBucket: "nadeje-208bd.firebasestorage.app", messagingSenderId: "688478977789", appId: "1:688478977789:web:512d1520cf96c9e59cc894" };
@@ -139,63 +145,66 @@
             container.innerHTML = "";
             
             const items = Object.entries(data).map(([name, val]) => {
-                const total = val.pocetTipu || 1;
+                const total = parseInt(val.pocetTipu) || 1;
+                const s = parseInt(val.trefeneSkore) || 0;
+                const st = parseInt(val.trefeniStrelci) || 0;
+                const tr = parseInt(val.trefenyTrend) || 0;
                 const partRate = (total / (globalMaxMatches || 1));
-                
-                // MATICE POUZE PRO INDEX (5-3-1)
-                const matrix = (val.trefeneSkore * 5) + (val.trefeniStrelci * 3) + (val.trefenyTrend * 1);
-                const indexEff = (matrix / total) * partRate;
-                
-                // ÚSPĚŠNOST V KATEGORII (Pro ostatní tabulky)
-                const catEff = (val[property] || 0) / total;
 
                 return { 
                     name, 
-                    value: val[property] || 0, 
+                    value: parseInt(val[property]) || 0, 
                     raw: val, 
-                    indexEff: indexEff, 
-                    catEff: catEff,
-                    total: total,
+                    s, st, tr, total,
                     part: Math.round(partRate * 100)
                 };
             }).filter(i => i.value > 0);
 
-            // ŘAZENÍ
+            // --- PŘÍSNÉ ŘAZENÍ (Tie-breaker matice) ---
             items.sort((a, b) => {
                 if (b.value !== a.value) return b.value - a.value;
-                if (isMain) {
-                    return b.indexEff - a.indexEff; // U Indexu rozhoduje vážená matice
+                if (b.s !== a.s) return b.s - a.s;
+                if (b.st !== a.st) return b.st - a.st;
+                return b.tr - a.tr;
+            });
+
+            // --- VÝPOČET SDÍLENÝCH POZIC ---
+            items.forEach((item, i) => {
+                const shared = items.filter(other => 
+                    other.value === item.value && 
+                    other.s === item.s && 
+                    other.st === item.st && 
+                    other.tr === item.tr
+                );
+
+                if (shared.length > 1) {
+                    const firstIdx = items.indexOf(shared[0]) + 1;
+                    const lastIdx = firstIdx + shared.length - 1;
+                    item.displayRank = `${firstIdx}.-${lastIdx}.`;
+                    item.isShared = true;
+                    item.baseRank = firstIdx;
                 } else {
-                    if (b.catEff !== a.catEff) return b.catEff - a.catEff; // U kategorií úspěšnost dané věci
-                    return b.total - a.total; // Nakonec celková účast
+                    item.displayRank = `${i + 1}.`;
+                    item.isShared = false;
+                    item.baseRank = i + 1;
                 }
             });
 
-            let lastRank = 1;
-            items.forEach((item, i) => {
-                if (i > 0) {
-                    const prev = items[i-1];
-                    let isSame = false;
-                    if (isMain) {
-                        isSame = (item.value === prev.value && Math.abs(item.indexEff - prev.indexEff) < 0.0001);
-                    } else {
-                        isSame = (item.value === prev.value && item.catEff === prev.catEff && item.total === prev.total);
-                    }
-                    if (!isSame) lastRank = i + 1;
-                }
-
-                const rank = lastRank;
-                const glow = rank <= 3 ? `rank-glow rank-glow-${rank}` : "";
+            items.forEach((item) => {
+                const rankNum = item.baseRank;
+                const glow = rankNum <= 3 ? `rank-glow rank-glow-${rankNum}` : "";
+                const rankClass = rankNum <= 3 ? `rank-${rankNum}` : "";
                 
+                // Vizuální ospravedlnění pod jménem (Matice tref)
                 let infoText = isMain ? 
-                    `<span class="eff-badge">Účinnost: ${Math.round(item.indexEff * 100)}</span> <span>Účast: ${item.part}%</span>` : 
-                    `<span>Úspěšnost: ${Math.round(item.catEff * 100)}%</span> <span>Zápasů: ${item.total}</span>`;
+                    `<span>🥅 <b class="badge-s">${item.s}</b></span> <span>🎯 <b class="badge-s">${item.st}</b></span> <span style="opacity:0.4">(${item.total}z)</span>` : 
+                    `<span>Úspěšnost: ${Math.round((item.value/item.total)*100)}%</span> <span>Účast: ${item.part}%</span>`;
 
                 container.innerHTML += `
                     <div class="stat-row ${glow}">
-                        <span class="rank rank-${rank}">${rank}.</span>
+                        <span class="rank ${rankClass}">${item.displayRank}</span>
                         <div class="name-box" onclick='showPlayerCard("${item.name}", ${JSON.stringify(item.raw)})'>
-                            <span class="name">${item.name} ${rank === 1 ? '👑' : ''}</span>
+                            <span class="name">${item.name} ${rankNum === 1 && !item.isShared ? '👑' : ''}</span>
                             <div class="breakdown">${infoText}</div>
                         </div>
                         <span class="value">${item.value}<small style="font-size:0.5em; opacity:0.6; margin-left:2px">${unit}</small></span>
@@ -204,34 +213,36 @@
         }
 
         function showPlayerCard(name, data) {
-            const total = data.pocetTipu || 1;
+            const total = parseInt(data.pocetTipu) || 1;
             const part = Math.round((total / globalMaxMatches) * 100);
-            const scR = Math.round((data.trefeneSkore || 0) / total * 100);
-            const plR = Math.round((data.trefeniStrelci || 0) / total * 100);
-            const trR = Math.round((data.trefenyTrend || 0) / total * 100);
+            const s = parseInt(data.trefeneSkore) || 0;
+            const st = parseInt(data.trefeniStrelci) || 0;
+            const tr = parseInt(data.trefenyTrend) || 0;
+            const scR = Math.round(s / total * 100);
+            const plR = Math.round(st / total * 100);
+            const trR = Math.round(tr / total * 100);
 
-            // Vtipné tituly
             let t = "Hledač štěstí"; let q = "I slepé kuře občas najde zrno...";
             if (part >= 85 && trR < 45) { t = "Věrný Srdcař"; q = "Srdce bije pro kancl, i když tikety hoří."; }
             if (trR > 65) { t = "Ledový Analytik"; q = "Čte hru jako otevřenou knihu."; }
-            if (plR > 45) { t = "Elitní Sniper"; q = "Trefí mouchu v letu, natož střelce."; }
-            if (scR > 15) { t = "Hokejový Jasnovědec"; q = "Viděl ten výsledek už včera ve snu."; }
-            if (data.vyhry > 400) { t = "Bankovní Lupič"; q = "Už pro něj jedou těžkooděnci."; }
+            if (st >= 4) { t = "Elitní Sniper"; q = "Trefí mouchu v letu, natož střelce."; }
+            if (s >= 1) { t = "Hokejový Jasnovědec"; q = "Viděl ten výsledek už včera ve snu."; }
+            if (parseInt(data.vyhry) > 400) { t = "Bankovní Lupič"; q = "Už pro něj jedou těžkooděnci."; }
 
             document.getElementById('modalContent').innerHTML = `
                 <div class="card-name">${name}</div><div class="card-title">${t}</div>
                 <div style="font-size:0.8em; opacity:0.5; margin-bottom:15px;">Účast: ${part}% (${total}z)</div>
-                <div class="card-stats-list">
+                <div class="card-stats-list" style="background:rgba(255,255,255,0.05); padding:15px; border-radius:15px;">
                     <div class="card-item">
-                        <div class="card-item-header">🥅 Přesná skóre <span>${data.trefeneSkore||0}x</span></div>
+                        <div class="card-item-header">🥅 Přesná skóre <span>${s}x</span></div>
                         <div class="progress-container"><div class="progress-bar" style="width:${scR}%"></div></div>
                     </div>
                     <div class="card-item">
-                        <div class="card-item-header">🎯 Trefení střelci <span>${data.trefeniStrelci||0}x</span></div>
+                        <div class="card-item-header">🎯 Trefení střelci <span>${st}x</span></div>
                         <div class="progress-container"><div class="progress-bar" style="width:${plR}%"></div></div>
                     </div>
                     <div class="card-item">
-                        <div class="card-item-header">📈 Úspěšnost trendů <span>${trR}%</span></div>
+                        <div class="card-item-header">📈 Body trendů <span>${tr} pts</span></div>
                         <div class="progress-container"><div class="progress-bar" style="width:${trR}%"></div></div>
                     </div>
                 </div>
