@@ -153,9 +153,9 @@
                 const realNB = (s * 5) + (st * 3) + (tr * 1);
                 
                 // EXPERTNÍ VÁŽENÁ KVALITA (0.5 / 0.35 / 0.15)
-                const indexSkore = (s / total) * 50;
-                const indexStrelci = (st / total) * 35;
-                const indexTrend = (tr / total) * 15;
+                const indexSkore = (s / total) * 55.5;
+                const indexStrelci = (st / total) * 33.3;
+                const indexTrend = (tr / total) * 11.1;
                 
                 // Výsledný index kvality
                 const vypoctenaKvalita = (indexSkore + indexStrelci + indexTrend) * 10 * partRate;
