@@ -652,7 +652,30 @@
     function uiUpdateFAB() { const count = Object.keys(localCart).length; const fab = document.getElementById('fabCart'); const badge = document.getElementById('fabBadge'); if(count > 0) { fab.style.display = 'flex'; badge.innerText = count; } else { fab.style.display = 'none'; } }
     function uiOpenCart() { const list = document.getElementById('cartItemsContainer'); list.innerHTML = ""; let sum = 0; Object.entries(localCart).forEach(([id, data]) => { sum += 20; list.innerHTML += `<div class="cart-item"><div><div style="font-size:0.7em; opacity:0.5; font-weight:800;">${data.matchName}</div><div style="font-weight:900; font-size:1.1em;">${data.jmeno} | <span style="color:var(--neon)">${data.skore}</span></div></div><div style="color:#ff4444; font-size:1.8em; font-weight:900; cursor:pointer; padding-left:15px;" onclick="actionRemoveFromCart('${id}')">×</div></div>`; }); document.getElementById('uiCartTotal').innerText = `${sum} Kč`; document.getElementById('cartViewPre').style.display = 'block'; document.getElementById('cartViewPost').style.display = 'none'; document.getElementById('cartModal').style.display = 'block'; }
     function uiCloseCart() { document.getElementById('cartModal').style.display = 'none'; }
-    function actionAddToTicket(id, mName) { const name = document.getElementById(`name-${id}`).value, sD = document.getElementById(`scD-${id}`).value, sH = document.getElementById(`scH-${id}`).value, striker = document.getElementById(`striker-${id}`).value, isHidden = document.getElementById(`hide-${id}`).checked; if(!name || sD==="" || sH==="" || !striker) return alert("Vyplň prosím všechna pole sázky!"); db.ref(`sazkyData/zapasy/${id}/sazky`).once('value', snap => { const data = snap.val() || {}; const isDup = Object.values(data).some(s => s.skore === `${sD}:${sH}` && s.strelec.toLowerCase().trim() === striker.toLowerCase().trim()); if(isDup) return alert("Tento přesný tip už v systému je!"); localCart[id] = { jmeno: name, skore: `${sD}:${sH}`, strelec: striker, skryt: isHidden, matchName: mName }; uiUpdateFAB(); uiToggleMatch(id); }); }
+    function actionAddToTicket(id, mName) { 
+        const name = document.getElementById(`name-${id}`).value, 
+              sD = document.getElementById(`scD-${id}`).value, 
+              sH = document.getElementById(`scH-${id}`).value, 
+              striker = document.getElementById(`striker-${id}`).value, 
+              isHidden = document.getElementById(`hide-${id}`).checked; 
+
+        if(!name || sD==="" || sH==="" || !striker) return alert("Vyplň prosím všechna pole sázky!"); 
+
+        db.ref(`sazkyData/zapasy/${id}/sazky`).once('value', snap => { 
+            const data = snap.val() || {}; 
+            const isDup = Object.values(data).some(s => s.skore === `${sD}:${sH}` && s.strelec.toLowerCase().trim() === striker.toLowerCase().trim()); 
+            
+            // MÍSTO ZÁKAZU DÁVÁME VAROVÁNÍ S MOŽNOSTÍ VOLBY
+            if(isDup) {
+                const potvrdit = confirm("POZOR: Tento přesný tip (skóre i střelec) už v systému existuje. Pokud vyhraješ, budeš se o bank dělit. Chceš přesto vsadit?");
+                if(!potvrdit) return; // Pokud klikne na Zrušit, nic se nestane a může sázku upravit
+            }
+
+            localCart[id] = { jmeno: name, skore: `${sD}:${sH}`, strelec: striker, skryt: isHidden, matchName: mName }; 
+            uiUpdateFAB(); 
+            uiToggleMatch(id); 
+        }); 
+    }
     function actionRemoveFromCart(id) { delete localCart[id]; uiUpdateFAB(); if(Object.keys(localCart).length === 0) uiCloseCart(); else uiOpenCart(); }
     
     function actionSendTicket() { 
