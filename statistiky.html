@@ -100,7 +100,7 @@
     
     <div class="stats-container">
         <div class="stat-card points-card">
-            <h2 class="points-title">⭐ INDEX NADĚJE (CELKEM)</h2>
+            <h2 class="points-title" style="color:var(--points)">⭐ INDEX NADĚJE (CELKEM)</h2>
             <div id="leaderboard-total">Načítám...</div>
         </div>
         <div class="stat-card"><h2>💰 BANKOVNÍ LUPIČI</h2><div id="leaderboard-money"></div></div>
@@ -144,28 +144,28 @@
                 const total = parseInt(val.pocetTipu) || 1;
                 const partRate = (total / (globalMaxMatches || 1));
                 
-                // --- DATA Z FIREBASE ---
+                // --- ŽIVÝ VÝPOČET Z DÍLČÍCH TREF ---
                 const s = parseInt(val.trefeneSkore) || 0;
                 const st = parseInt(val.trefeniStrelci) || 0;
                 const tr = parseInt(val.trefenyTrend) || 0;
                 
-                // 1. CELKOVÉ BODY (NB)
+                // Přepočítáme body (5-3-1) přímo tady
                 const realNB = (s * 5) + (st * 3) + (tr * 1);
                 
-                // 2. KVALITY INDEX (Vážená úspěšnost nezávislá na celkových bodech)
-                // (Trefy / Zápasy) * Váha * 10 (pro lepší čitelnost čísla)
-                const skoreEff = (s / total) * 5;
-                const strelciEff = (st / total) * 3;
-                const trendEff = (tr / total) * 1;
+                // EXPERTNÍ VÁŽENÁ KVALITA (0.5 / 0.35 / 0.15)
+                const indexSkore = (s / total) * 50;
+                const indexStrelci = (st / total) * 35;
+                const indexTrend = (tr / total) * 15;
                 
-                // Celková kvalita vynásobená účastí, aby se zohlednila věrnost
-                const vahaKvality = (skoreEff + strelciEff + trendEff) * 100 * partRate;
+                // Výsledný index kvality
+                const vypoctenaKvalita = (indexSkore + indexStrelci + indexTrend) * 10 * partRate;
 
                 return { 
                     name, 
+                    // Pro Index Naděje použijeme náš živý výpočet NB, pro ostatní hodnotu z DB
                     value: isMain ? realNB : (val[property] || 0), 
                     raw: val, 
-                    kvalita: vahaKvality, 
+                    kvalita: vypoctenaKvalita, 
                     total: total,
                     part: Math.round(partRate * 100)
                 };
@@ -173,10 +173,10 @@
 
             // ŘAZENÍ
             items.sort((a, b) => {
-                // 1. Primárně podle bodů (NB)
+                // 1. Primárně podle bodů
                 if (b.value !== a.value) return b.value - a.value;
                 if (isMain) {
-                    // 2. Sekundárně v Indexu podle naší proměnné kvalita
+                    // 2. Sekundárně v Indexu podle vážené kvality
                     return b.kvalita - a.kvalita;
                 } else {
                     // Ostatní kategorie podle úspěšnosti
@@ -193,7 +193,6 @@
                     const prev = items[i-1];
                     let isSame = false;
                     if (isMain) {
-                        // Shoda ranku jen při identických bodech i identické kvalitě
                         isSame = (item.value === prev.value && Math.abs(item.kvalita - prev.kvalita) < 0.01);
                     } else {
                         const effA = item.value / item.total;
