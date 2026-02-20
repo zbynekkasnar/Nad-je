@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DOHRÁVKA STATISTIK - KANCELÁŘ NADĚJE</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: white; padding: 20px; display: flex; justify-content: center; }
+        .card { background: #1e293b; padding: 30px; border-radius: 20px; width: 100%; max-width: 450px; border: 1px solid #334155; box-shadow: 0 20px 50px rgba(0,0,0,0.3); }
+        h1 { color: #00f2ff; font-size: 1.2em; text-align: center; margin-bottom: 25px; letter-spacing: 1px; }
+        label { display: block; margin-top: 15px; font-size: 0.8em; color: #94a3b8; text-transform: uppercase; font-weight: bold; }
+        input { width: 100%; padding: 12px; margin-top: 5px; background: #0f172a; border: 1px solid #334155; border-radius: 10px; color: white; font-size: 1em; }
+        input:focus { border-color: #00f2ff; outline: none; }
+        .btn { background: #00f2ff; color: #0f172a; padding: 15px; border: none; border-radius: 12px; width: 100%; cursor: pointer; font-weight: 900; margin-top: 25px; text-transform: uppercase; transition: 0.3s; }
+        .btn:hover { background: #00d0db; transform: translateY(-2px); }
+        .info { font-size: 0.75em; color: #64748b; margin-top: 15px; text-align: center; line-height: 1.4; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h1>📜 DOHRÁVKA STATISTIK</h1>
+    
+    <div style="background: rgba(0,242,255,0.05); padding: 15px; border-radius: 10px; border: 1px solid rgba(0,242,255,0.1); margin-bottom: 20px;">
+        <label>Výsledek zápasu (např. 3:2):</label>
+        <input type="text" id="finalRes" placeholder="X:Y">
+
+        <label>Střelci (oddělení čárkou):</label>
+        <input type="text" id="finalStrelci" placeholder="Příjmení střelců...">
+    </div>
+
+    <label>Sázkař:</label>
+    <input type="text" id="sName" placeholder="Jméno">
+    
+    <label>Jeho tip skóre:</label>
+    <input type="text" id="sScore" placeholder="X:Y">
+    
+    <label>Jeho tip střelec:</label>
+    <input type="text" id="sStriker" placeholder="Příjmení">
+
+    <label>Výhra (Lupič) v Kč:</label>
+    <input type="number" id="sWin" value="0">
+
+    <button class="btn" onclick="addPoints()">PŘIPSAT BODY A PENÍZE</button>
+
+    <p class="info">
+        Tato akce neovlivní bank v adminu ani nepřidá kartu na web. <br>
+        Pouze navýší NB body a vyhrané peníze v žebříčku.
+    </p>
+    <a href="admin.html" style="display:block; text-align:center; color:#00f2ff; text-decoration:none; font-size:0.8em; margin-top:20px;">← Zpět do Adminu</a>
+</div>
+
+<script>
+    const firebaseConfig = { 
+        apiKey: "AIzaSyC-NCdmsgA42FxnopKm92m1y5gUGw_z_uE", 
+        authDomain: "nadeje-208bd.firebaseapp.com", 
+        databaseURL: "https://nadeje-208bd-default-rtdb.europe-west1.firebasedatabase.app", 
+        projectId: "nadeje-208bd", 
+        storageBucket: "nadeje-208bd.firebasestorage.app", 
+        messagingSenderId: "688478977789", 
+        appId: "1:688478977789:web:512d1520cf96c9e59cc894" 
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    function addPoints() {
+        const finalRes = document.getElementById('finalRes').value;
+        const finalStrelci = document.getElementById('finalStrelci').value.toLowerCase();
+        const sName = document.getElementById('sName').value;
+        const sScore = document.getElementById('sScore').value;
+        const sStriker = document.getElementById('sStriker').value.toLowerCase().trim();
+        const sWin = parseInt(document.getElementById('sWin').value) || 0;
+
+        if(!finalRes || !sName || !sScore) return alert("Chybí výsledek, jméno nebo tip!");
+
+        const fParts = finalRes.split(':'), sParts = sScore.split(':');
+        const fD = parseInt(fParts[0]), fH = parseInt(fParts[1]);
+        const sD = parseInt(sParts[0]), sH = parseInt(sParts[1]);
+
+        // Logika bodování
+        const hitsScore = (fD === sD && fH === sH);
+        const hitsStriker = finalStrelci.includes(sStriker) && sStriker.length > 2;
+        let hitsTrend = false;
+        if (fD > fH && sD > sH) hitsTrend = true;
+        else if (fD < fH && sD < sH) hitsTrend = true;
+        else if (fD === fH && sD === sH) hitsTrend = true;
+
+        let points = 0;
+        if (hitsScore) points += 5;
+        if (hitsStriker) points += 3;
+        if (hitsTrend) points += 1;
+
+        db.ref(`sazkyData/stats/${sName}`).transaction(c => {
+            c = c || {vyhry:0, trefeneSkore:0, trefeniStrelci:0, trefenyTrend:0, celkoveBody:0};
+            if(hitsScore) c.trefeneSkore = (c.trefeneSkore || 0) + 1;
+            if(hitsStriker) c.trefeniStrelci = (c.trefeniStrelci || 0) + 1;
+            if(hitsTrend) c.trefenyTrend = (c.trefenyTrend || 0) + 1;
+            c.celkoveBody = (c.celkoveBody || 0) + points;
+            c.vyhry = (c.vyhry || 0) + sWin;
+            return c;
+        }).then(() => {
+            alert(`Sázkaři ${sName} připsáno ${points} NB a ${sWin} Kč.`);
+            // Vyčistit jen sázkaře pro dalšího v řadě
+            document.getElementById('sName').value = "";
+            document.getElementById('sScore').value = "";
+            document.getElementById('sStriker').value = "";
+            document.getElementById('sWin').value = "0";
+        });
+    }
+</script>
+</body>
+</html>
