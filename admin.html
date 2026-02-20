@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin v4.9.3 - KANCELÁŘ NADĚJE</title>
+    <title>Admin v4.9.4 - KANCELÁŘ NADĚJE</title>
     
     <script src="stats.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -67,7 +67,7 @@
         <img src="IMG_8429.png" style="max-width: 200px; border-radius: 20px;">
     </div>
     <a href="index.html" class="btn-back">← ZPĚT NA WEB</a>
-    <h1 style="text-align: center;">⚙️ Administrace v4.9.3</h1>
+    <h1 style="text-align: center;">⚙️ Administrace v4.9.4</h1>
 
     <div class="card">
         <h2>💰 Správa banku</h2>
@@ -362,7 +362,7 @@
                     db.ref('sazkyData/prevedenyBank').set(totalAmount);
                 }
                 
-                // --- NOVÁ LOGIKA EXPERT (TREND) ---
+                // --- ROZŠÍŘENÁ LOGIKA STATISTIK A NB ---
                 sazkyEntries.forEach(([sid, s]) => {
                     const parts = s.skore.split(':');
                     const sD = parseInt(parts[0]);
@@ -372,17 +372,23 @@
                     const pStr = s.strelec.toLowerCase().trim();
                     const hitsStriker = fst.some(r => r.includes(pStr) || pStr.includes(r));
 
-                    // Výpočet trendu 1-0-2
                     let hitsTrend = false;
                     if (finalD > finalH && sD > sH) hitsTrend = true;
                     else if (finalD < finalH && sD < sH) hitsTrend = true;
                     else if (finalD === finalH && sD === sH) hitsTrend = true;
 
+                    // Výpočet Nadějných Bodů (NB)
+                    let ziskNB = 0;
+                    if (hitsScore) ziskNB += 5;
+                    if (hitsStriker) ziskNB += 3;
+                    if (hitsTrend) ziskNB += 1;
+
                     db.ref(`sazkyData/stats/${s.jmeno}`).transaction(c => {
-                        c = c || {vyhry:0, trefeneSkore:0, trefeniStrelci:0, trefenyTrend:0};
+                        c = c || {vyhry:0, trefeneSkore:0, trefeniStrelci:0, trefenyTrend:0, celkoveBody:0};
                         if(hitsScore) c.trefeneSkore = (c.trefeneSkore || 0) + 1;
                         if(hitsStriker) c.trefeniStrelci = (c.trefeniStrelci || 0) + 1;
-                        if(hitsTrend) c.trefenyTrend = (c.trefenyTrend || 0) + 1; // Expert bod
+                        if(hitsTrend) c.trefenyTrend = (c.trefenyTrend || 0) + 1;
+                        c.celkoveBody = (c.celkoveBody || 0) + ziskNB;
                         return c;
                     });
                 });
@@ -393,8 +399,8 @@
                 
                 document.getElementById(`raw-${mid}`).value = "";
                 const msg = document.getElementById('statusMsg');
-                msg.innerText = "ZÁPAS VYHODNOCEN A EXPERTI ZAPSANÍ! 🏆";
-                msg.style.background = "var(--blue)";
+                msg.innerText = "VYHODNOCENO! PENÍZE I NB ROZDĚLENY! 🏆";
+                msg.style.background = "var(--green)";
                 msg.style.display = 'block';
                 setTimeout(() => { msg.style.display = 'none'; }, 4000);
                 closeAllModals();
